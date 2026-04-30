@@ -1273,11 +1273,8 @@ function renderMemberList(){
         if(e.target.closest('.mem-name-inp,.mem-admin-badge,.mem-del,.mem-av'))return;
         doClaim();
       });
-    } else if(canEditThisRow){
-      av.title='שינוי צבע';
-      av.style.cursor='pointer';
-      av.addEventListener('click',()=>openColorPicker(m.id,av));
     }
+    // colors are auto-assigned by PALETTE order; no manual picker
 
     const wrap=document.createElement('div');
     wrap.className='mem-inp-wrap';
