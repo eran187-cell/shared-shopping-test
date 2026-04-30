@@ -603,6 +603,7 @@ a,button,input,select{touch-action:manipulation}
       <button class="add-member-btn" id="addMemberBtn">
         <span style="font-size:20px">+</span> הוספת שותף
       </button>
+      <button id="saveMembersBtn" type="button" title="שמירה" style="display:none;margin:10px auto 0;width:48px;height:48px;border-radius:50%;border:none;background:var(--pri);color:#fff;font-size:22px;cursor:pointer;box-shadow:0 4px 14px rgba(45,186,122,.4);font-family:inherit;align-items:center;justify-content:center">✓</button>
     </div>
 
     <button class="btn-primary" id="saveSetupBtn">בואו נתחיל ←</button>
@@ -1187,6 +1188,7 @@ function openSetup(mode){
   document.getElementById('setupTopbar').style.display=mode==='settings'?'flex':'none';
   document.getElementById('setupHeader').style.display=mode==='setup'?'block':'none';
   document.getElementById('saveSetupBtn').style.display=mode==='setup'?'block':'none';
+  document.getElementById('saveMembersBtn').style.display='none'; // hide until user adds a member
   document.getElementById('leaveHouseBtn').style.display=mode==='settings'?'block':'none';
   const hcc=document.getElementById('houseCodeCard');
   if(houseId&&mode==='settings'){
@@ -1338,9 +1340,19 @@ document.getElementById('addMemberBtn').addEventListener('click',function(){
   const color=PALETTE.find(c=>!usedColors.includes(c))||PALETTE[editMembers.length%PALETTE.length];
   editMembers.push({id:'m_'+Date.now()+'_'+Math.random().toString(36).slice(2),name:'',color});
   renderMemberList();
+  // reveal the round save button now that there's an unsaved addition
+  const saveBtn=document.getElementById('saveMembersBtn');
+  if(saveBtn && setupMode==='settings')saveBtn.style.display='flex';
   // focus last input
   const inputs=document.querySelectorAll('.mem-name-inp');
   if(inputs.length)inputs[inputs.length-1].focus();
+});
+
+document.getElementById('saveMembersBtn').addEventListener('click',function(){
+  if(commitSettings()){
+    toast('הפרטים נשמרו ✓');
+    this.style.display='none';
+  }
 });
 
 function commitSettings(){
