@@ -1,0 +1,26 @@
+# Personal media files dropped into the project folder
+*.mp4
+*.mov
+*.webm
+*.avi
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.heic
+*.heif
+
+# Archives dropped into the project folder
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+
+# Allow only the icon used by the app
+!icon.svg

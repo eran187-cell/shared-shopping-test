@@ -1,0 +1,17 @@
+{
+  "name": "Shared Shopping TEST",
+  "short_name": "SS TEST",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f0faf5",
+  "theme_color": "#2dba7a",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

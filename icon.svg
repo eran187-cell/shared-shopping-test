@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5dd678"/>
+      <stop offset="100%" stop-color="#17afa0"/>
+    </linearGradient>
+    <filter id="sh" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="192" height="192" rx="40" fill="url(#bg)"/>
+
+  <!-- Basket handle (arch) -->
+  <path d="M58 88 Q58 42 96 42 Q134 42 134 88"
+        fill="none" stroke="white" stroke-width="12" stroke-linecap="round"
+        filter="url(#sh)" opacity="0.95"/>
+
+  <!-- Basket body -->
+  <path d="M34 88 L46 158 Q46 166 54 166 L138 166 Q146 166 146 158 L158 88 Z"
+        fill="white" opacity="0.96" filter="url(#sh)"/>
+
+  <!-- === Groceries poking out of basket top === -->
+
+  <!-- Baguette (orange, tilted left) -->
+  <g transform="rotate(-18, 62, 74)">
+    <rect x="56" y="54" width="12" height="34" rx="6" fill="#f5a623"/>
+    <rect x="57" y="54" width="10" height="7" rx="5" fill="#e8951a"/>
+    <line x1="62" y1="63" x2="62" y2="82" stroke="#e8951a" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="59" y1="68" x2="65" y2="68" stroke="#fcd090" stroke-width="1" stroke-linecap="round"/>
+    <line x1="59" y1="74" x2="65" y2="74" stroke="#fcd090" stroke-width="1" stroke-linecap="round"/>
+  </g>
+
+  <!-- Apple (red) -->
+  <circle cx="90" cy="73" r="14" fill="#e74c3c"/>
+  <path d="M88 61 Q90 55 94 58" fill="none" stroke="#2e7d32" stroke-width="2.5" stroke-linecap="round"/>
+  <ellipse cx="95" cy="57" rx="5" ry="7" fill="#4caf50" transform="rotate(20,95,57)"/>
+  <!-- Apple shine -->
+  <ellipse cx="84" cy="67" rx="3" ry="4" fill="rgba(255,255,255,0.3)" transform="rotate(-20,84,67)"/>
+
+  <!-- Milk carton (blue) -->
+  <rect x="105" y="60" width="17" height="26" rx="2" fill="#42a5f5"/>
+  <polygon points="105,60 113.5,50 122,60" fill="#1e88e5"/>
+  <rect x="108" y="67" width="11" height="10" rx="1" fill="white" opacity="0.3"/>
+  <circle cx="113.5" cy="53" r="3" fill="white" opacity="0.8"/>
+
+  <!-- Lettuce (green) -->
+  <ellipse cx="132" cy="70" rx="11" ry="16" fill="#43a047" transform="rotate(15,132,70)"/>
+  <ellipse cx="132" cy="70" rx="7" ry="11" fill="#66bb6a" transform="rotate(15,132,70)"/>
+  <line x1="132" y1="62" x2="132" y2="78" stroke="#2e7d32" stroke-width="1.5" stroke-linecap="round" transform="rotate(15,132,70)"/>
+
+  <!-- === Checklist rows on basket body === -->
+
+  <!-- Row 1 – green -->
+  <circle cx="66" cy="105" r="9" fill="#43a047"/>
+  <polyline points="61,105 65,109 72,101" stroke="white" stroke-width="2.5"
+            fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="81" y="102" width="46" height="7" rx="3.5" fill="#e0e0e0"/>
+
+  <!-- Row 2 – blue -->
+  <circle cx="66" cy="123" r="9" fill="#1e88e5"/>
+  <polyline points="61,123 65,127 72,119" stroke="white" stroke-width="2.5"
+            fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="81" y="120" width="38" height="7" rx="3.5" fill="#e0e0e0"/>
+
+  <!-- Row 3 – purple -->
+  <circle cx="66" cy="141" r="9" fill="#8e24aa"/>
+  <polyline points="61,141 65,145 72,137" stroke="white" stroke-width="2.5"
+            fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="81" y="138" width="28" height="7" rx="3.5" fill="#e0e0e0"/>
+
+  <!-- === Two person silhouettes (bottom-right) === -->
+
+  <!-- Person 1 – purple (smaller, behind) -->
+  <circle cx="118" cy="141" r="9" fill="#7b1fa2"/>
+  <path d="M105 166 Q105 152 118 152 Q131 152 131 166" fill="#7b1fa2"/>
+
+  <!-- Person 2 – teal (larger, front) -->
+  <circle cx="135" cy="135" r="11" fill="#17afa0"/>
+  <path d="M120 162 Q120 147 135 147 Q150 147 150 162" fill="#17afa0"/>
+</svg>
