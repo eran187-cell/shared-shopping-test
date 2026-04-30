@@ -1188,7 +1188,7 @@ function openSetup(mode){
   document.getElementById('setupTopbar').style.display=mode==='settings'?'flex':'none';
   document.getElementById('setupHeader').style.display=mode==='setup'?'block':'none';
   document.getElementById('saveSetupBtn').style.display=mode==='setup'?'block':'none';
-  document.getElementById('saveMembersBtn').style.display='none'; // hide until user adds a member
+  document.getElementById('saveMembersBtn').style.display=mode==='settings'?'flex':'none';
   document.getElementById('leaveHouseBtn').style.display=mode==='settings'?'block':'none';
   const hcc=document.getElementById('houseCodeCard');
   if(houseId&&mode==='settings'){
@@ -1340,19 +1340,13 @@ document.getElementById('addMemberBtn').addEventListener('click',function(){
   const color=PALETTE.find(c=>!usedColors.includes(c))||PALETTE[editMembers.length%PALETTE.length];
   editMembers.push({id:'m_'+Date.now()+'_'+Math.random().toString(36).slice(2),name:'',color});
   renderMemberList();
-  // reveal the round save button now that there's an unsaved addition
-  const saveBtn=document.getElementById('saveMembersBtn');
-  if(saveBtn && setupMode==='settings')saveBtn.style.display='flex';
   // focus last input
   const inputs=document.querySelectorAll('.mem-name-inp');
   if(inputs.length)inputs[inputs.length-1].focus();
 });
 
 document.getElementById('saveMembersBtn').addEventListener('click',function(){
-  if(commitSettings()){
-    toast('הפרטים נשמרו ✓');
-    this.style.display='none';
-  }
+  if(commitSettings())toast('הפרטים נשמרו ✓');
 });
 
 function commitSettings(){
