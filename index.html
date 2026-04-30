@@ -562,6 +562,9 @@ a,button,input,select{touch-action:manipulation}
 </head>
 <body>
 
+<!-- TEST environment indicator — visible on every screen -->
+<div id="testBanner" style="position:fixed;top:calc(2px + env(safe-area-inset-top, 0px));left:50%;transform:translateX(-50%);z-index:9500;background:#e74c3c;color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;padding:2px 10px;border-radius:0 0 8px 8px;pointer-events:none;font-family:system-ui,sans-serif">TEST</div>
+
 <!-- ══ SPLASH SCREEN ═══════════════════════════════ -->
 <div id="splash">
   <img src="icon.svg" alt="Shared Shopping"/>
