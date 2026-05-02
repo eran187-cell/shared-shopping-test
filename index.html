@@ -650,6 +650,7 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
     <button id="supportBtn" type="button" style="margin-top:16px;width:100%;padding:14px;border:1.5px solid var(--pri);border-radius:12px;background:var(--pril);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
       <span style="font-size:18px">✉️</span> לתמיכה / רעיונות והצעות
     </button>
+    <button id="forceUpdateBtn" type="button" style="margin-top:8px;width:100%;padding:10px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--mut);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">🔄 עדכון גרסה</button>
     <button id="aboutLink" type="button" style="background:none;border:none;color:var(--mut);font-size:12px;text-decoration:underline;cursor:pointer;padding:14px 0;font-family:inherit;display:block;margin:0 auto">מידע ופרטיות</button>
   </div>
 </div>
@@ -1580,6 +1581,24 @@ document.getElementById('supportBtn').addEventListener('click',function(){
 });
 
 // About / privacy overlay
+// Force a fresh load — unregister SW, clear caches, hard reload.
+document.getElementById('forceUpdateBtn').addEventListener('click',async function(){
+  if(!confirm('לבצע עדכון גרסה? האפליקציה תיטען מחדש וכל קאש יימחק. הנתונים שלך נשמרים.'))return;
+  this.disabled=true;this.textContent='מעדכן...';
+  try{
+    if(window.caches){
+      const keys=await caches.keys();
+      await Promise.all(keys.map(k=>caches.delete(k)));
+    }
+    if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r=>r.unregister()));
+    }
+  }catch(_){}
+  // Bypass HTTP cache too
+  location.reload(true);
+});
+
 document.getElementById('aboutLink').addEventListener('click',function(){
   document.getElementById('aboutOverlay').classList.add('open');
 });
