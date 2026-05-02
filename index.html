@@ -1910,6 +1910,8 @@ document.getElementById('creBtn').addEventListener('click',function(){
 /* ══ LIST VIEW ═══════════════════════════════ */
 function openList(id){
   activeId=id;activeFilter='all';chipsExpanded=false;
+  // pre-select the device-bound member so the very first add is also auto-assigned
+  selMember=_myMemberId();
   const lt=getLT(id);
   document.getElementById('listEmoji').textContent=lt.emoji;
   document.getElementById('listTitle').value=lt.name;
