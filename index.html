@@ -1583,7 +1583,7 @@ document.getElementById('supportBtn').addEventListener('click',function(){
 // About / privacy overlay
 // Force a fresh load — unregister SW, clear caches, hard reload.
 document.getElementById('forceUpdateBtn').addEventListener('click',async function(){
-  if(!confirm('לבצע עדכון גרסה? האפליקציה תיטען מחדש וכל קאש יימחק. הנתונים שלך נשמרים.'))return;
+  if(!confirm('האם לעדכן גרסה? כל הנתונים שהזנת ישמרו'))return;
   this.disabled=true;this.textContent='מעדכן...';
   try{
     if(window.caches){
