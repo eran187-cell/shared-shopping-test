@@ -562,8 +562,21 @@ a,button,input,select{touch-action:manipulation}
 </head>
 <body>
 
-<!-- TEST environment indicator — visible on every screen -->
-<div id="testBanner" style="position:fixed;top:calc(2px + env(safe-area-inset-top, 0px));left:50%;transform:translateX(-50%);z-index:9500;background:#e74c3c;color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;padding:2px 10px;border-radius:0 0 8px 8px;pointer-events:none;font-family:system-ui,sans-serif">TEST</div>
+<!-- TEST environment indicator + reset button — visible on every screen -->
+<div id="testBanner" style="position:fixed;top:calc(2px + env(safe-area-inset-top, 0px));left:50%;transform:translateX(-50%);z-index:9500;display:flex;gap:6px;align-items:center;font-family:system-ui,sans-serif">
+  <span style="background:#e74c3c;color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;padding:3px 10px;border-radius:0 0 8px 8px">TEST</span>
+  <button id="testResetBtn" type="button" title="ניקוי נתונים והתחלה מחדש" style="background:#f0ad4e;color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;padding:3px 8px;border:none;border-radius:0 0 8px 8px;cursor:pointer;font-family:inherit">איפוס</button>
+</div>
+<script>
+document.getElementById('testResetBtn').addEventListener('click',function(){
+  if(!confirm('לאפס את סביבת הטסט? יימחקו houseId, deviceId, וכל ההגדרות המקומיות, ויעלה onboarding מחדש.'))return;
+  Object.keys(localStorage).filter(k=>k.startsWith('sl3_')||k.startsWith('ss_')).forEach(k=>localStorage.removeItem(k));
+  // also unregister the SW so the next load is fully fresh
+  if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations){
+    navigator.serviceWorker.getRegistrations().then(rs=>{rs.forEach(r=>r.unregister());location.reload();});
+  } else { location.reload(); }
+});
+</script>
 
 <!-- ══ SPLASH SCREEN ═══════════════════════════════ -->
 <div id="splash">
