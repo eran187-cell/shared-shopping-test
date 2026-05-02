@@ -597,7 +597,14 @@ a,button,input,select{touch-action:manipulation}
       </div>
     </div>
 
-    <div class="section-card">
+    <div class="section-card" id="creatorNameCard">
+      <h3>השם שלי</h3>
+      <div class="field">
+        <input id="creatorName" type="text" placeholder="כך תופיע ברשימה" maxlength="30"/>
+      </div>
+    </div>
+
+    <div class="section-card" id="membersCard">
       <h3>שותפים</h3>
       <div class="member-list" id="memberList"></div>
       <button class="add-member-btn" id="addMemberBtn">
@@ -779,6 +786,20 @@ a,button,input,select{touch-action:manipulation}
     <div class="sheet-actions">
       <button class="btn-danger" id="joinOverlayConfirm" style="background:var(--pri)">הצטרפות</button>
       <button class="btn-cancel" id="joinOverlayCancel">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ask joiner for their name (new-flow self-claim) -->
+<div class="overlay" id="joinNameOverlay">
+  <div class="sheet">
+    <h3>מה שמכם?</h3>
+    <p style="font-size:14px;color:var(--mut);margin-bottom:14px">השם הזה יופיע ברשימה כשתוסיפו פריטים</p>
+    <div class="field">
+      <input id="joinNameInp" type="text" placeholder="לדוגמה: דנה" maxlength="30"/>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-primary" id="joinNameConfirm" style="flex:1">המשך ←</button>
     </div>
   </div>
 </div>
@@ -1112,6 +1133,43 @@ function startListener(id){
   });
   acLoadCustom();
 }
+// Show "what's your name?" dialog and self-add as a member when invitee
+// joins a house created via the new flow (no orphan slots to claim).
+function promptSelfJoinName(onDone){
+  const overlay=document.getElementById('joinNameOverlay');
+  const inp=document.getElementById('joinNameInp');
+  inp.value='';
+  overlay.classList.add('open');
+  setTimeout(()=>inp.focus(),60);
+  const submit=()=>{
+    const n=(inp.value||'').trim();
+    if(!n){inp.focus();return;}
+    const usedColors=(house.members||[]).map(m=>m.color);
+    const color=PALETTE.find(c=>!usedColors.includes(c))||PALETTE[(house.members||[]).length%PALETTE.length];
+    house.members=[...(house.members||[]),{
+      id:'m_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+      name:n,color,deviceId
+    }];
+    save();
+    overlay.classList.remove('open');
+    onDone&&onDone();
+  };
+  document.getElementById('joinNameConfirm').onclick=submit;
+  inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();submit();}};
+}
+// Decide whether to ask the joiner for their name. Existing devices and
+// legacy houses with orphan slots are unaffected.
+function postJoinFlow(onContinue){
+  if(isUnclaimed()){
+    const orphans=(house.members||[]).filter(m=>!m.deviceId);
+    if(!orphans.length){
+      // New-flow house: ask name, self-add, then continue
+      promptSelfJoinName(onContinue);
+      return;
+    }
+  }
+  onContinue&&onContinue();
+}
 function connectToHouse(id,cb,errCb){
   db.ref('houses/'+id).once('value',snap=>{
     const d=snap.val();
@@ -1190,6 +1248,10 @@ function openSetup(mode){
   document.getElementById('saveSetupBtn').style.display=mode==='setup'?'block':'none';
   document.getElementById('saveMembersBtn').style.display=mode==='settings'?'flex':'none';
   document.getElementById('leaveHouseBtn').style.display=mode==='settings'?'block':'none';
+  // creator-name field is shown only in initial setup; members list only in settings
+  document.getElementById('creatorNameCard').style.display=mode==='setup'?'block':'none';
+  document.getElementById('membersCard').style.display=mode==='settings'?'block':'none';
+  if(mode==='setup')document.getElementById('creatorName').value='';
   const hcc=document.getElementById('houseCodeCard');
   if(houseId&&mode==='settings'){
     document.getElementById('houseCodeDisplay').textContent=houseId;
@@ -1374,15 +1436,31 @@ function commitSettings(){
   return true;
 }
 
-// First-time setup: explicit "let's go" button
+// First-time setup: explicit "let's go" button. New flow — creator names
+// themselves and is auto-bound; everyone else self-joins via the invite link.
 document.getElementById('saveSetupBtn').addEventListener('click',function(){
+  const creatorName=(document.getElementById('creatorName').value||'').trim();
+  if(!creatorName){
+    document.getElementById('creatorName').focus();
+    toast('הזינו את השם שלכם');
+    return;
+  }
+  // Single-member setup: creator only, bound to this device, admin.
+  editMembers=[{
+    id:'m_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+    name:creatorName,
+    color:PALETTE[0],
+    deviceId,
+    isAdmin:true
+  }];
   if(!commitSettings())return;
   startListener(houseId);
   document.getElementById('setup').classList.add('hidden');
   document.getElementById('home').classList.remove('hidden');
   renderHome();
   toast('הבית נוצר ✓');
-  setTimeout(showInstallFlow,800);
+  // Open the invite share immediately — primary onboarding action
+  setTimeout(()=>{document.getElementById('shareBtn').click();},700);
 });
 
 // Settings mode: back arrow saves
@@ -2493,17 +2571,22 @@ document.getElementById('shareBtn').addEventListener('click',async function(){
   const url=location.href.split('?')[0].split('#')[0]+'?h='+houseId;
   const origHTML=this.innerHTML;
   const message='פתחתי את אפליקציית הקניות המשותפות לבית, מוזמנים להצטרף מהקישור הבא:\n'+url;
-  this.innerHTML='<span class="share-icon">✓</span> נפתח וואטסאפ...';
+  this.innerHTML='<span class="share-icon">✓</span> שיתוף...';
   this.classList.add('copy-ok');
   clearTimeout(shareTimer);
   shareTimer=setTimeout(()=>{
     this.innerHTML=origHTML;
     this.classList.remove('copy-ok');
   },2800);
+  // Always copy as a safety net so the user can paste manually if the
+  // native sheet is dismissed.
   try{await navigator.clipboard.writeText(message);}catch(_){}
+  // Prefer the device's native share sheet — supports any installed app.
+  // Fallback to a direct wa.me link if Web Share API is unavailable.
+  if(navigator.share){
+    try{await navigator.share({text:message});return;}catch(_){/* user canceled or failed */}
+  }
   toast('הקישור הועתק, ניתן לשתף עם החברים');
-  // Open WhatsApp directly with the message pre-filled.
-  // wa.me opens the app on mobile, web.whatsapp.com on desktop.
   const waUrl='https://wa.me/?text='+encodeURIComponent(message);
   window.open(waUrl,'_blank');
 });
@@ -2964,9 +3047,11 @@ if(_isAdmin){
     document.getElementById('joinOverlayConfirm').onclick=function(){
       document.getElementById('joinOverlay').classList.remove('open');
       connectToHouse(_deeplink,()=>{
-        document.getElementById('home').classList.remove('hidden');
-        renderHome();
-        toast('ברוכים הבאים לבית "'+house.name+'" ✓');
+        postJoinFlow(()=>{
+          document.getElementById('home').classList.remove('hidden');
+          renderHome();
+          toast('ברוכים הבאים לבית "'+house.name+'" ✓');
+        });
       });
     };
     document.getElementById('joinOverlayCancel').onclick=function(){
@@ -3031,9 +3116,11 @@ document.getElementById('joinHouseBtn').addEventListener('click',function(){
       return;
     }
     document.getElementById('onboardOverlay').style.display='none';
-    document.getElementById('home').classList.remove('hidden');
-    renderHome();
-    toast('ברוכים הבאים לבית "'+house.name+'" ✓');
+    postJoinFlow(()=>{
+      document.getElementById('home').classList.remove('hidden');
+      renderHome();
+      toast('ברוכים הבאים לבית "'+house.name+'" ✓');
+    });
   },function(){
     houseId=null;
     localStorage.removeItem('sl3_houseId');
