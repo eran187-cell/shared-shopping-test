@@ -627,9 +627,9 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
     </div>
 
     <!-- Setup-mode dual action: invite link (primary, 70%) + manual add (secondary, 30%) -->
-    <div id="setupActions" style="display:none;gap:8px;margin-top:14px">
-      <button class="btn-primary" id="sendInviteBtn" type="button" style="flex:7;display:flex;align-items:center;justify-content:center;gap:6px"><span>📤</span> שלח קישור להצטרפות</button>
-      <button id="manualEntryBtn" type="button" style="flex:3;padding:13px 8px;border-radius:12px;border:1.5px solid var(--pri);background:var(--sur);color:var(--pri);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">+ הוספה ידנית</button>
+    <div id="setupActions" style="display:none;gap:8px;margin-top:14px;align-items:stretch">
+      <button class="btn-primary" id="sendInviteBtn" type="button" style="flex:7;margin-top:0;display:flex;align-items:center;justify-content:center;gap:6px;box-sizing:border-box"><span>📤</span> שלח קישור להצטרפות</button>
+      <button id="manualEntryBtn" type="button" style="flex:3;padding:14px 8px;border-radius:12px;border:1.5px solid var(--pri);background:var(--sur);color:var(--pri);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;box-sizing:border-box">+ הוספה ידנית</button>
     </div>
     <button class="btn-primary" id="saveSetupBtn" style="display:none">בואו נתחיל ←</button>
     <button class="share-btn" id="shareBtn" style="display:none">
@@ -681,7 +681,7 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
       <div class="topbar-right">
         <button class="icon-btn" id="homeInstallBtn" title="הוספה לדף הבית" style="display:none">📲</button>
         <button class="icon-btn" id="darkToggle" title="החלף מצב תצוגה">🌙</button>
-        <button class="icon-btn" id="settingsBtn" title="הגדרות">⚙️</button>
+        <button class="icon-btn" id="settingsBtn" title="הגדרות">☰</button>
       </div>
     </div>
   </div>
@@ -1171,6 +1171,7 @@ function promptSelfJoinName(onDone){
     save();
     overlay.classList.remove('open');
     onDone&&onDone();
+    setTimeout(showInstallFlow,1200);
   };
   document.getElementById('joinNameConfirm').onclick=submit;
   inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();submit();}};
@@ -1491,6 +1492,10 @@ function _completeInitialSetup(opts){
   toast('הבית נוצר ✓');
   if(opts&&opts.share){
     setTimeout(()=>{document.getElementById('shareBtn').click();},700);
+    // Offer add-to-home-screen after the share action settles
+    setTimeout(showInstallFlow,4500);
+  } else {
+    setTimeout(showInstallFlow,1200);
   }
   return true;
 }
