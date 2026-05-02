@@ -613,7 +613,12 @@ a,button,input,select{touch-action:manipulation}
       <button id="saveMembersBtn" type="button" title="שמירה" style="display:none;margin:10px auto 0;width:48px;height:48px;border-radius:50%;border:none;background:var(--pri);color:#fff;font-size:22px;cursor:pointer;box-shadow:0 4px 14px rgba(45,186,122,.4);font-family:inherit;align-items:center;justify-content:center">✓</button>
     </div>
 
-    <button class="btn-primary" id="saveSetupBtn">בואו נתחיל ←</button>
+    <!-- Setup-mode dual action: invite link (primary, 70%) + manual add (secondary, 30%) -->
+    <div id="setupActions" style="display:none;gap:8px;margin-top:14px">
+      <button class="btn-primary" id="sendInviteBtn" type="button" style="flex:7;display:flex;align-items:center;justify-content:center;gap:6px"><span>📤</span> שלח קישור להצטרפות</button>
+      <button id="manualEntryBtn" type="button" style="flex:3;padding:13px 8px;border-radius:12px;border:1.5px solid var(--pri);background:var(--sur);color:var(--pri);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">+ הוספה ידנית</button>
+    </div>
+    <button class="btn-primary" id="saveSetupBtn" style="display:none">בואו נתחיל ←</button>
     <button class="share-btn" id="shareBtn" style="display:none">
       <span class="share-icon">🔗</span> שליחת קישור להצטרפות
     </button>
@@ -1249,9 +1254,14 @@ function openSetup(mode){
   document.getElementById('saveMembersBtn').style.display=mode==='settings'?'flex':'none';
   document.getElementById('leaveHouseBtn').style.display=mode==='settings'?'block':'none';
   // creator-name field is shown only in initial setup; members list only in settings
+  // (or in setup mode after the user explicitly chooses "manual entry")
   document.getElementById('creatorNameCard').style.display=mode==='setup'?'block':'none';
   document.getElementById('membersCard').style.display=mode==='settings'?'block':'none';
-  if(mode==='setup')document.getElementById('creatorName').value='';
+  document.getElementById('setupActions').style.display=mode==='setup'?'flex':'none';
+  if(mode==='setup'){
+    document.getElementById('creatorName').value='';
+    document.getElementById('manualEntryBtn').style.display='';
+  }
   const hcc=document.getElementById('houseCodeCard');
   if(houseId&&mode==='settings'){
     document.getElementById('houseCodeDisplay').textContent=houseId;
@@ -1436,31 +1446,59 @@ function commitSettings(){
   return true;
 }
 
-// First-time setup: explicit "let's go" button. New flow — creator names
-// themselves and is auto-bound; everyone else self-joins via the invite link.
-document.getElementById('saveSetupBtn').addEventListener('click',function(){
+// Shared first-time setup logic. Builds the creator member, persists,
+// transitions to home, and optionally opens the invite share sheet.
+function _completeInitialSetup(opts){
   const creatorName=(document.getElementById('creatorName').value||'').trim();
   if(!creatorName){
     document.getElementById('creatorName').focus();
     toast('הזינו את השם שלכם');
-    return;
+    return false;
   }
-  // Single-member setup: creator only, bound to this device, admin.
-  editMembers=[{
+  // Ensure the creator is the first member, bound to this device, admin.
+  // Any partners typed in via the manual-entry path are kept as additional members.
+  const creatorEntry={
     id:'m_'+Date.now()+'_'+Math.random().toString(36).slice(2),
     name:creatorName,
     color:PALETTE[0],
     deviceId,
     isAdmin:true
-  }];
-  if(!commitSettings())return;
+  };
+  const extras=(editMembers||[]).filter(m=>m.name && m.name.trim() && m.name.trim()!==creatorName).map((m,i)=>({
+    id:m.id||('m_'+Date.now()+'_'+i+'_'+Math.random().toString(36).slice(2)),
+    name:m.name.trim(),
+    color:m.color||PALETTE[(i+1)%PALETTE.length]
+  }));
+  editMembers=[creatorEntry,...extras];
+  if(!commitSettings())return false;
   startListener(houseId);
   document.getElementById('setup').classList.add('hidden');
   document.getElementById('home').classList.remove('hidden');
   renderHome();
   toast('הבית נוצר ✓');
-  // Open the invite share immediately — primary onboarding action
-  setTimeout(()=>{document.getElementById('shareBtn').click();},700);
+  if(opts&&opts.share){
+    setTimeout(()=>{document.getElementById('shareBtn').click();},700);
+  }
+  return true;
+}
+// 70% primary: create + open native share sheet
+document.getElementById('sendInviteBtn').addEventListener('click',function(){
+  _completeInitialSetup({share:true});
+});
+// 30% secondary: reveal manual partner-entry section
+document.getElementById('manualEntryBtn').addEventListener('click',function(){
+  document.getElementById('membersCard').style.display='block';
+  this.style.display='none';
+  // ensure at least one empty row to type into
+  if(!editMembers.length){
+    document.getElementById('addMemberBtn').click();
+  }
+  // expose the legacy "בואו נתחיל" button so the user can finish without sharing
+  document.getElementById('saveSetupBtn').style.display='block';
+});
+// Legacy "let's go" — used after manual entry; saves without auto-share
+document.getElementById('saveSetupBtn').addEventListener('click',function(){
+  _completeInitialSetup({share:false});
 });
 
 // Settings mode: back arrow saves
