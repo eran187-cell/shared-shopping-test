@@ -901,11 +901,26 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
     </div>
 
     <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
+      <h3 style="margin:0 0 10px 0;font-size:15px">📊 התפלגות חיבורים אחרונים</h3>
+      <div id="adminLoginPie"></div>
+    </div>
+
+    <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
       <h3 style="margin:0 0 10px 0;font-size:15px">🏠 רשימת בתים</h3>
-      <div style="display:flex;gap:6px;margin-bottom:12px;align-items:stretch">
+      <div style="display:flex;gap:6px;margin-bottom:8px;align-items:stretch">
         <input id="adminDelCode" type="text" placeholder="קוד בית למחיקה (4-12 תווים)" maxlength="12"
           style="flex:1;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--txt);font-family:monospace;font-size:13px;text-transform:uppercase"/>
         <button id="adminDelHouseBtn" style="padding:8px 14px;border:none;border-radius:8px;background:#e74c3c;color:#fff;font-weight:600;font-size:13px;cursor:pointer">🗑 מחק בית</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:12px;align-items:center;font-size:12px;color:var(--mut)">
+        <span>סינון:</span>
+        <select id="adminHouseFilter" style="flex:1;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:13px;font-family:inherit">
+          <option value="all">כולם</option>
+          <option value="today">פעילים היום</option>
+          <option value="week">פעילים בשבוע האחרון</option>
+          <option value="month">פעילים בחודש האחרון</option>
+          <option value="stale">לא פעילים מעל 30 ימים</option>
+        </select>
       </div>
       <div id="adminHouseList"></div>
     </div>
@@ -2926,10 +2941,74 @@ async function loadAdminStats(){
       }).join('')
       +'</div>';
 
-    // ── house list (sorted by activity: items desc, then last update desc)
-    const housesEntries=Object.entries(houses).sort((a,b)=>(b[1].i||0)-(a[1].i||0)||(b[1].t||0)-(a[1].t||0));
+    // ── activity buckets (for pie chart + filter)
+    const now=Date.now();
+    const DAY=86400000;
+    const allEntries=Object.entries(houses).sort((a,b)=>(b[1].i||0)-(a[1].i||0)||(b[1].t||0)-(a[1].t||0));
+    function _bucket(h){
+      if(!h.t)return 'unknown';
+      const days=(now-h.t)/DAY;
+      if(days<=1)return 'today';
+      if(days<=7)return 'week';
+      if(days<=30)return 'month';
+      return 'stale';
+    }
+    const bucketCounts={today:0,week:0,month:0,stale:0,unknown:0};
+    allEntries.forEach(([,h])=>{bucketCounts[_bucket(h)]++;});
+    // pie chart
+    const pieEl=document.getElementById('adminLoginPie');
+    const pieTotal=allEntries.length;
+    if(pieTotal){
+      const pieData=[
+        {key:'today',label:'פעילים היום',color:'#2dba7a',n:bucketCounts.today},
+        {key:'week',label:'בשבוע האחרון',color:'#5dade2',n:bucketCounts.week},
+        {key:'month',label:'בחודש האחרון',color:'#f5b041',n:bucketCounts.month},
+        {key:'stale',label:'מעל 30 ימים',color:'#aaa',n:bucketCounts.stale},
+        {key:'unknown',label:'לא ידוע',color:'#666',n:bucketCounts.unknown}
+      ].filter(s=>s.n>0);
+      const cx=70,cy=70,r=60;
+      let acc=0;
+      const slices=pieData.map(s=>{
+        const frac=s.n/pieTotal;
+        const a0=acc*2*Math.PI-Math.PI/2;
+        acc+=frac;
+        const a1=acc*2*Math.PI-Math.PI/2;
+        const x0=cx+r*Math.cos(a0),y0=cy+r*Math.sin(a0);
+        const x1=cx+r*Math.cos(a1),y1=cy+r*Math.sin(a1);
+        const large=frac>0.5?1:0;
+        const path=frac>=0.999
+          ?'M '+(cx+r)+' '+cy+' A '+r+' '+r+' 0 1 1 '+(cx-r)+' '+cy+' A '+r+' '+r+' 0 1 1 '+(cx+r)+' '+cy
+          :'M '+cx+' '+cy+' L '+x0+' '+y0+' A '+r+' '+r+' 0 '+large+' 1 '+x1+' '+y1+' Z';
+        return '<path d="'+path+'" fill="'+s.color+'"></path>';
+      }).join('');
+      const legend=pieData.map(s=>{
+        const pct=Math.round((s.n/pieTotal)*100);
+        return '<div style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0"><span style="width:10px;height:10px;border-radius:2px;background:'+s.color+'"></span><span style="flex:1">'+s.label+'</span><span style="color:var(--mut)">'+s.n+' ('+pct+'%)</span></div>';
+      }).join('');
+      pieEl.innerHTML='<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><svg width="140" height="140" viewBox="0 0 140 140" style="flex:0 0 auto">'+slices+'</svg><div style="flex:1;min-width:160px">'+legend+'</div></div>';
+    } else {
+      pieEl.innerHTML='<div style="text-align:center;color:var(--mut);padding:20px">אין עדיין נתוני בתים.</div>';
+    }
+
+    // ── filtered house list
+    const filterSel=document.getElementById('adminHouseFilter');
+    function _matchesFilter(h,f){
+      if(f==='all')return true;
+      const b=_bucket(h);
+      if(f==='today')return b==='today';
+      if(f==='week')return b==='today'||b==='week';
+      if(f==='month')return b==='today'||b==='week'||b==='month';
+      if(f==='stale')return b==='stale';
+      return true;
+    }
     const listEl=document.getElementById('adminHouseList');
-    if(housesEntries.length){
+    function _renderHouseList(){
+      const f=filterSel.value||'all';
+      const housesEntries=allEntries.filter(([,h])=>_matchesFilter(h,f));
+      if(!housesEntries.length){
+        listEl.innerHTML='<div style="text-align:center;color:var(--mut);padding:20px">אין בתים תואמים לסינון.</div>';
+        return;
+      }
       listEl.innerHTML=housesEntries.map(([hash,h],i)=>{
         const ageDays=h.t?Math.floor((Date.now()-h.t)/86400000):null;
         const ageLabel=ageDays===null?'—':ageDays===0?'פעיל היום':ageDays===1?'אתמול':'לפני '+ageDays+' ימים';
@@ -2959,9 +3038,9 @@ async function loadAdminStats(){
       listEl.querySelectorAll('[data-reset-code]').forEach(btn=>{
         btn.addEventListener('click',()=>adminResetClaims(btn.dataset.resetCode,btn.dataset.resetName));
       });
-    } else {
-      listEl.innerHTML='<div style="text-align:center;color:var(--mut);padding:20px">אין עדיין נתוני בתים.</div>';
     }
+    filterSel.onchange=_renderHouseList;
+    _renderHouseList();
 
     // ── tell-friends + install panels
     const houseRows=Object.entries(houses).map(([hash,h])=>({hash,h}));
