@@ -578,6 +578,63 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
 });
 </script>
 
+<!-- Persistent hamburger (global). Hidden on first-run onboarding; shown on home/list/settings. -->
+<button id="globalMenuBtn" type="button" title="תפריט" data-track="global:menu" style="display:none;position:fixed;top:calc(8px + env(safe-area-inset-top,0px));right:10px;z-index:8500;width:48px;height:48px;border-radius:12px;border:none;background:var(--sur);color:var(--txt);font-size:24px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.08);font-family:inherit">☰</button>
+
+<!-- Right-anchored slide-in drawer (placeholder shell — populated in later phases) -->
+<div id="globalDrawer" style="display:none;position:fixed;inset:0;z-index:9000;font-family:inherit">
+  <div id="globalDrawerScrim" style="position:absolute;inset:0;background:rgba(0,0,0,.45);opacity:0;transition:opacity .25s ease"></div>
+  <aside id="globalDrawerPanel" style="position:absolute;top:0;right:0;bottom:0;width:min(86vw,340px);background:var(--sur);box-shadow:-4px 0 24px rgba(0,0,0,.18);transform:translateX(110%);transition:transform .28s ease;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);overflow-y:auto">
+    <div style="display:flex;align-items:center;padding:14px 14px 6px;gap:8px">
+      <button id="globalDrawerClose" type="button" title="סגור" style="background:none;border:none;font-size:22px;color:var(--mut);cursor:pointer;width:36px;height:36px;border-radius:8px">✕</button>
+      <h3 style="margin:0;flex:1;font-size:16px">תפריט</h3>
+    </div>
+    <!-- Featured "tell friends" / share — populated in phase 2 -->
+    <div id="drawerShareSlot" style="padding:6px 14px"></div>
+    <!-- Menu items — populated in phase 2 -->
+    <nav id="drawerNav" style="padding:6px 6px;flex:1"></nav>
+    <!-- Footer: version number -->
+    <div style="padding:10px 14px;font-size:11px;color:var(--mut);text-align:center;border-top:1px solid var(--bdr)">גרסה <span id="drawerVersion"></span></div>
+  </aside>
+</div>
+<script>
+const APP_VERSION='1.02-rc.1';
+(function(){
+  const btn=document.getElementById('globalMenuBtn');
+  const drawer=document.getElementById('globalDrawer');
+  const panel=document.getElementById('globalDrawerPanel');
+  const scrim=document.getElementById('globalDrawerScrim');
+  const closeBtn=document.getElementById('globalDrawerClose');
+  document.getElementById('drawerVersion').textContent=APP_VERSION;
+  function open(){
+    drawer.style.display='block';
+    requestAnimationFrame(()=>{panel.style.transform='translateX(0)';scrim.style.opacity='1';});
+  }
+  function close(){
+    panel.style.transform='translateX(110%)';scrim.style.opacity='0';
+    setTimeout(()=>{drawer.style.display='none';},280);
+  }
+  btn.addEventListener('click',open);
+  closeBtn.addEventListener('click',close);
+  scrim.addEventListener('click',close);
+  // Expose so later phases can refresh contents
+  window._globalDrawer={open,close};
+  // Visibility helper — visible whenever the user is past initial onboarding
+  window._refreshGlobalMenuVisibility=function(){
+    const onboardOpen=document.getElementById('onboardOverlay');
+    const onboardVisible=onboardOpen&&getComputedStyle(onboardOpen).display!=='none';
+    const setupHeader=document.getElementById('setupHeader');
+    const setupView=document.getElementById('setup');
+    const initialSetupActive=setupView&&!setupView.classList.contains('hidden')&&!setupView.classList.contains('slide-right')
+      && setupHeader&&setupHeader.style.display!=='none';
+    btn.style.display=(onboardVisible||initialSetupActive)?'none':'flex';
+  };
+  // Cheap safety: re-evaluate periodically in case a transition path was missed.
+  setInterval(()=>window._refreshGlobalMenuVisibility(),1000);
+  document.addEventListener('DOMContentLoaded',()=>window._refreshGlobalMenuVisibility());
+})();
+</script>
+
 <!-- ══ SPLASH SCREEN ═══════════════════════════════ -->
 <div id="splash">
   <img src="icon.svg" alt="Shared Shopping"/>
@@ -1304,6 +1361,7 @@ let editMembers=[]; // working copy
 
 function openSetup(mode){
   setupMode=mode;
+  setTimeout(()=>window._refreshGlobalMenuVisibility&&window._refreshGlobalMenuVisibility(),50);
   // copy members for editing
   editMembers=house.members.map(m=>({...m}));
 
@@ -1955,6 +2013,7 @@ document.getElementById('creBtn').addEventListener('click',function(){
 /* ══ LIST VIEW ═══════════════════════════════ */
 function openList(id){
   activeId=id;activeFilter='all';chipsExpanded=false;
+  setTimeout(()=>window._refreshGlobalMenuVisibility&&window._refreshGlobalMenuVisibility(),0);
   // pre-select the device-bound member so the very first add is also auto-assigned
   selMember=_myMemberId();
   const lt=getLT(id);
@@ -1982,6 +2041,7 @@ function goHome(){
   document.getElementById('home').classList.remove('hidden');
   document.getElementById('qabar').classList.remove('visible');
   renderHome();
+  setTimeout(()=>window._refreshGlobalMenuVisibility&&window._refreshGlobalMenuVisibility(),0);
 }
 document.getElementById('backBtn').addEventListener('click',goHome);
 
