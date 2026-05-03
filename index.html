@@ -590,10 +590,10 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
 <div class="view slide-right" id="setup">
   <!-- topbar shown only in settings mode -->
   <div class="setup-topbar" id="setupTopbar" style="display:none">
-    <button class="back-btn" id="settingsBack" title="שמור וצא">&#8594;</button>
+    <button class="back-btn" id="settingsBack" title="שמור וצא" data-track="settings:back">&#8594;</button>
     <h2>הגדרות משפחה</h2>
-    <button class="setup-tell-btn" id="tellFriendsBtn" title="ספר לחברים על האפליקציה">📣 ספר לחברים</button>
-    <button class="setup-close-btn" id="setupCloseBtn" title="סגור">✕</button>
+    <button class="setup-tell-btn" id="tellFriendsBtn" title="ספר לחברים על האפליקציה" data-track="settings:tellFriends">📣 ספר לחברים</button>
+    <button class="setup-close-btn" id="setupCloseBtn" title="סגור" data-track="settings:close">✕</button>
   </div>
 
   <div class="setup-scroll" id="setupScroll">
@@ -620,25 +620,25 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
     <div class="section-card" id="membersCard">
       <h3>שותפים</h3>
       <div class="member-list" id="memberList"></div>
-      <button class="add-member-btn" id="addMemberBtn">
+      <button class="add-member-btn" id="addMemberBtn" data-track="settings:addMember">
         <span style="font-size:20px">+</span> הוספת שותף
       </button>
-      <button id="saveMembersBtn" type="button" title="שמירה" style="display:none;margin:10px auto 0;width:48px;height:48px;border-radius:50%;border:none;background:var(--pri);color:#fff;font-size:22px;cursor:pointer;box-shadow:0 4px 14px rgba(45,186,122,.4);font-family:inherit;align-items:center;justify-content:center">✓</button>
+      <button id="saveMembersBtn" type="button" title="שמירה" data-track="settings:saveMembers" style="display:none;margin:10px auto 0;width:48px;height:48px;border-radius:50%;border:none;background:var(--pri);color:#fff;font-size:22px;cursor:pointer;box-shadow:0 4px 14px rgba(45,186,122,.4);font-family:inherit;align-items:center;justify-content:center">✓</button>
     </div>
 
     <!-- Setup-mode dual action: invite link (primary, 70%) + manual add (secondary, 30%) -->
     <div id="setupActions" style="display:none;gap:8px;margin-top:14px;align-items:stretch">
-      <button class="btn-primary" id="sendInviteBtn" type="button" style="flex:7;margin-top:0;display:flex;align-items:center;justify-content:center;gap:6px;box-sizing:border-box"><span>📤</span> שלח קישור להצטרפות</button>
-      <button id="manualEntryBtn" type="button" style="flex:3;padding:14px 8px;border-radius:12px;border:1.5px solid var(--pri);background:var(--sur);color:var(--pri);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;box-sizing:border-box">+ הוספה ידנית</button>
+      <button class="btn-primary" id="sendInviteBtn" type="button" data-track="setup:sendInvite" style="flex:7;margin-top:0;display:flex;align-items:center;justify-content:center;gap:6px;box-sizing:border-box"><span>📤</span> שלח קישור להצטרפות</button>
+      <button id="manualEntryBtn" type="button" data-track="setup:manualEntry" style="flex:3;padding:14px 8px;border-radius:12px;border:1.5px solid var(--pri);background:var(--sur);color:var(--pri);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;box-sizing:border-box">+ הוספה ידנית</button>
     </div>
-    <button class="btn-primary" id="saveSetupBtn" style="display:none">בואו נתחיל ←</button>
-    <button class="share-btn" id="shareBtn" style="display:none">
+    <button class="btn-primary" id="saveSetupBtn" data-track="setup:start" style="display:none">בואו נתחיל ←</button>
+    <button class="share-btn" id="shareBtn" data-track="settings:share" style="display:none">
       <span class="share-icon">🔗</span> שליחת קישור להצטרפות
     </button>
-    <button class="install-btn" id="installBtn" style="display:none">
+    <button class="install-btn" id="installBtn" data-track="settings:install" style="display:none">
       <span>📲</span> הוספת קיצור לדף הבית
     </button>
-    <button class="btn-leave" id="leaveHouseBtn" style="display:none">🚪 יציאה מהקבוצה</button>
+    <button class="btn-leave" id="leaveHouseBtn" data-track="settings:leave" style="display:none">🚪 יציאה מהקבוצה</button>
 
     <!-- house code (shown in settings mode) — moved to bottom because most join via link -->
     <div class="house-code-card" id="houseCodeCard" style="display:none">
@@ -647,11 +647,11 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
       <div class="house-code-hint">לשימוש ידני, אם הקישור לא עובד</div>
     </div>
 
-    <button id="supportBtn" type="button" style="margin-top:16px;width:100%;padding:14px;border:1.5px solid var(--pri);border-radius:12px;background:var(--pril);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
+    <button id="supportBtn" type="button" data-track="settings:support" style="margin-top:16px;width:100%;padding:14px;border:1.5px solid var(--pri);border-radius:12px;background:var(--pril);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
       <span style="font-size:18px">✉️</span> לתמיכה / רעיונות והצעות
     </button>
-    <button id="forceUpdateBtn" type="button" style="margin-top:8px;width:100%;padding:10px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--mut);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">🔄 עדכון גרסה</button>
-    <button id="aboutLink" type="button" style="background:none;border:none;color:var(--mut);font-size:12px;text-decoration:underline;cursor:pointer;padding:14px 0;font-family:inherit;display:block;margin:0 auto">מידע ופרטיות</button>
+    <button id="forceUpdateBtn" type="button" data-track="settings:forceUpdate" style="margin-top:8px;width:100%;padding:10px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--mut);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">🔄 עדכון גרסה</button>
+    <button id="aboutLink" type="button" data-track="settings:about" style="background:none;border:none;color:var(--mut);font-size:12px;text-decoration:underline;cursor:pointer;padding:14px 0;font-family:inherit;display:block;margin:0 auto">מידע ופרטיות</button>
   </div>
 </div>
 
@@ -680,9 +680,9 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
     <div class="topbar-row2">
       <div class="members" id="membersEl"></div>
       <div class="topbar-right">
-        <button class="icon-btn" id="homeInstallBtn" title="הוספה לדף הבית" style="display:none">📲</button>
+        <button class="icon-btn" id="homeInstallBtn" title="הוספה לדף הבית" data-track="home:install" style="display:none">📲</button>
         <button class="icon-btn" id="darkToggle" title="החלף מצב תצוגה">🌙</button>
-        <button class="icon-btn" id="settingsBtn" title="הגדרות">☰</button>
+        <button class="icon-btn" id="settingsBtn" title="הגדרות" data-track="home:settings">☰</button>
       </div>
     </div>
   </div>
@@ -709,7 +709,7 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
 <!-- ══ LIST VIEW ══════════════════════════════════ -->
 <div class="view slide-right" id="list">
   <div class="topbar">
-    <button class="back-btn" id="backBtn">&#8594;</button>
+    <button class="back-btn" id="backBtn" data-track="list:back">&#8594;</button>
     <span id="listEmoji" style="font-size:22px"></span>
     <input id="listTitle" type="text"
       style="flex:1;font-size:18px;font-weight:700;border:none;background:transparent;
@@ -717,11 +717,11 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
              border-bottom:1.5px dashed var(--bdr);transition:border-color .15s,border-style .15s"
       onfocus="this.style.borderBottomColor='var(--pri)';this.style.borderBottomStyle='solid'"
       onblur="this.style.borderBottomColor='var(--bdr)';this.style.borderBottomStyle='dashed';saveListName(this.value)"/>
-    <button class="icon-btn" id="waShareBtn" title="שיתוף" style="color:var(--txt);opacity:.55">
+    <button class="icon-btn" id="waShareBtn" title="שיתוף" data-track="list:share" style="color:var(--txt);opacity:.55">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
     </button>
-    <button class="icon-btn" id="resetListBtn" title="איפוס רשימה" style="color:var(--txt);opacity:.55">↺</button>
-    <button class="icon-btn" id="deleteListBtn" title="מחיקת רשימה" style="color:var(--txt);opacity:.55">🗑</button>
+    <button class="icon-btn" id="resetListBtn" title="איפוס רשימה" data-track="list:reset" style="color:var(--txt);opacity:.55">↺</button>
+    <button class="icon-btn" id="deleteListBtn" title="מחיקת רשימה" data-track="list:deleteList" style="color:var(--txt);opacity:.55">🗑</button>
   </div>
 
   <div class="prog-row">
@@ -743,7 +743,7 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
   <!-- Main row -->
   <div class="qa-row">
     <!-- Submit -->
-    <button class="qa-submit" id="qaBtn" title="הוסף פריט">
+    <button class="qa-submit" id="qaBtn" title="הוסף פריט" data-track="list:add">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
     </button>
     <!-- Item name + integrated qty stepper -->
@@ -752,13 +752,13 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
              autocomplete="off" autocorrect="off" spellcheck="false"/>
       <div class="qa-sep"></div>
       <!-- Qty stepper lives INSIDE the box -->
-      <button class="qa-qty-btn" id="qaQtyMinus" aria-label="הפחת כמות">−</button>
+      <button class="qa-qty-btn" id="qaQtyMinus" aria-label="הפחת כמות" data-track="list:qtyMinus">−</button>
       <div class="qa-qty-num" id="qaQtyNum">1</div>
-      <button class="qa-qty-btn" id="qaQtyPlus" aria-label="הגדל כמות">+</button>
+      <button class="qa-qty-btn" id="qaQtyPlus" aria-label="הגדל כמות" data-track="list:qtyPlus">+</button>
       <div class="ac-drop" id="acDrop"></div>
     </div>
     <!-- Three dots -->
-    <button class="qa-dots" id="qaDots" title="אפשרויות נוספות">⋮</button>
+    <button class="qa-dots" id="qaDots" title="אפשרויות נוספות" data-track="list:more">⋮</button>
   </div>
 
   <!-- More options panel (hidden by default) -->
@@ -818,7 +818,7 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
       <input id="joinNameInp" type="text" placeholder="לדוגמה: דנה" maxlength="30"/>
     </div>
     <div class="sheet-actions">
-      <button class="btn-primary" id="joinNameConfirm" style="flex:1">המשך ←</button>
+      <button class="btn-primary" id="joinNameConfirm" data-track="join:confirm" style="flex:1">המשך ←</button>
     </div>
   </div>
 </div>
@@ -858,9 +858,9 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
 
       <label style="font-size:12px;color:var(--mut)">כמות</label>
       <div class="qty-stepper-box">
-        <button type="button" class="qty-stepper-btn" id="editItemQtyMinus" aria-label="הפחת">−</button>
+        <button type="button" class="qty-stepper-btn" id="editItemQtyMinus" aria-label="הפחת" data-track="editItem:qtyMinus">−</button>
         <input id="editItemQty" type="number" min="1" step="1" inputmode="numeric"/>
-        <button type="button" class="qty-stepper-btn" id="editItemQtyPlus" aria-label="הוסף">+</button>
+        <button type="button" class="qty-stepper-btn" id="editItemQtyPlus" aria-label="הוסף" data-track="editItem:qtyPlus">+</button>
       </div>
 
       <label style="font-size:12px;color:var(--mut)">יחידה</label>
@@ -873,8 +873,8 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
       <div id="editItemMembers" style="display:flex;gap:6px;flex-wrap:wrap"></div>
     </div>
     <div class="sheet-actions">
-      <button class="btn-primary" id="editItemSave">שמירה</button>
-      <button class="btn-cancel" id="editItemCancel">ביטול</button>
+      <button class="btn-primary" id="editItemSave" data-track="editItem:save">שמירה</button>
+      <button class="btn-cancel" id="editItemCancel" data-track="editItem:cancel">ביטול</button>
     </div>
   </div>
 </div>
@@ -933,6 +933,17 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
     <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
       <h3 style="margin:0 0 10px 0;font-size:15px">📲 התקנות אפליקציה</h3>
       <div id="adminInstalls"></div>
+    </div>
+
+    <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
+      <h3 style="margin:0 0 10px 0;font-size:15px">🖱️ מפת לחיצות</h3>
+      <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;font-size:12px;color:var(--mut)">
+        <span>בית:</span>
+        <select id="adminClickHouse" style="flex:1;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:13px;font-family:inherit">
+          <option value="">כל הבתים (אגרגטיבי)</option>
+        </select>
+      </div>
+      <div id="adminClicks"></div>
     </div>
 
     <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
@@ -1079,6 +1090,25 @@ async function _bumpHouseStat(field){
     }).catch(err=>console.warn('[stats bump]',field,err.code||err.message));
   }catch(e){console.warn('[stats bump]',e);}
 }
+// Per-button click counter: /stats/houses/{hash}/clicks/{screen}/{button}
+async function _bumpClick(screen,button){
+  if(!houseId||!screen||!button)return;
+  try{
+    const hash=await _getHouseHash();
+    db.ref('stats/houses/'+hash+'/clicks/'+screen+'/'+button)
+      .transaction(c=>(c||0)+1)
+      .catch(err=>console.warn('[click]',screen,button,err.code||err.message));
+  }catch(e){}
+}
+// Auto-track any click on an element (or ancestor) carrying data-track="screen:button"
+document.addEventListener('click',function(e){
+  const el=e.target&&e.target.closest&&e.target.closest('[data-track]');
+  if(!el)return;
+  const v=el.getAttribute('data-track')||'';
+  const idx=v.indexOf(':');
+  if(idx<=0)return;
+  _bumpClick(v.slice(0,idx),v.slice(idx+1));
+},true);
 function _safeItemKey(name){
   // Firebase keys can't contain . # $ [ ] /
   // base64-encode the UTF-8 bytes and replace URL-unsafe chars
@@ -3105,6 +3135,66 @@ async function loadAdminStats(){
     } else {
       document.getElementById('adminTopItems').innerHTML='<div style="text-align:center;color:var(--mut);padding:20px">אין עדיין נתוני פריטים. הוסף כמה פריטים באפליקציה כדי שיתחילו להיאסף.</div>';
     }
+
+    // ── click heatmap (button-press counts) ─────────────────────
+    const SCREEN_LABELS={home:'מסך הבית',list:'רשימת קניות',setup:'הקמה',settings:'הגדרות',editItem:'עריכת פריט',join:'הצטרפות'};
+    const BUTTON_LABELS={
+      'home:back':'← חזרה','home:settings':'☰ הגדרות','home:install':'📲 התקנה',
+      'list:back':'← חזרה','list:share':'🔗 שיתוף','list:reset':'↺ איפוס','list:deleteList':'🗑 מחיקת רשימה',
+      'list:add':'+ הוספה','list:more':'⋮ עוד','list:qtyMinus':'− כמות','list:qtyPlus':'+ כמות',
+      'setup:start':'בואו נתחיל','setup:sendInvite':'📤 שלח קישור','setup:manualEntry':'הוספה ידנית',
+      'settings:back':'→ חזרה','settings:close':'✕ סגירה','settings:tellFriends':'📣 ספר לחברים',
+      'settings:addMember':'+ הוספת שותף','settings:saveMembers':'✓ שמירה','settings:share':'🔗 שיתוף',
+      'settings:install':'📲 התקנה','settings:leave':'🚪 יציאה','settings:support':'✉️ תמיכה',
+      'settings:about':'מידע ופרטיות','settings:forceUpdate':'🔄 עדכון גרסה',
+      'editItem:save':'שמירה','editItem:cancel':'ביטול','editItem:qtyMinus':'− כמות','editItem:qtyPlus':'+ כמות',
+      'join:confirm':'המשך'
+    };
+    // populate house picker (only houses that have any clicks data)
+    const housesWithClicks=Object.entries(houses).filter(([,h])=>h.clicks);
+    const houseSel=document.getElementById('adminClickHouse');
+    const prevSel=houseSel.value;
+    houseSel.innerHTML='<option value="">כל הבתים (אגרגטיבי)</option>'+housesWithClicks.map(([hash,h])=>{
+      const code=h.c||'';const name=h.n||code||hash.slice(0,6);
+      return '<option value="'+hash+'">'+esc(name)+(code?' ('+esc(code)+')':'')+'</option>';
+    }).join('');
+    if(prevSel)houseSel.value=prevSel;
+    function _renderClicks(){
+      const sel=houseSel.value;
+      const sources=sel?[[sel,houses[sel]]].filter(x=>x[1]):Object.entries(houses);
+      // aggregate {screen: {button: count}}
+      const agg={};
+      sources.forEach(([,h])=>{
+        if(!h.clicks)return;
+        Object.entries(h.clicks).forEach(([screen,btns])=>{
+          if(!agg[screen])agg[screen]={};
+          Object.entries(btns||{}).forEach(([btn,c])=>{
+            if(typeof c==='number')agg[screen][btn]=(agg[screen][btn]||0)+c;
+          });
+        });
+      });
+      const screens=Object.keys(agg).sort();
+      const el=document.getElementById('adminClicks');
+      if(!screens.length){el.innerHTML='<div style="text-align:center;color:var(--mut);padding:20px">אין עדיין נתוני לחיצות.</div>';return;}
+      // global max for color scaling
+      let maxC=1;
+      screens.forEach(s=>Object.values(agg[s]).forEach(c=>{if(c>maxC)maxC=c;}));
+      el.innerHTML=screens.map(s=>{
+        const btns=Object.entries(agg[s]).sort((a,b)=>b[1]-a[1]);
+        const rows=btns.map(([b,c])=>{
+          const pct=Math.round((c/maxC)*100);
+          const label=BUTTON_LABELS[s+':'+b]||b;
+          return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0">'
+            +'<span style="font-size:13px;flex:1">'+esc(label)+'</span>'
+            +'<div style="flex:2;height:8px;background:var(--bdr);border-radius:4px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:hsl('+(120-Math.round(120*c/maxC))+',75%,50%)"></div></div>'
+            +'<span style="font-size:13px;font-weight:700;color:var(--pri);min-width:36px;text-align:left">'+c+'</span>'
+            +'</div>';
+        }).join('');
+        return '<div style="margin-bottom:14px"><div style="font-size:13px;font-weight:700;color:var(--mut);border-bottom:1px solid var(--bdr);padding-bottom:4px;margin-bottom:6px">'+(SCREEN_LABELS[s]||s)+'</div>'+rows+'</div>';
+      }).join('');
+    }
+    houseSel.onchange=_renderClicks;
+    _renderClicks();
 
     document.getElementById('adminTime').textContent='עודכן '+new Date().toLocaleTimeString('he-IL');
   }catch(err){
