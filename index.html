@@ -729,12 +729,12 @@ const APP_VERSION='1.02-rc.1';
 
     <div class="ss-field-row" id="houseNameRow">
       <input id="houseName" type="text" placeholder="שם הבית/קבוצה" maxlength="30"/>
-      <button id="saveHouseNameBtn" class="ss-field-save" type="button" title="שמור" data-track="setup:saveHouseName">✓</button>
+      <button id="saveHouseNameBtn" class="ss-field-save" type="button" title="שמור" data-track="setup:saveHouseName" style="display:none">✓</button>
     </div>
 
     <div class="ss-field-row" id="creatorNameCard">
       <input id="creatorName" type="text" placeholder="השם שלי" maxlength="30"/>
-      <button id="saveCreatorNameBtn" class="ss-field-save" type="button" title="שמור" data-track="setup:saveMyName">✓</button>
+      <button id="saveCreatorNameBtn" class="ss-field-save" type="button" title="שמור" data-track="setup:saveMyName" style="display:none">✓</button>
     </div>
 
     <div class="section-card" id="membersCard">
@@ -746,9 +746,10 @@ const APP_VERSION='1.02-rc.1';
       <button id="saveMembersBtn" type="button" title="שמירה" data-track="settings:saveMembers" style="display:none;margin:10px auto 0;width:48px;height:48px;border-radius:50%;border:none;background:var(--pri);color:#fff;font-size:22px;cursor:pointer;box-shadow:0 4px 14px rgba(45,186,122,.4);font-family:inherit;align-items:center;justify-content:center">✓</button>
     </div>
 
-    <!-- Setup-mode primary action: send invite link. Manual add stays as a hidden fallback for now. -->
-    <div id="setupActions" style="display:none;margin-top:14px">
-      <button class="ss-share-cta" id="sendInviteBtn" type="button" data-track="setup:sendInvite"><span style="font-size:20px">📤</span> שלח קישור הצטרפות</button>
+    <!-- Setup-mode primary action: send invite link. Below: start without sharing. -->
+    <div id="setupActions" style="display:none;margin-top:14px;flex-direction:column;gap:10px">
+      <button class="ss-share-cta" id="sendInviteBtn" type="button" data-track="setup:sendInvite"><span style="font-size:20px">📤</span> שליחת קישור הצטרפות</button>
+      <button id="startNoShareBtn" type="button" data-track="setup:startNoShare" style="width:100%;min-height:48px;padding:14px;border-radius:12px;border:1.5px solid var(--pri);background:var(--sur);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">התחלה ללא שליחת קישור</button>
       <button id="manualEntryBtn" type="button" data-track="setup:manualEntry" style="display:none">+ הוספה ידנית</button>
     </div>
     <button class="btn-primary" id="saveSetupBtn" data-track="setup:start" style="display:none">בואו נתחיל ←</button>
@@ -1439,7 +1440,8 @@ function openSetup(mode){
   // creator-name field is shown only in initial setup; members list only in settings
   document.getElementById('creatorNameCard').style.display=mode==='setup'?'flex':'none';
   document.getElementById('membersCard').style.display=mode==='settings'?'block':'none';
-  document.getElementById('setupActions').style.display=mode==='setup'?'block':'none';
+  document.getElementById('setupActions').style.display=mode==='setup'?'flex':'none';
+  document.getElementById('supportBtn').style.display=mode==='settings'?'flex':'none';
   // inline ✓ on house-name visible in both modes; on creator-name only in setup
   const saveHN=document.getElementById('saveHouseNameBtn');if(saveHN)saveHN.style.display=mode==='settings'?'flex':'flex';
   if(mode==='setup'){
@@ -1668,11 +1670,15 @@ function _completeInitialSetup(opts){
   }
   return true;
 }
-// 70% primary: create + open native share sheet
+// Primary: create + open native share sheet
 document.getElementById('sendInviteBtn').addEventListener('click',function(){
   _completeInitialSetup({share:true});
 });
-// 30% secondary: reveal manual partner-entry section
+// Secondary: create without sharing — go straight to home
+document.getElementById('startNoShareBtn').addEventListener('click',function(){
+  _completeInitialSetup({share:false});
+});
+// (legacy) Reveal manual partner-entry section
 document.getElementById('manualEntryBtn').addEventListener('click',function(){
   document.getElementById('membersCard').style.display='block';
   this.style.display='none';
