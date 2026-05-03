@@ -607,6 +607,7 @@ const APP_VERSION='1.02-rc.1';
   const closeBtn=document.getElementById('globalDrawerClose');
   document.getElementById('drawerVersion').textContent=APP_VERSION;
   function open(){
+    if(typeof _populate==='function')_populate();
     drawer.style.display='block';
     requestAnimationFrame(()=>{panel.style.transform='translateX(0)';scrim.style.opacity='1';});
   }
@@ -632,6 +633,61 @@ const APP_VERSION='1.02-rc.1';
   // Cheap safety: re-evaluate periodically in case a transition path was missed.
   setInterval(()=>window._refreshGlobalMenuVisibility(),1000);
   document.addEventListener('DOMContentLoaded',()=>window._refreshGlobalMenuVisibility());
+
+  // ── Drawer population ──────────────────────────────
+  function _bridge(id){
+    return ()=>{const el=document.getElementById(id);if(el){close();setTimeout(()=>el.click(),140);}};
+  }
+  function _toggleDark(){
+    const isDark=!document.body.classList.contains('dark');
+    localStorage.setItem('sl3_dark',isDark?'1':'0');
+    document.body.classList.toggle('dark',isDark);
+    const dt=document.getElementById('darkToggle');if(dt)dt.textContent=isDark?'☀️':'🌙';
+    _populate(); // refresh label
+  }
+  function _resetApp(){
+    if(!confirm('לאפס את האפליקציה? קוד הבית יוסר מהמכשיר ותחזרו למסך הראשי. הנתונים בענן נשמרים.'))return;
+    Object.keys(localStorage).filter(k=>k.startsWith('sl3_')||k.startsWith('ss_')).forEach(k=>localStorage.removeItem(k));
+    if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations){
+      navigator.serviceWorker.getRegistrations().then(rs=>{rs.forEach(r=>r.unregister());location.reload();});
+    } else { location.reload(); }
+  }
+  function _forceUpdate(){
+    if(!confirm('האם לעדכן גרסה? כל הנתונים שהזנת ישמרו'))return;
+    (async()=>{
+      try{
+        if(window.caches){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));}
+        if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations){
+          const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()));
+        }
+      }catch(_){}
+      location.reload(true);
+    })();
+  }
+  function _populate(){
+    const isDark=document.body.classList.contains('dark');
+    const shareSlot=document.getElementById('drawerShareSlot');
+    shareSlot.innerHTML='<button id="drawerTellFriends" type="button" data-track="drawer:tellFriends" style="width:100%;padding:14px;border:1.5px solid var(--pri);border-radius:12px;background:var(--pril);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px"><span style="font-size:18px">📤</span> המלץ לחברים</button>';
+    document.getElementById('drawerTellFriends').addEventListener('click',_bridge('tellFriendsBtn'));
+    const items=[
+      {icon:'⚙',label:'הגדרות',track:'drawer:settings',action:_bridge('settingsBtn')},
+      {icon:'📲',label:'התקנת האפליקציה',track:'drawer:install',action:_bridge('homeInstallBtn')},
+      {icon:isDark?'☀️':'🌙',label:isDark?'תצוגה בהירה':'תצוגה כהה',track:'drawer:theme',action:_toggleDark},
+      {icon:'🔗',label:'שלח קישור להצטרפות',track:'drawer:share',action:_bridge('shareBtn')},
+      {icon:'🔄',label:'עדכון גרסה',track:'drawer:update',action:_forceUpdate},
+      {icon:'✉️',label:'פניה לתמיכה',track:'drawer:support',action:_bridge('supportBtn')},
+      {icon:'📜',label:'תנאים',track:'drawer:about',action:_bridge('aboutLink')},
+      {icon:'🚪',label:'איפוס אפליקציה',track:'drawer:resetApp',action:_resetApp}
+    ];
+    const nav=document.getElementById('drawerNav');
+    nav.innerHTML=items.map((it,i)=>'<button type="button" class="drawer-item" data-i="'+i+'" data-track="'+it.track+'" style="display:flex;align-items:center;gap:10px;width:100%;padding:14px;border:none;background:none;color:var(--txt);font-size:15px;cursor:pointer;font-family:inherit;text-align:right;border-radius:8px;min-height:48px"><span style="font-size:20px;width:28px;text-align:center">'+it.icon+'</span><span style="flex:1">'+it.label+'</span></button>').join('');
+    nav.querySelectorAll('.drawer-item').forEach(b=>{
+      b.addEventListener('click',()=>items[+b.dataset.i].action());
+      b.addEventListener('mouseenter',()=>b.style.background='var(--bg)');
+      b.addEventListener('mouseleave',()=>b.style.background='none');
+    });
+  }
+  document.addEventListener('DOMContentLoaded',_populate);
 })();
 </script>
 
@@ -707,8 +763,9 @@ const APP_VERSION='1.02-rc.1';
     <button id="supportBtn" type="button" data-track="settings:support" style="margin-top:16px;width:100%;padding:14px;border:1.5px solid var(--pri);border-radius:12px;background:var(--pril);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
       <span style="font-size:18px">✉️</span> לתמיכה / רעיונות והצעות
     </button>
-    <button id="forceUpdateBtn" type="button" data-track="settings:forceUpdate" style="margin-top:8px;width:100%;padding:10px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--mut);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">🔄 עדכון גרסה</button>
-    <button id="aboutLink" type="button" data-track="settings:about" style="background:none;border:none;color:var(--mut);font-size:12px;text-decoration:underline;cursor:pointer;padding:14px 0;font-family:inherit;display:block;margin:0 auto">מידע ופרטיות</button>
+    <!-- Moved to global hamburger drawer in v1.02. Kept hidden in DOM as click hooks for the drawer. -->
+    <button id="forceUpdateBtn" type="button" data-track="settings:forceUpdate" style="display:none">🔄 עדכון גרסה</button>
+    <button id="aboutLink" type="button" data-track="settings:about" style="display:none">מידע ופרטיות</button>
   </div>
 </div>
 
