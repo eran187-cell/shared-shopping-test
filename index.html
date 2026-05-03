@@ -186,15 +186,17 @@ a,button,input,select{touch-action:manipulation}
 #home .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 20px calc(24px + var(--sab))}
 .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);margin-bottom:12px}
 
-.lt-grid{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:140px;gap:12px;margin-bottom:24px}
-.lt-card{background:var(--sur);border-radius:16px;border:1.5px solid var(--bdr);padding:14px 14px 12px;cursor:pointer;transition:border-color .18s,box-shadow .18s,transform .18s,opacity .18s;animation:fadeUp .25s ease both;user-select:none;position:relative;display:flex;flex-direction:column;overflow:hidden}
+.lt-grid{display:grid;grid-template-columns:1fr;grid-auto-rows:minmax(96px,auto);gap:12px;margin-bottom:24px}
+.lt-card{background:var(--sur);border-radius:16px;border:1.5px solid var(--bdr);padding:14px 16px 18px;cursor:pointer;transition:border-color .18s,box-shadow .18s,transform .18s,opacity .18s;animation:fadeUp .25s ease both;user-select:none;position:relative;display:flex;flex-direction:row;align-items:center;gap:14px;min-height:72px;overflow:hidden}
 .lt-card:hover{border-color:var(--pri);box-shadow:0 4px 18px rgba(45,186,122,.15);transform:translateY(-2px)}
 .lt-card:active:not(.dragging){transform:scale(.97)}
-.lt-emoji{font-size:26px;margin-bottom:6px;flex-shrink:0}
-.lt-name{font-size:14px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
-.lt-count{font-size:11px;color:var(--mut);flex-shrink:0}
-.lt-bar{height:4px;background:var(--bdr);border-radius:99px;margin-top:auto;padding-top:6px;overflow:hidden}
-.lt-fill{height:4px;background:var(--pri);border-radius:99px;transition:width .4s}
+.lt-emoji{font-size:38px;flex-shrink:0;line-height:1}
+.lt-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;justify-content:center}
+.lt-name{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lt-count{font-size:12px;color:var(--mut)}
+.lt-bar{position:absolute;left:0;right:0;bottom:0;height:5px;background:var(--bdr);border-radius:0 0 16px 16px;overflow:hidden}
+.lt-fill{height:5px;background:var(--pri);transition:width .4s}
+.lt-new-badge{font-size:11px;font-weight:700;background:var(--pri);color:#fff;padding:3px 8px;border-radius:99px;flex-shrink:0;white-space:nowrap}
 .lt-card.add-card{border:1.5px dashed var(--bdr);align-items:center;justify-content:center;gap:6px;color:var(--mut)}
 .lt-card.add-card:hover{border-color:var(--pri);color:var(--pri);background:var(--pril)}
 .lt-card.add-card .plus{font-size:28px}
@@ -798,11 +800,12 @@ const APP_VERSION='1.02-rc.1';
 <!-- ══ HOME VIEW ══════════════════════════════════ -->
 <div class="view hidden" id="home">
   <div class="topbar">
-    <div class="house-name" id="houseNameEl">בית <em>שלנו</em></div>
-    <div class="topbar-row2">
+    <div class="house-name" id="houseNameEl" style="display:none"></div>
+    <div class="topbar-row2" style="justify-content:flex-end">
       <div class="members" id="membersEl"></div>
-      <div class="topbar-right">
-        <button class="icon-btn" id="homeInstallBtn" title="הוספה לדף הבית" data-track="home:install" style="display:none">📲</button>
+      <!-- legacy icon buttons hidden in v1.02; kept as DOM hooks for the global drawer -->
+      <div class="topbar-right" style="display:none">
+        <button class="icon-btn" id="homeInstallBtn" title="הוספה לדף הבית" data-track="home:install">📲</button>
         <button class="icon-btn" id="darkToggle" title="החלף מצב תצוגה">🌙</button>
         <button class="icon-btn" id="settingsBtn" title="הגדרות" data-track="home:settings">☰</button>
       </div>
@@ -1983,6 +1986,14 @@ let _ddSrc=-1;
 
 /* ══ RENDER HOME ══════════════════════ */
 function renderHome(){
+  // First-ever entry to the lists page → offer add-to-home-screen.
+  try{
+    const standalone=window.matchMedia&&window.matchMedia('(display-mode:standalone)').matches||!!navigator.standalone;
+    if(houseId && !standalone && !localStorage.getItem('sl3_homeInstallShown')){
+      localStorage.setItem('sl3_homeInstallShown','1');
+      setTimeout(()=>{try{showInstallFlow();}catch(_){}}, 1500);
+    }
+  }catch(_){}
   document.getElementById('houseNameEl').textContent=(house&&house.name)||'הבית שלנו';
   const members=Array.isArray(house&&house.members)?house.members:[];
   document.getElementById('membersEl').innerHTML=
@@ -1999,6 +2010,10 @@ function renderHome(){
     const list=items[lt.id]||[];
     const total=list.length,done=list.filter(x=>x.checked).length,pending=total-done;
     const pct=total?Math.round(done/total*100):0;
+    // count new items added since the last visit to this list
+    const seenKey='sl3_lastSeen_'+(houseId||'')+'_'+lt.id;
+    const lastSeen=parseInt(localStorage.getItem(seenKey)||'0',10);
+    const newCount=Math.max(0,total-lastSeen);
     const card=document.createElement('div');
     card.className='lt-card';
     card.dataset.ltIdx=i;
@@ -2021,8 +2036,11 @@ function renderHome(){
 
     card.insertAdjacentHTML('beforeend',
       '<div class="lt-emoji">'+lt.emoji+'</div>'
-      +'<div class="lt-name">'+esc(lt.name)+'</div>'
-      +'<div class="lt-count">'+pending+' לקנות'+(total?' · '+done+'/'+total:'')+'</div>'
+      +'<div class="lt-body">'
+        +'<div class="lt-name">'+esc(lt.name)+'</div>'
+        +'<div class="lt-count">'+pending+' לקנות'+(total?' · '+done+'/'+total:'')+'</div>'
+      +'</div>'
+      +(newCount>0?'<div class="lt-new-badge">+'+newCount+' חדש</div>':'')
       +'<div class="lt-bar"><div class="lt-fill" style="width:'+pct+'%"></div></div>');
 
     // Edit-mode: tap emoji to pick a new one, tap name to rename inline
@@ -2145,6 +2163,11 @@ document.getElementById('creBtn').addEventListener('click',function(){
 function openList(id){
   activeId=id;activeFilter='all';chipsExpanded=false;
   setTimeout(()=>window._refreshGlobalMenuVisibility&&window._refreshGlobalMenuVisibility(),0);
+  // mark this list as seen — clears the "+N new" badge on the home page
+  try{
+    const list=items[id]||[];
+    localStorage.setItem('sl3_lastSeen_'+(houseId||'')+'_'+id,String(list.length));
+  }catch(_){}
   // pre-select the device-bound member so the very first add is also auto-assigned
   selMember=_myMemberId();
   const lt=getLT(id);
@@ -3006,11 +3029,11 @@ function showInstallFlow(){
         {n:'4',text:'בחר <strong>"הוסף למסך הבית"</strong> ואשר.'},
       ];
     } else {
-      // iOS Safari — manual instructions
+      // iOS Safari — manual instructions, using iPhone-native terminology
       steps=[
-        {n:'1',text:'לחץ על כפתור השיתוף <strong>📤</strong> בתחתית Safari'},
-        {n:'2',text:'גלול ברשימה ובחר <strong>"הוסף למסך הבית"</strong>'},
-        {n:'3',text:'לחץ <strong>"הוסף"</strong> בפינה הימנית למעלה'},
+        {n:'1',text:'בחלק התחתון של Safari, לחץ על כפתור <strong>שיתוף</strong> (ריבוע עם חץ ⬆ באמצע)'},
+        {n:'2',text:'גלול בתפריט שנפתח ובחר <strong>"הוסף למסך הבית"</strong>'},
+        {n:'3',text:'אשר עם <strong>"הוסף"</strong> בפינה הימנית למעלה — האייקון יופיע כמו אפליקציה רגילה'},
       ];
     }
     document.getElementById('installSteps').innerHTML=steps.map(s=>
