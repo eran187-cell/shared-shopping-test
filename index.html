@@ -1664,8 +1664,21 @@ function _completeInitialSetup(opts){
   toast('הבית נוצר ✓');
   if(opts&&opts.share){
     setTimeout(()=>{document.getElementById('shareBtn').click();},700);
-    // Offer add-to-home-screen after the share action settles
-    setTimeout(showInstallFlow,4500);
+    // Fire the install offer when the page comes back into focus after
+    // the native share sheet closes. Includes a desktop fallback timer
+    // because Web Share on desktop may not toggle visibility.
+    let _fired=false;
+    function _onVisible(){
+      if(_fired||document.visibilityState!=='visible')return;
+      _fired=true;document.removeEventListener('visibilitychange',_onVisible);
+      setTimeout(showInstallFlow,500);
+    }
+    setTimeout(()=>{
+      document.addEventListener('visibilitychange',_onVisible);
+      setTimeout(()=>{
+        if(!_fired){_fired=true;document.removeEventListener('visibilitychange',_onVisible);showInstallFlow();}
+      },7000);
+    },1500);
   } else {
     setTimeout(showInstallFlow,1200);
   }
