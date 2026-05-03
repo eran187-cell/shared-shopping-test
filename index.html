@@ -115,6 +115,17 @@ a,button,input,select{touch-action:manipulation}
 .field label{display:block;font-size:13px;font-weight:600;color:var(--mut);margin-bottom:5px}
 .field input{width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid var(--bdr);background:var(--bg);font-size:16px;color:var(--txt);outline:none;font-family:inherit;transition:border .15s;-webkit-appearance:none}
 .field input:focus{border-color:var(--pri);background:var(--sur);color:var(--txt)}
+/* v1.02 flat field rows for setup/welcome */
+.ss-field-row{display:flex;gap:8px;margin:14px 0;align-items:stretch}
+.ss-field-row input{flex:1;padding:14px 14px;border:1.5px solid var(--bdr);border-radius:12px;font-size:15px;background:var(--sur);color:var(--txt);font-family:inherit;outline:none;min-height:48px;box-sizing:border-box;-webkit-appearance:none}
+.ss-field-row input:focus{border-color:var(--pri)}
+.ss-field-row input.invalid,.ss-field-row input.invalid:focus{border-color:#e74c3c}
+.ss-field-row input.invalid::placeholder{color:#e74c3c;opacity:.85}
+.ss-field-save{flex:0 0 auto;width:48px;height:48px;min-height:48px;border:none;border-radius:12px;background:var(--pri);color:#fff;font-size:22px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;transition:transform .12s}
+.ss-field-save:active{transform:scale(.94)}
+.ss-field-save.saved{background:#3ecf8e}
+.ss-share-cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:56px;padding:16px;border-radius:14px;background:var(--pri);color:#fff;border:none;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:12px;box-shadow:0 4px 14px rgba(45,186,122,.35)}
+.setup-x{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));left:10px;width:44px;height:44px;border-radius:12px;background:var(--sur);border:1px solid var(--bdr);color:var(--txt);font-size:20px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;z-index:5}
 
 /* Members list in settings */
 .member-list{display:flex;flex-direction:column;gap:8px}
@@ -710,24 +721,20 @@ const APP_VERSION='1.02-rc.1';
   </div>
 
   <div class="setup-scroll" id="setupScroll">
+    <button id="setupX" type="button" class="setup-x" title="חזרה" data-track="setup:close" style="display:none">✕</button>
     <div id="setupHeader">
       <div class="setup-logo">🏠</div>
       <div class="setup-title">ברוכים הבאים!</div>
-      <div class="setup-sub">הגדרת הבית והשותפים</div>
     </div>
 
-    <div class="section-card">
-      <h3>שם בית / קבוצה</h3>
-      <div class="field">
-        <input id="houseName" type="text" placeholder="למשל: בית לוי 🏡" maxlength="30"/>
-      </div>
+    <div class="ss-field-row" id="houseNameRow">
+      <input id="houseName" type="text" placeholder="שם הבית/קבוצה" maxlength="30"/>
+      <button id="saveHouseNameBtn" class="ss-field-save" type="button" title="שמור" data-track="setup:saveHouseName">✓</button>
     </div>
 
-    <div class="section-card" id="creatorNameCard">
-      <h3>השם שלי</h3>
-      <div class="field">
-        <input id="creatorName" type="text" placeholder="כך תופיע ברשימה" maxlength="30"/>
-      </div>
+    <div class="ss-field-row" id="creatorNameCard">
+      <input id="creatorName" type="text" placeholder="השם שלי" maxlength="30"/>
+      <button id="saveCreatorNameBtn" class="ss-field-save" type="button" title="שמור" data-track="setup:saveMyName">✓</button>
     </div>
 
     <div class="section-card" id="membersCard">
@@ -739,10 +746,10 @@ const APP_VERSION='1.02-rc.1';
       <button id="saveMembersBtn" type="button" title="שמירה" data-track="settings:saveMembers" style="display:none;margin:10px auto 0;width:48px;height:48px;border-radius:50%;border:none;background:var(--pri);color:#fff;font-size:22px;cursor:pointer;box-shadow:0 4px 14px rgba(45,186,122,.4);font-family:inherit;align-items:center;justify-content:center">✓</button>
     </div>
 
-    <!-- Setup-mode dual action: invite link (primary, 70%) + manual add (secondary, 30%) -->
-    <div id="setupActions" style="display:none;gap:8px;margin-top:14px;align-items:stretch">
-      <button class="btn-primary" id="sendInviteBtn" type="button" data-track="setup:sendInvite" style="flex:7;margin-top:0;display:flex;align-items:center;justify-content:center;gap:6px;box-sizing:border-box"><span>📤</span> שלח קישור להצטרפות</button>
-      <button id="manualEntryBtn" type="button" data-track="setup:manualEntry" style="flex:3;padding:14px 8px;border-radius:12px;border:1.5px solid var(--pri);background:var(--sur);color:var(--pri);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;box-sizing:border-box">+ הוספה ידנית</button>
+    <!-- Setup-mode primary action: send invite link. Manual add stays as a hidden fallback for now. -->
+    <div id="setupActions" style="display:none;margin-top:14px">
+      <button class="ss-share-cta" id="sendInviteBtn" type="button" data-track="setup:sendInvite"><span style="font-size:20px">📤</span> שלח קישור הצטרפות</button>
+      <button id="manualEntryBtn" type="button" data-track="setup:manualEntry" style="display:none">+ הוספה ידנית</button>
     </div>
     <button class="btn-primary" id="saveSetupBtn" data-track="setup:start" style="display:none">בואו נתחיל ←</button>
     <button class="share-btn" id="shareBtn" data-track="settings:share" style="display:none">
@@ -1078,11 +1085,11 @@ const APP_VERSION='1.02-rc.1';
     <div class="onboard-icon">🏠</div>
     <h2 class="onboard-title">קניות משפחתיות</h2>
     <p class="onboard-sub">סנכרון בזמן אמת עם כל המשפחה</p>
-    <button class="btn-primary" id="createHouseBtn" style="width:100%;font-size:15px">✨ יצירת בית חדש</button>
-    <div class="onboard-or">או הצטרפות לבית קיים</div>
-    <input id="joinCodeInput" class="onboard-code-inp" placeholder="קוד הבית" maxlength="8" autocomplete="off" autocapitalize="characters" inputmode="text"/>
-    <button class="btn-primary" id="joinHouseBtn" style="width:100%;font-size:15px">הצטרפות</button>
-    <div id="joinError" class="onboard-error"></div>
+    <button class="btn-primary" id="createHouseBtn" style="width:100%;font-size:17px;font-weight:700;padding:18px;min-height:56px">+ יצירת בית חדש</button>
+    <!-- Hidden join hooks: kept in DOM as fallbacks (e.g. ?h=CODE deeplink, support flow). -->
+    <input id="joinCodeInput" maxlength="8" style="display:none"/>
+    <button id="joinHouseBtn" style="display:none">הצטרפות</button>
+    <div id="joinError" class="onboard-error" style="display:none"></div>
   </div>
 </div>
 
@@ -1425,17 +1432,20 @@ function openSetup(mode){
   document.getElementById('houseName').value=house.name||'';
   document.getElementById('setupTopbar').style.display=mode==='settings'?'flex':'none';
   document.getElementById('setupHeader').style.display=mode==='setup'?'block':'none';
+  document.getElementById('setupX').style.display=mode==='setup'?'flex':'none';
   document.getElementById('saveSetupBtn').style.display=mode==='setup'?'block':'none';
   document.getElementById('saveMembersBtn').style.display=mode==='settings'?'flex':'none';
   document.getElementById('leaveHouseBtn').style.display=mode==='settings'?'block':'none';
   // creator-name field is shown only in initial setup; members list only in settings
-  // (or in setup mode after the user explicitly chooses "manual entry")
-  document.getElementById('creatorNameCard').style.display=mode==='setup'?'block':'none';
+  document.getElementById('creatorNameCard').style.display=mode==='setup'?'flex':'none';
   document.getElementById('membersCard').style.display=mode==='settings'?'block':'none';
-  document.getElementById('setupActions').style.display=mode==='setup'?'flex':'none';
+  document.getElementById('setupActions').style.display=mode==='setup'?'block':'none';
+  // inline ✓ on house-name visible in both modes; on creator-name only in setup
+  const saveHN=document.getElementById('saveHouseNameBtn');if(saveHN)saveHN.style.display=mode==='settings'?'flex':'flex';
   if(mode==='setup'){
     document.getElementById('creatorName').value='';
-    document.getElementById('manualEntryBtn').style.display='';
+    document.getElementById('houseName').classList.remove('invalid');
+    document.getElementById('creatorName').classList.remove('invalid');
   }
   const hcc=document.getElementById('houseCodeCard');
   if(houseId&&mode==='settings'){
@@ -1450,15 +1460,9 @@ function openSetup(mode){
   const admin=isAdmin();
   document.getElementById('houseName').disabled=!admin;
   document.getElementById('addMemberBtn').style.display=admin?'':'none';
-  // small heading shown to everyone
-  let notice=document.getElementById('adminNotice');
-  if(!notice){
-    notice=document.createElement('p');
-    notice.id='adminNotice';
-    notice.style.cssText='text-align:center;font-size:13px;color:var(--mut);padding:4px 0';
-    document.getElementById('setupScroll').insertBefore(notice,document.getElementById('setupScroll').firstChild);
-  }
-  notice.textContent='רק יוצר הבית יכול לערוך הגדרות';
+  // 'admin notice' subtitle removed in v1.02 redesign
+  const oldNotice=document.getElementById('adminNotice');
+  if(oldNotice)oldNotice.remove();
   updateShareBtnVisibility();
 
   if(mode==='setup'){
@@ -1624,12 +1628,16 @@ function commitSettings(){
 // Shared first-time setup logic. Builds the creator member, persists,
 // transitions to home, and optionally opens the invite share sheet.
 function _completeInitialSetup(opts){
-  const creatorName=(document.getElementById('creatorName').value||'').trim();
-  if(!creatorName){
-    document.getElementById('creatorName').focus();
-    toast('הזינו את השם שלכם');
-    return false;
-  }
+  // Inline-validation: clear invalid markers, then re-mark missing fields in red.
+  const hnEl=document.getElementById('houseName');
+  const cnEl=document.getElementById('creatorName');
+  hnEl.classList.remove('invalid');cnEl.classList.remove('invalid');
+  const houseNameVal=(hnEl.value||'').trim();
+  const creatorName=(cnEl.value||'').trim();
+  let firstBad=null;
+  if(!houseNameVal){hnEl.classList.add('invalid');hnEl.placeholder='שם הבית/קבוצה — חסר';firstBad=hnEl;}
+  if(!creatorName){cnEl.classList.add('invalid');cnEl.placeholder='השם שלי — חסר';if(!firstBad)firstBad=cnEl;}
+  if(firstBad){firstBad.focus();return false;}
   // Ensure the creator is the first member, bound to this device, admin.
   // Any partners typed in via the manual-entry path are kept as additional members.
   const creatorEntry={
@@ -1709,6 +1717,52 @@ document.getElementById('settingsBack').addEventListener('click',function(){
 // Cancel: discard changes and go home
 // X (top-left) closes settings without saving — same behavior as the old "ביטול" button
 document.getElementById('setupCloseBtn').addEventListener('click',goHome);
+
+// Setup mode X — abandon a freshly-created (not yet committed) house and return to entry
+document.getElementById('setupX').addEventListener('click',function(){
+  const isFreshHouse=!isSetupDone();
+  if(isFreshHouse && houseId){
+    if(_fbRef){_fbRef.off();_fbRef=null;}
+    localStorage.removeItem('sl3_houseId');
+    houseId=null;
+    house={name:'',members:[]};listTypes=[];items={};nextId=1;activeId=null;
+    document.getElementById('setup').classList.add('slide-right');
+    document.getElementById('home').classList.add('hidden');
+    document.getElementById('onboardOverlay').style.display='flex';
+    setTimeout(()=>window._refreshGlobalMenuVisibility&&window._refreshGlobalMenuVisibility(),0);
+    return;
+  }
+  // House already exists — same as the settings X
+  goHome();
+});
+
+// Inline ✓ on house-name field. In settings mode this saves immediately.
+function _flashSaveBtn(btn){
+  if(!btn)return;
+  btn.classList.add('saved');btn.textContent='✓';
+  setTimeout(()=>{btn.classList.remove('saved');},800);
+}
+document.getElementById('saveHouseNameBtn').addEventListener('click',function(){
+  const inp=document.getElementById('houseName');
+  const v=(inp.value||'').trim();
+  inp.classList.remove('invalid');
+  if(!v){inp.classList.add('invalid');inp.placeholder='שם הבית/קבוצה — חסר';inp.focus();return;}
+  _flashSaveBtn(this);
+  if(setupMode==='settings' && isAdmin()){
+    house.name=v;save();
+  }
+});
+document.getElementById('saveCreatorNameBtn').addEventListener('click',function(){
+  const inp=document.getElementById('creatorName');
+  const v=(inp.value||'').trim();
+  inp.classList.remove('invalid');
+  if(!v){inp.classList.add('invalid');inp.placeholder='השם שלי — חסר';inp.focus();return;}
+  _flashSaveBtn(this);
+  // setup mode: persisted on send-link click. Nothing else to do.
+});
+// Typing clears the red invalid state immediately.
+document.getElementById('houseName').addEventListener('input',function(){this.classList.remove('invalid');});
+document.getElementById('creatorName').addEventListener('input',function(){this.classList.remove('invalid');});
 
 // "ספר לחברים" — generic invite link for new users (no house code attached)
 document.getElementById('tellFriendsBtn').addEventListener('click',async function(){
