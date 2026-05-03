@@ -449,16 +449,21 @@ a,button,input,select{touch-action:manipulation}
 .qa-send svg{transform:scaleX(-1)} /* point arrow into the input (RTL) */
 .qa-send:active{background:#25a067;transform:scale(.94)}
 .qa-submit.pop{animation:submitPop .6s cubic-bezier(.34,1.56,.64,1) both}
-/* Urgent toggle in qabar / edit-item */
-.qa-urgent{
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  width:100%;min-height:48px;padding:12px;
-  border:1.5px solid var(--bdr);border-radius:12px;
-  background:var(--bg);color:var(--txt);
-  font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;
-  transition:all .15s;
+/* Urgent toggle in qabar / edit-item — minor inline pill */
+.qa-urgent-row{display:flex;justify-content:flex-end}
+.qa-urgent-mini{
+  display:inline-flex;align-items:center;gap:5px;
+  min-height:32px;padding:5px 12px;
+  border:1px solid var(--bdr);border-radius:99px;
+  background:transparent;color:var(--mut);
+  font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;
+  transition:all .15s;-webkit-tap-highlight-color:transparent;
 }
-.qa-urgent.active{background:#fff0ee;border-color:#e74c3c;color:#e74c3c}
+.qa-urgent-mini .bell{font-size:14px;filter:grayscale(1);opacity:.7}
+.qa-urgent-mini .lbl{font-size:12px}
+.qa-urgent-mini.active{background:#fff0ee;border-color:#e74c3c;color:#e74c3c}
+.qa-urgent-mini.active .bell{filter:none;opacity:1;animation:bellShake .5s ease}
+@keyframes bellShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-12deg)}50%{transform:rotate(10deg)}75%{transform:rotate(-6deg)}}
 /* Urgent indicator on item rows */
 .item-card.urgent{border-right:5px solid #e74c3c;padding-right:9px}
 .item-card.urgent .iname::before{content:'🚨 ';font-size:14px}
@@ -932,9 +937,9 @@ const APP_VERSION='1.02-rc.1';
       <input class="qa-note-inp" id="qaNoteInp" type="text"
              placeholder="הערה אופציונלית…" autocomplete="off" autocorrect="off"/>
     </div>
-    <div class="qa-section">
-      <button class="qa-urgent" id="qaUrgentBtn" type="button" data-track="list:urgent" aria-pressed="false">
-        <span style="font-size:18px">🚨</span> סימון כדחוף
+    <div class="qa-section qa-urgent-row">
+      <button class="qa-urgent-mini" id="qaUrgentBtn" type="button" data-track="list:urgent" aria-pressed="false" title="סימון כדחוף">
+        <span class="bell">🔔</span><span class="lbl">דחוף</span>
       </button>
     </div>
   </div>
@@ -1024,8 +1029,8 @@ const APP_VERSION='1.02-rc.1';
       <label style="font-size:12px;color:var(--mut)">הערה (אופציונלי)</label>
       <input id="editItemNote" type="text" maxlength="120" placeholder="לדוגמה: חלב סויה" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--txt);font-size:14px"/>
 
-      <button class="qa-urgent" id="editItemUrgentBtn" type="button" data-track="editItem:urgent" aria-pressed="false" style="margin-top:6px">
-        <span style="font-size:18px">🚨</span> סימון כדחוף
+      <button class="qa-urgent-mini" id="editItemUrgentBtn" type="button" data-track="editItem:urgent" aria-pressed="false" title="סימון כדחוף" style="margin-top:6px;align-self:flex-start">
+        <span class="bell">🔔</span><span class="lbl">דחוף</span>
       </button>
 
       <!-- 'משויך ל' kept hidden in v1.02 — assignee is auto-bound to the device -->
@@ -2208,6 +2213,7 @@ function openList(id){
   document.getElementById('home').classList.add('hidden');
   document.getElementById('list').classList.remove('slide-right');
   document.getElementById('qabar').classList.add('visible');
+  if(window._qabarExpand)window._qabarExpand();
   // ⋮ hint suppressed in v1.02 — the more-options panel is always open now
   _maybeShowResetHint();
   _maybeShowShareHint();
@@ -2329,14 +2335,38 @@ function _resetQaMore(){
   if(u){u.classList.remove('active');u.setAttribute('aria-pressed','false');}
   // qaMore is always open in v1.02 — leave it alone
 }
-// Wire urgent toggle behavior on every .qa-urgent button (qabar + edit-item modal)
+// Wire urgent toggle on every urgent button (qabar + edit-item modal)
 document.addEventListener('click',function(e){
-  const u=e.target&&e.target.closest&&e.target.closest('.qa-urgent');
+  const u=e.target&&e.target.closest&&e.target.closest('.qa-urgent-mini,.qa-urgent');
   if(!u)return;
   const on=!u.classList.contains('active');
   u.classList.toggle('active',on);
   u.setAttribute('aria-pressed',on?'true':'false');
 });
+
+// Auto-collapse the qa-more options panel after 3s of inactivity in qabar.
+(function(){
+  const qabar=document.getElementById('qabar');
+  const more=document.getElementById('qaMore');
+  if(!qabar||!more)return;
+  let timer=null;
+  function arm(){
+    clearTimeout(timer);
+    timer=setTimeout(()=>more.classList.remove('open'),3000);
+  }
+  function expand(){
+    more.classList.add('open');
+    arm();
+  }
+  // Any interaction inside qabar opens (or refreshes) the panel
+  ['focusin','pointerdown','input','keydown'].forEach(ev=>qabar.addEventListener(ev,expand,true));
+  // Hovering the panel keeps it open
+  more.addEventListener('mouseenter',()=>clearTimeout(timer));
+  more.addEventListener('mouseleave',arm);
+  // Expose for openList to call on each list entry
+  window._qabarExpand=expand;
+  arm();
+})();
 
 /* ── Add (real-time) ─────────────────── */
 let _submitLock=false;
