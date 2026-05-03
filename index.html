@@ -437,6 +437,31 @@ a,button,input,select{touch-action:manipulation}
   transition:background .15s,transform .1s;
 }
 .qa-submit:active{background:#25a067;transform:scale(.95)}
+/* WhatsApp-style send button (replaces ✓ in v1.02) */
+.qa-send{
+  width:48px;height:48px;min-width:48px;border-radius:50%;
+  background:var(--pri);border:none;color:#fff;
+  cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s,transform .1s;
+  box-shadow:0 2px 8px rgba(45,186,122,.35);
+}
+.qa-send svg{transform:scaleX(-1)} /* point arrow into the input (RTL) */
+.qa-send:active{background:#25a067;transform:scale(.94)}
+.qa-submit.pop{animation:submitPop .6s cubic-bezier(.34,1.56,.64,1) both}
+/* Urgent toggle in qabar / edit-item */
+.qa-urgent{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;min-height:48px;padding:12px;
+  border:1.5px solid var(--bdr);border-radius:12px;
+  background:var(--bg);color:var(--txt);
+  font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;
+  transition:all .15s;
+}
+.qa-urgent.active{background:#fff0ee;border-color:#e74c3c;color:#e74c3c}
+/* Urgent indicator on item rows */
+.item-card.urgent{border-right:5px solid #e74c3c;padding-right:9px}
+.item-card.urgent .iname::before{content:'🚨 ';font-size:14px}
 /* More panel */
 .qa-more{
   display:none;margin-top:12px;padding-top:12px;
@@ -865,29 +890,28 @@ const APP_VERSION='1.02-rc.1';
 
 <!-- Quick-add bar -->
 <div class="qabar" id="qabar">
-  <!-- Main row -->
+  <!-- Main row: input on visual right, WhatsApp-style send on visual left -->
   <div class="qa-row">
-    <!-- Submit -->
-    <button class="qa-submit" id="qaBtn" title="הוסף פריט" data-track="list:add">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-    </button>
-    <!-- Item name + integrated qty stepper -->
     <div class="qa-inp-box" id="acWrap">
       <input class="qa-inp" id="qaInput" type="text" placeholder="הוספת פריט…"
              autocomplete="off" autocorrect="off" spellcheck="false"/>
       <div class="qa-sep"></div>
-      <!-- Qty stepper lives INSIDE the box -->
       <button class="qa-qty-btn" id="qaQtyMinus" aria-label="הפחת כמות" data-track="list:qtyMinus">−</button>
       <div class="qa-qty-num" id="qaQtyNum">1</div>
       <button class="qa-qty-btn" id="qaQtyPlus" aria-label="הגדל כמות" data-track="list:qtyPlus">+</button>
       <div class="ac-drop" id="acDrop"></div>
     </div>
-    <!-- Three dots -->
-    <button class="qa-dots" id="qaDots" title="אפשרויות נוספות" data-track="list:more">⋮</button>
+    <button class="qa-send" id="qaBtn" title="שלח" data-track="list:add">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M2.5 21l19-9-19-9 0 7 13 2-13 2z"/>
+      </svg>
+    </button>
+    <!-- legacy ⋮ kept hidden as a click hook -->
+    <button class="qa-dots" id="qaDots" data-track="list:more" style="display:none">⋮</button>
   </div>
 
-  <!-- More options panel (hidden by default) -->
-  <div class="qa-more" id="qaMore">
+  <!-- More options panel — always open in v1.02 -->
+  <div class="qa-more open" id="qaMore">
     <div class="qa-section">
       <div class="qa-section-label">יחידה</div>
       <div class="qa-units-row" id="qaUnitsRow">
@@ -898,7 +922,8 @@ const APP_VERSION='1.02-rc.1';
         <button class="qa-unit" data-unit="מ&quot;ל">מ"ל</button>
       </div>
     </div>
-    <div class="qa-section">
+    <!-- legacy "מי מזמין" row kept hidden — assignee is now auto-set from device binding -->
+    <div class="qa-section" style="display:none">
       <div class="qa-section-label">מי מזמין</div>
       <div class="qa-members-row" id="qaMembersRow"></div>
     </div>
@@ -906,6 +931,11 @@ const APP_VERSION='1.02-rc.1';
       <div class="qa-section-label">הערה</div>
       <input class="qa-note-inp" id="qaNoteInp" type="text"
              placeholder="הערה אופציונלית…" autocomplete="off" autocorrect="off"/>
+    </div>
+    <div class="qa-section">
+      <button class="qa-urgent" id="qaUrgentBtn" type="button" data-track="list:urgent" aria-pressed="false">
+        <span style="font-size:18px">🚨</span> סימון כדחוף
+      </button>
     </div>
   </div>
 </div>
@@ -994,8 +1024,12 @@ const APP_VERSION='1.02-rc.1';
       <label style="font-size:12px;color:var(--mut)">הערה (אופציונלי)</label>
       <input id="editItemNote" type="text" maxlength="120" placeholder="לדוגמה: חלב סויה" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--txt);font-size:14px"/>
 
-      <label style="font-size:12px;color:var(--mut)">משויך ל...</label>
-      <div id="editItemMembers" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <button class="qa-urgent" id="editItemUrgentBtn" type="button" data-track="editItem:urgent" aria-pressed="false" style="margin-top:6px">
+        <span style="font-size:18px">🚨</span> סימון כדחוף
+      </button>
+
+      <!-- 'משויך ל' kept hidden in v1.02 — assignee is auto-bound to the device -->
+      <div id="editItemMembers" style="display:none"></div>
     </div>
     <div class="sheet-actions">
       <button class="btn-primary" id="editItemSave" data-track="editItem:save">שמירה</button>
@@ -2174,7 +2208,7 @@ function openList(id){
   document.getElementById('home').classList.add('hidden');
   document.getElementById('list').classList.remove('slide-right');
   document.getElementById('qabar').classList.add('visible');
-  _maybeShowDotsHint();
+  // ⋮ hint suppressed in v1.02 — the more-options panel is always open now
   _maybeShowResetHint();
   _maybeShowShareHint();
   // NOTE: deliberately NOT focusing qaInput on entry — opening the keyboard
@@ -2232,7 +2266,7 @@ function updateProgress(list){
 function buildCard(item){
   const m=getMember(item.assignee);
   const card=document.createElement('div');
-  card.className='item-card'+(item.checked?' checked':'');
+  card.className='item-card'+(item.checked?' checked':'')+(item.urgent?' urgent':'');
   card.dataset.id=String(item.id);
 
   const chk=document.createElement('button');
@@ -2290,9 +2324,19 @@ function _resetQaMore(){
   document.querySelectorAll('.qa-unit').forEach(b=>b.classList.toggle('active',b.dataset.unit==="יח'"));
   selMember=_myMemberId();renderQaMembers();
   document.getElementById('qaNoteInp').value='';
-  document.getElementById('qaMore').classList.remove('open');
-  document.getElementById('qaDots').classList.remove('active');
+  // urgent toggle resets to off after each add
+  const u=document.getElementById('qaUrgentBtn');
+  if(u){u.classList.remove('active');u.setAttribute('aria-pressed','false');}
+  // qaMore is always open in v1.02 — leave it alone
 }
+// Wire urgent toggle behavior on every .qa-urgent button (qabar + edit-item modal)
+document.addEventListener('click',function(e){
+  const u=e.target&&e.target.closest&&e.target.closest('.qa-urgent');
+  if(!u)return;
+  const on=!u.classList.contains('active');
+  u.classList.toggle('active',on);
+  u.setAttribute('aria-pressed',on?'true':'false');
+});
 
 /* ── Add (real-time) ─────────────────── */
 let _submitLock=false;
@@ -2315,6 +2359,7 @@ function submitItem(){
   _submitLock=true;
   setTimeout(()=>{_submitLock=false;},800);
   const noteVal=document.getElementById('qaNoteInp').value.trim();
+  const urgent=!!document.getElementById('qaUrgentBtn')&&document.getElementById('qaUrgentBtn').classList.contains('active');
   const item={
     id:uid(),name,
     qty:_qaQty,
@@ -2323,6 +2368,7 @@ function submitItem(){
     checked:false,
   };
   if(noteVal)item.note=noteVal; // only set note if non-empty (Firebase rejects undefined)
+  if(urgent)item.urgent=true;
   if(!items[activeId])items[activeId]=[];
   items[activeId].push(item);save();
   recordItemStat(name);
@@ -2432,6 +2478,9 @@ function openItemEditor(itemId){
   document.getElementById('editItemName').value=item.name||'';
   document.getElementById('editItemQty').value=item.qty||1;
   document.getElementById('editItemNote').value=item.note||'';
+  // Urgent toggle — reflect current item state
+  const ub=document.getElementById('editItemUrgentBtn');
+  if(ub){ub.classList.toggle('active',!!item.urgent);ub.setAttribute('aria-pressed',item.urgent?'true':'false');}
 
   // Unit picker — same buttons as the quick-add
   const unitsRow=document.getElementById('editItemUnitsRow');
@@ -2505,10 +2554,13 @@ document.getElementById('editItemSave').addEventListener('click',function(){
   const qty=Math.max(1,parseInt(document.getElementById('editItemQty').value,10)||1);
   const unit=_editingUnit||"יח'";
   const note=(document.getElementById('editItemNote').value||'').trim();
+  const ub=document.getElementById('editItemUrgentBtn');
+  const urgent=!!ub&&ub.classList.contains('active');
   item.name=name;
   item.qty=qty;
   item.unit=unit;
   if(note)item.note=note; else delete item.note;
+  if(urgent)item.urgent=true; else delete item.urgent;
   save();
   document.getElementById('editItemOverlay').classList.remove('open');
   _editingItemId=null;
