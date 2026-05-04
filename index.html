@@ -2860,9 +2860,33 @@ function _acPick(e){
   _acDrop.classList.remove('open');
   _acInput.focus();
 }
-// touchend handles mobile reliably; also swallow the follow-up click to
-// prevent ghost-click double-fire on the ✓ button underneath
-_acDrop.addEventListener('touchend',_acPick);
+// Mobile: distinguish a real tap from a scroll gesture before picking.
+// If the finger moved more than ~10px between touchstart and touchend,
+// treat it as a scroll and ignore.
+let _acTouchStart=null;
+_acDrop.addEventListener('touchstart',function(e){
+  const t=e.touches&&e.touches[0];
+  _acTouchStart=t?{x:t.clientX,y:t.clientY,t:Date.now()}:null;
+},{passive:true});
+_acDrop.addEventListener('touchmove',function(e){
+  if(!_acTouchStart)return;
+  const t=e.touches&&e.touches[0];if(!t)return;
+  const dx=Math.abs(t.clientX-_acTouchStart.x);
+  const dy=Math.abs(t.clientY-_acTouchStart.y);
+  if(dx>10||dy>10)_acTouchStart={...(_acTouchStart||{}),scrolled:true};
+},{passive:true});
+_acDrop.addEventListener('touchend',function(e){
+  const start=_acTouchStart;_acTouchStart=null;
+  if(start && start.scrolled){return;} // scroll gesture — don't pick
+  const ct=e.changedTouches&&e.changedTouches[0];
+  if(start && ct){
+    const dx=Math.abs(ct.clientX-start.x);
+    const dy=Math.abs(ct.clientY-start.y);
+    if(dx>10||dy>10)return;
+  }
+  _acPick(e);
+});
+// Desktop / non-touch fallback
 _acDrop.addEventListener('click',_acPick);
 document.addEventListener('click',e=>{
   if(!document.getElementById('acWrap').contains(e.target))_acDrop.classList.remove('open');
