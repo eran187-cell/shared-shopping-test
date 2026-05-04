@@ -2249,12 +2249,8 @@ function openList(id){
   // ⋮ hint suppressed in v1.02 — the more-options panel is always open now
   _maybeShowResetHint();
   _maybeShowShareHint();
-  // Auto-focus the add-item input so the user can start typing immediately.
-  // Mobile keyboard opens; that's the intent (matches "Amazon-style" entry).
-  setTimeout(()=>{
-    const qi=document.getElementById('qaInput');
-    if(qi)try{qi.focus({preventScroll:true});}catch(_){qi.focus();}
-  },120);
+  // Do NOT focus qaInput on entry — keyboard should stay closed until the
+  // user explicitly taps the field.
   const wrap=document.getElementById('itemsWrap');
   if(wrap)wrap.scrollTop=0;
 }
