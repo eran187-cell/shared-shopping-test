@@ -303,13 +303,22 @@ a,button,input,select{touch-action:manipulation}
 .item-note{font-size:12px;color:var(--mut);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .adot{width:22px;height:22px;border-radius:50%;font-size:10px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .item-ctrl{display:flex;align-items:center;flex-shrink:0;gap:6px}
-.ctrl-stepper{display:flex;border:1.5px solid var(--bdr);border-radius:8px;overflow:hidden;background:var(--bg)}
-.ctrl-btn{height:32px;width:30px;border:none;background:transparent;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s;flex-shrink:0;line-height:1;padding:0}
-.ctrl-inc{color:var(--pri)}
-.ctrl-dec{color:var(--txt);opacity:.7;border-inline-end:1px solid var(--bdr)}
-.ctrl-btn:active{background:var(--pril)}
-.ctrl-del{height:32px;width:30px;border-radius:8px;border:1.5px solid rgba(231,76,60,.4);background:transparent;color:var(--red);cursor:pointer;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:background .12s;flex-shrink:0;padding:0}
-.ctrl-del:active{background:#fdecea}
+/* Amazon-style qty pill — left side switches between 🗑 (qty=1) and − (qty>1) */
+.qty-pill{display:inline-flex;align-items:center;border:2px solid var(--pri);border-radius:999px;background:transparent;height:44px;padding:0 2px;flex-shrink:0;box-sizing:border-box;gap:0}
+.qp-side{height:40px;width:40px;border:none;background:transparent;color:var(--pri);font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;line-height:1;padding:0;font-family:inherit}
+.qp-side:active{background:var(--pril)}
+.qp-trash{color:#e74c3c}
+.qp-trash:active{background:#fdecea}
+.qp-num{font-size:15px;font-weight:700;color:var(--txt);min-width:22px;text-align:center;padding:0 4px}
+/* Inline expansion under an item card (replaces the edit modal) */
+.iexpand{display:none;flex-basis:100%;margin-top:12px;padding-top:12px;border-top:1px dashed var(--bdr);width:100%}
+.item-card.expanded{flex-wrap:wrap;max-height:none;align-items:flex-start}
+.item-card.expanded .iexpand{display:block}
+.iexpand-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.iexpand-row label{font-size:12px;color:var(--mut);min-width:54px;flex-shrink:0}
+.iexpand-row .qa-units-row{flex:1;min-width:0}
+.iexpand-row input[type=text]{flex:1;min-width:0;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--txt);font-size:14px;font-family:inherit;outline:none;min-height:44px;box-sizing:border-box}
+.iexpand-row input[type=text]:focus{border-color:var(--pri)}
 
 .empty-list{text-align:center;padding:60px 20px;color:var(--mut)}
 .empty-list .ei{font-size:48px;margin-bottom:12px}
@@ -2288,7 +2297,7 @@ function buildCard(item){
   info.title='לחץ לעריכה';
   info.addEventListener('click',function(e){
     e.stopPropagation();
-    openItemEditor(item.id);
+    _toggleItemExpanded(card,item);
   });
   const whoHtml=m?'<span class="who-badge" style="background:'+m.color+'">'+esc(m.name)+'</span>':'';
   const noteHtml=item.note?'<div class="item-note">'+esc(item.note)+'</div>':'';
@@ -2298,15 +2307,106 @@ function buildCard(item){
 
   const ctrl=document.createElement('div');
   ctrl.className='item-ctrl';
-  ctrl.innerHTML='<div class="ctrl-stepper">'
-    +'<button class="ctrl-btn ctrl-dec" data-action="decrease" title="הפחת">−</button>'
-    +'<button class="ctrl-btn ctrl-inc" data-action="increase" title="הוסף">+</button>'
-    +'</div>'
-    +'<button class="ctrl-del" data-action="delete" title="מחיקה">✕</button>';
+  ctrl.appendChild(_buildQtyPill(item));
 
   card.appendChild(chk);card.appendChild(info);
   card.appendChild(ctrl);
   return card;
+}
+// Build the Amazon-style qty pill for an item. Left side toggles between
+// 🗑 (qty=1) and − (qty>1). Re-rendered after every qty change.
+function _buildQtyPill(item){
+  const pill=document.createElement('div');
+  pill.className='qty-pill';
+  const left=document.createElement('button');
+  left.className='qp-side';
+  if(item.qty<=1){
+    left.classList.add('qp-trash');
+    left.dataset.action='delete';
+    left.title='מחק';
+    left.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 012-2h2a2 2 0 012 2v2"/></svg>';
+  } else {
+    left.dataset.action='decrease';
+    left.title='הפחת';
+    left.textContent='−';
+  }
+  const num=document.createElement('div');
+  num.className='qp-num';num.textContent=String(item.qty);
+  const right=document.createElement('button');
+  right.className='qp-side';right.dataset.action='increase';right.title='הוסף';right.textContent='+';
+  pill.appendChild(left);pill.appendChild(num);pill.appendChild(right);
+  return pill;
+}
+// Toggle inline edit panel under the row. Single-open-at-a-time.
+function _toggleItemExpanded(card,item){
+  const wrap=document.getElementById('itemsWrap');
+  if(!wrap)return;
+  if(card.classList.contains('expanded')){
+    card.classList.remove('expanded');
+    const ex=card.querySelector('.iexpand');if(ex)ex.remove();
+    return;
+  }
+  // close any other open card
+  wrap.querySelectorAll('.item-card.expanded').forEach(c=>{
+    c.classList.remove('expanded');
+    const ex=c.querySelector('.iexpand');if(ex)ex.remove();
+  });
+  card.appendChild(_buildExpandPanel(card,item));
+  card.classList.add('expanded');
+}
+// Render the inline editor panel (unit, note, urgent). Auto-saves on change.
+function _buildExpandPanel(card,item){
+  const ex=document.createElement('div');
+  ex.className='iexpand';
+  const _UNITS=["יח'",'ק"ג','גרם','ליטר','מ"ל'];
+  const cur=item.unit||"יח'";
+  const units=_UNITS.includes(cur)?_UNITS:[cur,..._UNITS];
+  ex.innerHTML=
+    '<div class="iexpand-row"><label>יחידה</label>'
+    +'<div class="qa-units-row">'+units.map(u=>'<button type="button" class="qa-unit'+(u===(item.unit||"יח'")?' active':'')+'" data-unit="'+esc(u)+'">'+esc(u)+'</button>').join('')+'</div>'
+    +'</div>'
+    +'<div class="iexpand-row"><label>הערה</label><input type="text" class="iexpand-note" maxlength="120" placeholder="לדוגמה: חלב סויה" value="'+esc(item.note||'')+'"/></div>'
+    +'<div class="iexpand-row" style="justify-content:flex-end">'
+      +'<button type="button" class="qa-urgent-mini'+(item.urgent?' active':'')+'" aria-pressed="'+(item.urgent?'true':'false')+'" data-track="editItem:urgent"><span class="bell">🔔</span><span class="lbl">דחוף</span></button>'
+    +'</div>';
+  // Unit picker — single select; auto-save on click
+  ex.querySelectorAll('.qa-unit').forEach(b=>{
+    b.addEventListener('click',function(e){
+      e.stopPropagation();
+      const u=this.dataset.unit;
+      item.unit=u;save();
+      ex.querySelectorAll('.qa-unit').forEach(x=>x.classList.toggle('active',x.dataset.unit===u));
+      const badge=card.querySelector('.qty-badge');
+      if(badge)badge.textContent=item.qty+' '+u;
+    });
+  });
+  // Note — auto-save on blur
+  const noteInp=ex.querySelector('.iexpand-note');
+  noteInp.addEventListener('click',e=>e.stopPropagation());
+  noteInp.addEventListener('blur',function(){
+    const v=(this.value||'').trim();
+    if(v)item.note=v;else delete item.note;
+    save();
+    // refresh visible note line
+    let line=card.querySelector('.item-note');
+    if(v){
+      if(!line){line=document.createElement('div');line.className='item-note';card.querySelector('.iinfo').appendChild(line);}
+      line.textContent=v;
+    } else if(line){line.remove();}
+  });
+  // Urgent toggle handled by the document-level .qa-urgent-mini listener;
+  // we just need to persist the new state on click.
+  ex.querySelector('.qa-urgent-mini').addEventListener('click',function(e){
+    e.stopPropagation();
+    // The document-level handler flips .active before our save fires.
+    setTimeout(()=>{
+      const on=ex.querySelector('.qa-urgent-mini').classList.contains('active');
+      if(on)item.urgent=true;else delete item.urgent;
+      save();
+      card.classList.toggle('urgent',on);
+    },0);
+  });
+  return ex;
 }
 
 /* ── QA state ────────────────────────── */
@@ -2459,6 +2559,9 @@ function changeQty(card, delta){
   item.qty=nq;save();
   const badge=card.querySelector('.qty-badge');
   if(badge)badge.textContent=nq+' '+item.unit;
+  // Re-render the qty pill so left side toggles between trash and minus
+  const ctrl=card.querySelector('.item-ctrl');
+  if(ctrl){ctrl.innerHTML='';ctrl.appendChild(_buildQtyPill(item));}
 }
 
 /* ── Remove (animated) ───────────────── */
