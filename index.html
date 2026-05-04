@@ -488,12 +488,19 @@ a,button,input,select{touch-action:manipulation}
 /* Urgent indicator on item rows */
 .item-card.urgent{border-right:5px solid #e74c3c;padding-right:9px}
 .item-card.urgent .iname::before{content:'🔔 ';font-size:14px}
-/* More panel */
+/* More panel — smooth slide-down on collapse */
 .qa-more{
-  display:none;margin-top:12px;padding-top:12px;
-  border-top:1px solid var(--bdr);animation:fadeUp .18s ease both;
+  display:block;overflow:hidden;
+  max-height:0;opacity:0;
+  margin-top:0;padding-top:0;
+  border-top:1px solid transparent;
+  transition:max-height .28s ease,opacity .22s ease,margin-top .28s ease,padding-top .28s ease,border-top-color .2s ease;
 }
-.qa-more.open{display:block}
+.qa-more.open{
+  max-height:600px;opacity:1;
+  margin-top:12px;padding-top:12px;
+  border-top-color:var(--bdr);
+}
 .qa-section{margin-bottom:12px}
 .qa-section:last-child{margin-bottom:0}
 .qa-section-label{font-size:11px;font-weight:700;text-transform:uppercase;
@@ -2242,10 +2249,12 @@ function openList(id){
   // ⋮ hint suppressed in v1.02 — the more-options panel is always open now
   _maybeShowResetHint();
   _maybeShowShareHint();
-  // NOTE: deliberately NOT focusing qaInput on entry — opening the keyboard
-  // automatically hides the list and feels intrusive. User taps the input
-  // when they want to add.
-  // also scroll list to top so the user sees items from the start
+  // Auto-focus the add-item input so the user can start typing immediately.
+  // Mobile keyboard opens; that's the intent (matches "Amazon-style" entry).
+  setTimeout(()=>{
+    const qi=document.getElementById('qaInput');
+    if(qi)try{qi.focus({preventScroll:true});}catch(_){qi.focus();}
+  },120);
   const wrap=document.getElementById('itemsWrap');
   if(wrap)wrap.scrollTop=0;
 }
@@ -2460,15 +2469,21 @@ document.addEventListener('click',function(e){
   u.setAttribute('aria-pressed',on?'true':'false');
 });
 
-// Auto-collapse the qa-more options panel after 3s of inactivity in qabar.
+// Auto-collapse the qa-more options panel after 3s of inactivity in qabar,
+// but never while the user is mid-entry (qaInput non-empty).
 (function(){
   const qabar=document.getElementById('qabar');
   const more=document.getElementById('qaMore');
+  const inp=document.getElementById('qaInput');
   if(!qabar||!more)return;
   let timer=null;
-  function arm(){
+  function arm(delay){
     clearTimeout(timer);
-    timer=setTimeout(()=>more.classList.remove('open'),3000);
+    timer=setTimeout(()=>{
+      // Re-check at fire time: don't shrink while the user has text in the input
+      if(inp && inp.value && inp.value.trim()){arm(800);return;}
+      more.classList.remove('open');
+    },delay||3000);
   }
   function expand(){
     more.classList.add('open');
@@ -2478,9 +2493,12 @@ document.addEventListener('click',function(e){
   ['focusin','pointerdown','input','keydown'].forEach(ev=>qabar.addEventListener(ev,expand,true));
   // Hovering the panel keeps it open
   more.addEventListener('mouseenter',()=>clearTimeout(timer));
-  more.addEventListener('mouseleave',arm);
-  // Expose for openList to call on each list entry
+  more.addEventListener('mouseleave',()=>arm());
+  // Expose for openList + submitItem
   window._qabarExpand=expand;
+  // Called right after a successful add — keep panel open one more second,
+  // then collapse smoothly so the user sees the row shrink as a transition.
+  window._qabarCollapseSoon=function(){arm(1000);};
   arm();
 })();
 
@@ -2560,6 +2578,8 @@ function submitItem(){
   _resetQaMore();
   toast('"'+name+'" נוסף ✓');
   input.focus();
+  // Collapse the options panel ~1s after a successful add (smooth slide-down).
+  if(window._qabarCollapseSoon)window._qabarCollapseSoon();
 }
 
 /* ── Change qty ──────────────────────── */
