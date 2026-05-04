@@ -710,7 +710,7 @@ const APP_VERSION='1.02-rc.1';
   function _populate(){
     const isDark=document.body.classList.contains('dark');
     const shareSlot=document.getElementById('drawerShareSlot');
-    shareSlot.innerHTML='<button id="drawerTellFriends" type="button" data-track="drawer:tellFriends" style="width:100%;padding:14px;border:1.5px solid var(--pri);border-radius:12px;background:var(--pril);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px"><span style="font-size:18px">📤</span> המלץ לחברים</button>';
+    shareSlot.innerHTML='<button id="drawerTellFriends" type="button" data-track="drawer:tellFriends" style="width:100%;padding:14px;border:1.5px solid var(--pri);border-radius:12px;background:var(--pril);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px"><svg class="share-glyph" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> המלץ לחברים</button>';
     document.getElementById('drawerTellFriends').addEventListener('click',_bridge('tellFriendsBtn'));
     const items=[
       {icon:'⚙',label:'הגדרות',track:'drawer:settings',action:_bridge('settingsBtn')},
@@ -748,7 +748,7 @@ const APP_VERSION='1.02-rc.1';
   <div class="setup-topbar" id="setupTopbar" style="display:none">
     <button class="back-btn" id="settingsBack" title="שמור וצא" data-track="settings:back">&#8594;</button>
     <h2>הגדרות משפחה</h2>
-    <button class="setup-tell-btn" id="tellFriendsBtn" title="ספר לחברים על האפליקציה" data-track="settings:tellFriends">📣 ספר לחברים</button>
+    <button class="setup-tell-btn" id="tellFriendsBtn" title="ספר לחברים על האפליקציה" data-track="settings:tellFriends"><svg class="share-glyph" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> המלץ לחברים</button>
     <button class="setup-close-btn" id="setupCloseBtn" title="סגור" data-track="settings:close">✕</button>
   </div>
 
@@ -780,13 +780,13 @@ const APP_VERSION='1.02-rc.1';
 
     <!-- Setup-mode primary action: send invite link. Below: start without sharing. -->
     <div id="setupActions" style="display:none;margin-top:14px;flex-direction:column;gap:10px">
-      <button class="ss-share-cta" id="sendInviteBtn" type="button" data-track="setup:sendInvite"><span style="font-size:20px">📤</span> שליחת קישור הצטרפות</button>
+      <button class="ss-share-cta" id="sendInviteBtn" type="button" data-track="setup:sendInvite"><svg class="share-glyph" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> שליחת קישור הצטרפות</button>
       <button id="startNoShareBtn" type="button" data-track="setup:startNoShare" style="width:100%;min-height:48px;padding:14px;border-radius:12px;border:1.5px solid var(--pri);background:var(--sur);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">התחלה ללא שליחת קישור</button>
       <button id="manualEntryBtn" type="button" data-track="setup:manualEntry" style="display:none">+ הוספה ידנית</button>
     </div>
     <button class="btn-primary" id="saveSetupBtn" data-track="setup:start" style="display:none">בואו נתחיל ←</button>
     <button class="share-btn" id="shareBtn" data-track="settings:share" style="display:none">
-      <span class="share-icon">🔗</span> שליחת קישור להצטרפות
+      <svg class="share-glyph" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> שליחת קישור להצטרפות
     </button>
     <button class="install-btn" id="installBtn" data-track="settings:install" style="display:none">
       <span>📲</span> הוספת קיצור לדף הבית
@@ -1702,25 +1702,34 @@ function _completeInitialSetup(opts){
   toast('הבית נוצר ✓');
   if(opts&&opts.share){
     setTimeout(()=>{document.getElementById('shareBtn').click();},700);
-    // Fire the install offer when the page comes back into focus after
-    // the native share sheet closes. Includes a desktop fallback timer
-    // because Web Share on desktop may not toggle visibility.
-    let _fired=false;
-    function _onVisible(){
-      if(_fired||document.visibilityState!=='visible')return;
-      _fired=true;document.removeEventListener('visibilitychange',_onVisible);
-      setTimeout(showInstallFlow,500);
-    }
-    setTimeout(()=>{
-      document.addEventListener('visibilitychange',_onVisible);
-      setTimeout(()=>{
-        if(!_fired){_fired=true;document.removeEventListener('visibilitychange',_onVisible);showInstallFlow();}
-      },7000);
-    },1500);
-  } else {
-    setTimeout(showInstallFlow,1200);
   }
+  // Single source of truth for the install offer: fire it on the home page.
+  // Wait until the page is actually visible (i.e. share sheet is closed)
+  // and add a generous fallback timer.
+  _scheduleInstallOffer();
   return true;
+}
+// Defer the install offer until the page is visible (share sheet closed).
+// Always fires once per page load when not already in standalone mode.
+let _installOfferDone=false;
+function _scheduleInstallOffer(delay){
+  if(_installOfferDone)return;
+  if(typeof _isStandalone==='function' && _isStandalone())return;
+  delay=delay||1500;
+  function fire(){
+    if(_installOfferDone)return;
+    _installOfferDone=true;
+    document.removeEventListener('visibilitychange',onVis);
+    try{showInstallFlow();}catch(_){}
+  }
+  function onVis(){
+    if(document.visibilityState==='visible')setTimeout(fire,500);
+  }
+  setTimeout(()=>{
+    if(document.visibilityState==='visible'){fire();return;}
+    document.addEventListener('visibilitychange',onVis);
+    setTimeout(fire,9000); // hard fallback
+  },delay);
 }
 // Primary: create + open native share sheet
 document.getElementById('sendInviteBtn').addEventListener('click',function(){
@@ -2021,14 +2030,8 @@ let _ddSrc=-1;
 
 /* ══ RENDER HOME ══════════════════════ */
 function renderHome(){
-  // First-ever entry to the lists page → offer add-to-home-screen.
-  try{
-    const standalone=window.matchMedia&&window.matchMedia('(display-mode:standalone)').matches||!!navigator.standalone;
-    if(houseId && !standalone && !localStorage.getItem('sl3_homeInstallShown')){
-      localStorage.setItem('sl3_homeInstallShown','1');
-      setTimeout(()=>{try{showInstallFlow();}catch(_){}}, 1500);
-    }
-  }catch(_){}
+  // First entry to the lists page (this page-load) → offer add-to-home-screen.
+  if(houseId)_scheduleInstallOffer();
   document.getElementById('houseNameEl').textContent=(house&&house.name)||'הבית שלנו';
   const members=Array.isArray(house&&house.members)?house.members:[];
   document.getElementById('membersEl').innerHTML=
@@ -3060,13 +3063,19 @@ function showInstallFlow(){
   if(_isStandalone())return;
   _bumpHouseStat('ic');
   if(_installPrompt){
-    // Android/Chrome — native prompt
-    _installPrompt.prompt();
-    _installPrompt.userChoice.then(choice=>{
-      if(choice && choice.outcome==='accepted')_bumpHouseStat('iac');
-      _installPrompt=null;_refreshInstallBtns();
-    });
-    return;
+    // Android/Chrome — native prompt. If prompt() throws (e.g. it was
+    // already shown/dismissed), fall through to the manual instructions.
+    try{
+      _installPrompt.prompt();
+      _installPrompt.userChoice.then(choice=>{
+        if(choice && choice.outcome==='accepted')_bumpHouseStat('iac');
+        _installPrompt=null;_refreshInstallBtns();
+      }).catch(()=>{});
+      return;
+    }catch(_){
+      _installPrompt=null;
+      // continue to the manual-instructions overlay
+    }
   }
   const ua=navigator.userAgent;
   const isAndroid=/Android/i.test(ua);
