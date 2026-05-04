@@ -478,6 +478,13 @@ a,button,input,select{touch-action:manipulation}
 .qa-urgent-mini.active{background:#fff0ee;border-color:#e74c3c;color:#e74c3c}
 .qa-urgent-mini.active .bell{filter:none;opacity:1;animation:bellShake .5s ease}
 @keyframes bellShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-12deg)}50%{transform:rotate(10deg)}75%{transform:rotate(-6deg)}}
+/* Combined note + urgent row — note 80% / urgent 20% (matches one unit button width) */
+.qa-note-urgent-row{display:flex;gap:6px;align-items:stretch;width:100%}
+.qa-note-urgent-row .qa-note-inp,
+.qa-note-urgent-row input[type=text]{flex:4;min-width:0;min-height:40px;padding:8px 12px;margin:0}
+.qa-note-urgent-row .qa-urgent-mini{flex:1;min-width:0;height:40px;padding:6px 4px;border-radius:99px;justify-content:center;gap:4px}
+.qa-note-urgent-row .qa-urgent-mini .lbl{display:none}
+.qa-note-urgent-row .qa-urgent-mini .bell{font-size:18px}
 /* Urgent indicator on item rows */
 .item-card.urgent{border-right:5px solid #e74c3c;padding-right:9px}
 .item-card.urgent .iname::before{content:'🔔 ';font-size:14px}
@@ -950,12 +957,9 @@ const APP_VERSION='1.02-rc.1';
       <div class="qa-section-label">מי מזמין</div>
       <div class="qa-members-row" id="qaMembersRow"></div>
     </div>
-    <div class="qa-section">
-      <div class="qa-section-label">הערה</div>
+    <div class="qa-section qa-note-urgent-row">
       <input class="qa-note-inp" id="qaNoteInp" type="text"
              placeholder="הערה אופציונלית…" autocomplete="off" autocorrect="off"/>
-    </div>
-    <div class="qa-section qa-urgent-row">
       <button class="qa-urgent-mini" id="qaUrgentBtn" type="button" data-track="list:urgent" aria-pressed="false" title="סימון כדחוף">
         <span class="bell">🔔</span><span class="lbl">דחוף</span>
       </button>
@@ -2374,9 +2378,9 @@ function _buildExpandPanel(card,item){
     '<div class="iexpand-row">'
     +'<div class="qa-units-row qa-units-spread">'+units.map(u=>'<button type="button" class="qa-unit'+(u===(item.unit||"יח'")?' active':'')+'" data-unit="'+esc(u)+'">'+esc(u)+'</button>').join('')+'</div>'
     +'</div>'
-    +'<div class="iexpand-row"><label>הערה</label><input type="text" class="iexpand-note" maxlength="120" placeholder="לדוגמה: חלב סויה" value="'+esc(item.note||'')+'"/></div>'
-    +'<div class="iexpand-row" style="justify-content:flex-end">'
-      +'<button type="button" class="qa-urgent-mini'+(item.urgent?' active':'')+'" aria-pressed="'+(item.urgent?'true':'false')+'" data-track="editItem:urgent"><span class="bell">🔔</span><span class="lbl">דחוף</span></button>'
+    +'<div class="iexpand-row qa-note-urgent-row">'
+      +'<input type="text" class="iexpand-note" maxlength="120" placeholder="הערה אופציונלית" value="'+esc(item.note||'')+'"/>'
+      +'<button type="button" class="qa-urgent-mini'+(item.urgent?' active':'')+'" aria-pressed="'+(item.urgent?'true':'false')+'" data-track="editItem:urgent" title="סימון כדחוף"><span class="bell">🔔</span><span class="lbl">דחוף</span></button>'
     +'</div>';
   // Unit picker — single select; auto-save on click
   ex.querySelectorAll('.qa-unit').forEach(b=>{
