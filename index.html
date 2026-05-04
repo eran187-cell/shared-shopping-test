@@ -493,10 +493,14 @@ a,button,input,select{touch-action:manipulation}
   letter-spacing:.5px;color:var(--mut);margin-bottom:8px}
 /* Unit chips */
 .qa-units-row{display:flex;gap:6px;flex-wrap:wrap}
+/* Spread variant: each button takes equal share of the row width for better tap targets */
+.qa-units-spread{display:flex;gap:6px;flex-wrap:nowrap;width:100%}
+.qa-units-spread .qa-unit{flex:1 1 0;min-width:0;text-align:center;padding:10px 6px;font-size:14px}
 .qa-unit{
   padding:6px 14px;border-radius:99px;border:1.5px solid var(--bdr);
   background:var(--bg);color:var(--txt);font-size:13px;font-weight:600;
   cursor:pointer;font-family:inherit;transition:all .12s;white-space:nowrap;
+  min-height:40px;
 }
 .qa-unit.active{background:var(--pri);color:#fff;border-color:var(--pri)}
 /* Members row */
@@ -933,8 +937,7 @@ const APP_VERSION='1.02-rc.1';
   <!-- More options panel — always open in v1.02 -->
   <div class="qa-more open" id="qaMore">
     <div class="qa-section">
-      <div class="qa-section-label">יחידה</div>
-      <div class="qa-units-row" id="qaUnitsRow">
+      <div class="qa-units-row qa-units-spread" id="qaUnitsRow">
         <button class="qa-unit active" data-unit="יח'">יח'</button>
         <button class="qa-unit" data-unit="ק&quot;ג">ק"ג</button>
         <button class="qa-unit" data-unit="גרם">גרם</button>
@@ -2368,8 +2371,8 @@ function _buildExpandPanel(card,item){
   const cur=item.unit||"יח'";
   const units=_UNITS.includes(cur)?_UNITS:[cur,..._UNITS];
   ex.innerHTML=
-    '<div class="iexpand-row"><label>יחידה</label>'
-    +'<div class="qa-units-row">'+units.map(u=>'<button type="button" class="qa-unit'+(u===(item.unit||"יח'")?' active':'')+'" data-unit="'+esc(u)+'">'+esc(u)+'</button>').join('')+'</div>'
+    '<div class="iexpand-row">'
+    +'<div class="qa-units-row qa-units-spread">'+units.map(u=>'<button type="button" class="qa-unit'+(u===(item.unit||"יח'")?' active':'')+'" data-unit="'+esc(u)+'">'+esc(u)+'</button>').join('')+'</div>'
     +'</div>'
     +'<div class="iexpand-row"><label>הערה</label><input type="text" class="iexpand-note" maxlength="120" placeholder="לדוגמה: חלב סויה" value="'+esc(item.note||'')+'"/></div>'
     +'<div class="iexpand-row" style="justify-content:flex-end">'
