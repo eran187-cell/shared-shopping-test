@@ -2628,8 +2628,31 @@ let _acDeleting=false;
 const _acInput=document.getElementById('qaInput');
 const _acDrop=document.getElementById('acDrop'); // kept for "הוסף חדש" hint only
 
+// _acDepts maps product name → department name (used for future grouping/sorting).
+// Populated from products_by_department.json when available.
+let _acDepts={};
 async function acInit(){
-  try{const r=await fetch('./products.json');_acProducts=await r.json();}catch(e){_acProducts=[];}
+  // Primary source: structured catalog with departments. Fallback to the legacy
+  // flat products.json if the new file is unavailable.
+  try{
+    const r=await fetch('./products_by_department.json');
+    if(!r.ok)throw 0;
+    const data=await r.json();
+    const depts=data&&data['מחלקות']?data['מחלקות']:{};
+    const seen=new Set();
+    const flat=[];
+    Object.entries(depts).forEach(([dept,arr])=>{
+      (arr||[]).forEach(name=>{
+        const n=String(name||'').trim();
+        if(!n||seen.has(n))return;
+        seen.add(n);flat.push(n);
+        if(!_acDepts[n])_acDepts[n]=dept;
+      });
+    });
+    _acProducts=flat;
+  }catch(_){
+    try{const r=await fetch('./products.json');_acProducts=await r.json();}catch(e){_acProducts=[];}
+  }
 }
 function acLoadCustom(){
   if(!houseId)return;
