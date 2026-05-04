@@ -3062,42 +3062,36 @@ function _refreshInstallBtns(){
 function showInstallFlow(){
   if(_isStandalone())return;
   _bumpHouseStat('ic');
-  if(_installPrompt){
-    // Android/Chrome — native prompt. If prompt() throws (e.g. it was
-    // already shown/dismissed), fall through to the manual instructions.
-    try{
-      _installPrompt.prompt();
-      _installPrompt.userChoice.then(choice=>{
-        if(choice && choice.outcome==='accepted')_bumpHouseStat('iac');
-        _installPrompt=null;_refreshInstallBtns();
-      }).catch(()=>{});
-      return;
-    }catch(_){
-      _installPrompt=null;
-      // continue to the manual-instructions overlay
-    }
-  }
   const ua=navigator.userAgent;
   const isAndroid=/Android/i.test(ua);
+  const overlay=document.getElementById('installOverlay');
+  const stepsEl=document.getElementById('installSteps');
+  const doneBtn=document.getElementById('installDoneBtn');
   if(isAndroid){
-    // Native prompt unavailable (Samsung Internet, dismissed before, or in-app browser)
-    const isSamsung=/SamsungBrowser/i.test(ua);
-    const isFirefox=/Firefox/i.test(ua);
-    const isChrome=/Chrome/i.test(ua)&&!isSamsung;
-    const browserName=isSamsung?'Samsung Internet':isFirefox?'Firefox':isChrome?'Chrome':'הדפדפן';
-    const menuLabel=isSamsung?'הוסף דף ל-':'התקן את האפליקציה / הוסף למסך הבית';
-    const steps=[
-      {n:'1',text:'לחץ על תפריט שלוש הנקודות <strong>⋮</strong> בפינה הימנית למעלה של '+browserName+'.'},
-      {n:'2',text:'בחר <strong>"'+menuLabel+'"</strong> '+(isSamsung?'<strong>"מסך הבית"</strong>.':'(לפעמים מופיע כ"התקן" / "Install app").')},
-      {n:'3',text:'אשר את ההתקנה.'},
-      {n:'ℹ',text:'אם לא רואה את האפשרות — סגור ופתח את הדפדפן, או נסה <strong>Chrome</strong> שתומך הכי טוב.'},
-    ];
-    document.getElementById('installSteps').innerHTML=steps.map(s=>
-      '<div class="install-step"><div class="install-step-num">'+s.n+'</div><div>'+s.text+'</div></div>'
-    ).join('');
-    document.getElementById('installOverlay').classList.add('open');
+    // Single-line message + 'אישור' that triggers the native install
+    // prompt when available, or just dismisses if it isn't.
+    stepsEl.innerHTML='<p style="font-size:15px;line-height:1.6;text-align:center;margin:14px 6px">מומלץ להתקין את האפליקציה על עמוד הבית במכשירך</p>';
+    doneBtn.textContent='אישור';
+    doneBtn.onclick=function(){
+      overlay.classList.remove('open');
+      if(_installPrompt){
+        try{
+          _installPrompt.prompt();
+          _installPrompt.userChoice.then(c=>{
+            if(c&&c.outcome==='accepted')_bumpHouseStat('iac');
+            _installPrompt=null;_refreshInstallBtns();
+          }).catch(()=>{});
+        }catch(_){_installPrompt=null;}
+      }
+    };
+    overlay.classList.add('open');
     return;
   }
+  // Non-Android: restore default 'הבנתי ✓' close behavior (the existing
+  // addEventListener closes the overlay; clear any custom onclick from
+  // a prior Android run on this page).
+  doneBtn.textContent='הבנתי ✓';
+  doneBtn.onclick=null;
   if(_isIOS){
     const ua=navigator.userAgent;
     const isIOSChrome=/CriOS/.test(ua);
