@@ -310,6 +310,11 @@ a,button,input,select{touch-action:manipulation}
 .qp-trash{color:#e74c3c}
 .qp-trash:active{background:#fdecea}
 .qp-num{font-size:15px;font-weight:700;color:var(--txt);min-width:22px;text-align:center;padding:0 4px}
+.qp-side:disabled{opacity:.32;cursor:default;pointer-events:none}
+/* qabar variant: tighter than the row pill so input + pill + send fit */
+.qty-pill-qabar{height:48px;padding:0 1px}
+.qty-pill-qabar .qp-side{width:36px;height:44px;font-size:22px}
+.qty-pill-qabar .qp-num{font-size:16px;min-width:20px;padding:0 2px}
 /* Inline expansion under an item card (replaces the edit modal) */
 .iexpand{display:none;flex-basis:100%;margin-top:12px;padding-top:12px;border-top:1px dashed var(--bdr);width:100%}
 .item-card.expanded{flex-wrap:wrap;max-height:none;align-items:flex-start}
@@ -904,16 +909,17 @@ const APP_VERSION='1.02-rc.1';
 
 <!-- Quick-add bar -->
 <div class="qabar" id="qabar">
-  <!-- Main row: input on visual right, WhatsApp-style send on visual left -->
+  <!-- Main row: input on visual right, qty pill in middle, WhatsApp-style send on visual left -->
   <div class="qa-row">
     <div class="qa-inp-box" id="acWrap">
       <input class="qa-inp" id="qaInput" type="text" placeholder="הוספת פריט…"
              autocomplete="off" autocorrect="off" spellcheck="false"/>
-      <div class="qa-sep"></div>
-      <button class="qa-qty-btn" id="qaQtyMinus" aria-label="הפחת כמות" data-track="list:qtyMinus">−</button>
-      <div class="qa-qty-num" id="qaQtyNum">1</div>
-      <button class="qa-qty-btn" id="qaQtyPlus" aria-label="הגדל כמות" data-track="list:qtyPlus">+</button>
       <div class="ac-drop" id="acDrop"></div>
+    </div>
+    <div class="qty-pill qty-pill-qabar" id="qaQtyPill">
+      <button class="qp-side" id="qaQtyMinus" aria-label="הפחת כמות" data-track="list:qtyMinus">−</button>
+      <div class="qp-num" id="qaQtyNum">1</div>
+      <button class="qp-side" id="qaQtyPlus" aria-label="הגדל כמות" data-track="list:qtyPlus">+</button>
     </div>
     <button class="qa-send" id="qaBtn" title="שלח" data-track="list:add">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
