@@ -656,15 +656,14 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
 </script>
 
 <!-- Persistent hamburger (global). Hidden on first-run onboarding; shown on home/list/settings. -->
-<button id="globalMenuBtn" type="button" title="תפריט" data-track="global:menu" style="display:none;position:fixed;top:calc(8px + env(safe-area-inset-top,0px));right:10px;z-index:8500;width:48px;height:48px;border-radius:12px;border:none;background:var(--sur);color:var(--txt);font-size:24px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.08);font-family:inherit">☰</button>
+<button id="globalMenuBtn" type="button" title="תפריט" data-track="global:menu" style="display:none;position:fixed;top:calc(env(safe-area-inset-top,0px));right:0;z-index:8500;width:56px;height:calc(56px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px);border:none;border-left:1px solid var(--bdr);background:var(--sur);color:var(--txt);font-size:26px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center">☰</button>
 
 <!-- Right-anchored slide-in drawer (placeholder shell — populated in later phases) -->
 <div id="globalDrawer" style="display:none;position:fixed;inset:0;z-index:9000;font-family:inherit">
   <div id="globalDrawerScrim" style="position:absolute;inset:0;background:rgba(0,0,0,.45);opacity:0;transition:opacity .25s ease"></div>
   <aside id="globalDrawerPanel" style="position:absolute;top:0;right:0;bottom:0;width:min(86vw,340px);background:var(--sur);box-shadow:-4px 0 24px rgba(0,0,0,.18);transform:translateX(110%);transition:transform .28s ease;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);overflow-y:auto">
     <div style="display:flex;align-items:center;padding:14px 14px 6px;gap:8px">
-      <button id="globalDrawerClose" type="button" title="סגור" style="background:none;border:none;font-size:22px;color:var(--mut);cursor:pointer;width:36px;height:36px;border-radius:8px">✕</button>
-      <h3 style="margin:0;flex:1;font-size:16px">תפריט</h3>
+      <button id="globalDrawerClose" type="button" title="סגור" style="background:none;border:none;font-size:22px;color:var(--mut);cursor:pointer;width:44px;height:44px;border-radius:8px;margin-right:auto">✕</button>
     </div>
     <!-- Featured "tell friends" / share — populated in phase 2 -->
     <div id="drawerShareSlot" style="padding:6px 14px"></div>
@@ -744,7 +743,7 @@ const APP_VERSION='1.02-rc.1';
   function _populate(){
     const isDark=document.body.classList.contains('dark');
     const shareSlot=document.getElementById('drawerShareSlot');
-    shareSlot.innerHTML='<button id="drawerTellFriends" type="button" data-track="drawer:tellFriends" style="width:100%;padding:14px;border:1.5px solid var(--pri);border-radius:12px;background:var(--pril);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px"><svg class="share-glyph" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> המלץ לחברים</button>';
+    shareSlot.innerHTML='<button id="drawerTellFriends" type="button" data-track="drawer:tellFriends" style="width:100%;padding:14px;border:1.5px solid var(--pri);border-radius:12px;background:var(--pril);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px"><svg class="share-glyph" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> המלצה לחברים</button>';
     document.getElementById('drawerTellFriends').addEventListener('click',_bridge('tellFriendsBtn'));
     const items=[
       {icon:'⚙',label:'הגדרות',track:'drawer:settings',action:_bridge('settingsBtn')},
@@ -900,19 +899,21 @@ const APP_VERSION='1.02-rc.1';
 <!-- ══ LIST VIEW ══════════════════════════════════ -->
 <div class="view slide-right" id="list">
   <div class="topbar">
-    <button class="back-btn" id="backBtn" data-track="list:back">&#8594;</button>
-    <span id="listEmoji" style="font-size:22px"></span>
-    <input id="listTitle" type="text"
-      style="flex:1;font-size:18px;font-weight:700;border:none;background:transparent;
-             color:var(--txt);outline:none;font-family:inherit;min-width:0;
-             border-bottom:1.5px dashed var(--bdr);transition:border-color .15s,border-style .15s"
+    <button class="back-btn" id="backBtn" data-track="list:back" style="display:none">&#8594;</button>
+    <span id="listEmoji" style="display:none"></span>
+    <input id="listTitle" type="text" style="display:none"
       onfocus="this.style.borderBottomColor='var(--pri)';this.style.borderBottomStyle='solid'"
       onblur="this.style.borderBottomColor='var(--bdr)';this.style.borderBottomStyle='dashed';saveListName(this.value)"/>
-    <button class="icon-btn" id="waShareBtn" title="שיתוף" data-track="list:share" style="color:var(--txt);opacity:.55">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+    <div class="members" id="listMembersEl" style="margin-left:auto"></div>
+    <button class="icon-btn" id="waShareBtn" title="שיתוף" data-track="list:share">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
     </button>
-    <button class="icon-btn" id="resetListBtn" title="איפוס רשימה" data-track="list:reset" style="color:var(--txt);opacity:.55">↺</button>
-    <button class="icon-btn" id="deleteListBtn" title="מחיקת רשימה" data-track="list:deleteList" style="color:var(--txt);opacity:.55">🗑</button>
+    <button class="icon-btn" id="resetListBtn" title="איפוס סימונים" data-track="list:reset">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+    </button>
+    <button class="icon-btn" id="deleteListBtn" title="ניקוי הרשימה" data-track="list:deleteList">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 012-2h2a2 2 0 012 2v2"/></svg>
+    </button>
   </div>
 
   <div class="prog-row">
@@ -2067,6 +2068,18 @@ let _ddSrc=-1;
 
 /* ══ RENDER HOME ══════════════════════ */
 function renderHome(){
+  // v1.02: a single list is the only experience — skip the home picker
+  // entirely when there's exactly one list and we're not in edit mode.
+  if(!_editMode && Array.isArray(listTypes) && listTypes.length===1){
+    if(window._installOfferDone===undefined && houseId)_scheduleInstallOffer();
+    document.getElementById('home').classList.add('hidden');
+    if(activeId!==listTypes[0].id)openList(listTypes[0].id);
+    else { // already on the list view; just update members + progress
+      if(document.getElementById('list')&&!document.getElementById('list').classList.contains('slide-right'))updateProgress(activeList());
+    }
+    _renderListMembers();
+    return;
+  }
   // First entry to the lists page (this page-load) → offer add-to-home-screen.
   if(houseId)_scheduleInstallOffer();
   document.getElementById('houseNameEl').textContent=(house&&house.name)||'הבית שלנו';
@@ -2235,9 +2248,16 @@ document.getElementById('creBtn').addEventListener('click',function(){
 });
 
 /* ══ LIST VIEW ═══════════════════════════════ */
+function _renderListMembers(){
+  const el=document.getElementById('listMembersEl');
+  if(!el)return;
+  const members=Array.isArray(house&&house.members)?house.members:[];
+  el.innerHTML=members.map(m=>'<div class="av'+(m.isAdmin?' is-admin':'')+'" style="background:'+m.color+';margin-right:-8px" title="'+esc(m.name)+(m.isAdmin?' (מנהל)':'')+'">'+initials(m.name)+'</div>').join('');
+}
 function openList(id){
   activeId=id;activeFilter='all';chipsExpanded=false;
   setTimeout(()=>window._refreshGlobalMenuVisibility&&window._refreshGlobalMenuVisibility(),0);
+  _renderListMembers();
   // mark this list as seen — clears the "+N new" badge on the home page
   try{
     const list=items[id]||[];
@@ -3178,7 +3198,9 @@ document.getElementById('shareBtn').addEventListener('click',async function(){
   if(!houseId)return;
   const url=location.href.split('?')[0].split('#')[0]+'?h='+houseId;
   const origHTML=this.innerHTML;
-  const message='פתחתי את אפליקציית הקניות המשותפות לבית, מוזמנים להצטרף מהקישור הבא:\n'+url;
+  const _hn=(house&&house.name||'').trim();
+  const _hnPart=_hn?' של '+_hn:'';
+  const message='פתחתי את אפליקציית רשימת הקניות המשותפת'+_hnPart+', מוזמנים להצטרף מהקישור הבא:\n'+url;
   this.innerHTML='<span class="share-icon">✓</span> שיתוף...';
   this.classList.add('copy-ok');
   clearTimeout(shareTimer);
