@@ -912,13 +912,14 @@ const APP_VERSION='1.02-rc.1';
 
 <!-- ══ LIST VIEW ══════════════════════════════════ -->
 <div class="view slide-right" id="list">
-  <div class="topbar">
+  <div class="topbar" style="padding-right:64px">
     <button class="back-btn" id="backBtn" data-track="list:back" style="display:none">&#8594;</button>
     <span id="listEmoji" style="display:none"></span>
     <input id="listTitle" type="text" style="display:none"
       onfocus="this.style.borderBottomColor='var(--pri)';this.style.borderBottomStyle='solid'"
       onblur="this.style.borderBottomColor='var(--bdr)';this.style.borderBottomStyle='dashed';saveListName(this.value)"/>
-    <div class="members" id="listMembersEl" style="margin-left:auto"></div>
+    <div class="members" id="listMembersEl"></div>
+    <div style="flex:1"></div>
     <button class="icon-btn" id="waShareBtn" title="שיתוף" data-track="list:share">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
     </button>
