@@ -3140,7 +3140,9 @@ document.getElementById('waShareBtn').addEventListener('click', function () {
   }
 
   lines.push('─'.repeat(24));
-  lines.push('_נשלח מאפליקציית קניות משפחתיות_');
+  // Include an invite link so recipients can jump straight into the app/list.
+  const appUrl=location.href.split('?')[0].split('#')[0]+(houseId?'?h='+houseId:'');
+  lines.push('להצטרפות לאפליקציה: '+appUrl);
 
   const text = lines.join('\n');
   if (navigator.share) {
