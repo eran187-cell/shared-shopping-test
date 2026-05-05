@@ -656,7 +656,7 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
 </script>
 
 <!-- Persistent hamburger (global). Hidden on first-run onboarding; shown on home/list/settings. -->
-<button id="globalMenuBtn" type="button" title="תפריט" data-track="global:menu" style="display:none;position:fixed;top:calc(env(safe-area-inset-top,0px));right:0;z-index:8500;width:56px;height:calc(56px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px);border:none;border-left:1px solid var(--bdr);background:var(--sur);color:var(--txt);font-size:26px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center">☰</button>
+<button id="globalMenuBtn" type="button" title="תפריט" data-track="global:menu" style="display:none;position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);right:12px;z-index:8500;width:48px;height:48px;border-radius:12px;border:none;background:transparent;color:var(--txt);font-size:24px;cursor:pointer;font-family:inherit;align-items:center;justify-content:center">☰</button>
 
 <!-- Right-anchored slide-in drawer (placeholder shell — populated in later phases) -->
 <div id="globalDrawer" style="display:none;position:fixed;inset:0;z-index:9000;font-family:inherit">
@@ -740,23 +740,37 @@ const APP_VERSION='1.02-rc.1';
       location.reload(true);
     })();
   }
+  // Inline-SVG line-art icons (Lucide-inspired). Use currentColor so they
+  // adapt to dark/light mode automatically.
+  const _ICON={
+    gift:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 100-5C13 2 12 7 12 7z"/></svg>',
+    gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',
+    download:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+    sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+    moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>',
+    link:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>',
+    refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10"/><path d="M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>',
+    envelope:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>',
+    document:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
+    trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
+  };
   function _populate(){
     const isDark=document.body.classList.contains('dark');
     const shareSlot=document.getElementById('drawerShareSlot');
-    shareSlot.innerHTML='<button id="drawerTellFriends" type="button" data-track="drawer:tellFriends" style="width:100%;padding:14px;border:1.5px solid var(--pri);border-radius:12px;background:var(--pril);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px"><svg class="share-glyph" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> המלצה לחברים</button>';
+    shareSlot.innerHTML='<button id="drawerTellFriends" type="button" data-track="drawer:tellFriends" style="width:100%;padding:14px;border:1.5px solid var(--pri);border-radius:12px;background:var(--pril);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px">'+_ICON.gift+' המלצה לחברים</button>';
     document.getElementById('drawerTellFriends').addEventListener('click',_bridge('tellFriendsBtn'));
     const items=[
-      {icon:'⚙',label:'הגדרות',track:'drawer:settings',action:_bridge('settingsBtn')},
-      {icon:'📲',label:'התקנת האפליקציה',track:'drawer:install',action:_bridge('homeInstallBtn')},
-      {icon:isDark?'☀️':'🌙',label:isDark?'תצוגה בהירה':'תצוגה כהה',track:'drawer:theme',action:_toggleDark},
-      {icon:'🔗',label:'שלח קישור להצטרפות',track:'drawer:share',action:_bridge('shareBtn')},
-      {icon:'🔄',label:'עדכון גרסה',track:'drawer:update',action:_forceUpdate},
-      {icon:'✉️',label:'פניה לתמיכה',track:'drawer:support',action:_bridge('supportBtn')},
-      {icon:'📜',label:'תנאים',track:'drawer:about',action:_bridge('aboutLink')},
-      {icon:'🚪',label:'איפוס אפליקציה',track:'drawer:resetApp',action:_resetApp}
+      {icon:_ICON.gear,label:'הגדרות',track:'drawer:settings',action:_bridge('settingsBtn')},
+      {icon:_ICON.download,label:'התקנת האפליקציה',track:'drawer:install',action:_bridge('homeInstallBtn')},
+      {icon:isDark?_ICON.sun:_ICON.moon,label:isDark?'תצוגה בהירה':'תצוגה כהה',track:'drawer:theme',action:_toggleDark},
+      {icon:_ICON.link,label:'שלח קישור להצטרפות',track:'drawer:share',action:_bridge('shareBtn')},
+      {icon:_ICON.refresh,label:'עדכון גרסה',track:'drawer:update',action:_forceUpdate},
+      {icon:_ICON.envelope,label:'פניה לתמיכה',track:'drawer:support',action:_bridge('supportBtn')},
+      {icon:_ICON.document,label:'תנאים',track:'drawer:about',action:_bridge('aboutLink')},
+      {icon:_ICON.trash,label:'איפוס אפליקציה',track:'drawer:resetApp',action:_resetApp}
     ];
     const nav=document.getElementById('drawerNav');
-    nav.innerHTML=items.map((it,i)=>'<button type="button" class="drawer-item" data-i="'+i+'" data-track="'+it.track+'" style="display:flex;align-items:center;gap:10px;width:100%;padding:14px;border:none;background:none;color:var(--txt);font-size:15px;cursor:pointer;font-family:inherit;text-align:right;border-radius:8px;min-height:48px"><span style="font-size:20px;width:28px;text-align:center">'+it.icon+'</span><span style="flex:1">'+it.label+'</span></button>').join('');
+    nav.innerHTML=items.map((it,i)=>'<button type="button" class="drawer-item" data-i="'+i+'" data-track="'+it.track+'" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:none;background:none;color:var(--txt);font-size:15px;cursor:pointer;font-family:inherit;text-align:right;border-radius:8px;min-height:48px"><span style="width:28px;display:inline-flex;align-items:center;justify-content:center;color:var(--txt)">'+it.icon+'</span><span style="flex:1">'+it.label+'</span></button>').join('');
     nav.querySelectorAll('.drawer-item').forEach(b=>{
       b.addEventListener('click',()=>items[+b.dataset.i].action());
       b.addEventListener('mouseenter',()=>b.style.background='var(--bg)');
