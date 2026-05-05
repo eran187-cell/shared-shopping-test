@@ -833,7 +833,7 @@ const APP_VERSION='1.02-rc.1';
     <div class="house-code-card" id="houseCodeCard" style="display:none">
       <div class="house-code-label">קוד הבית שלכם</div>
       <div class="house-code-val" id="houseCodeDisplay">------</div>
-      <div class="house-code-hint">לשימוש ידני, אם הקישור לא עובד</div>
+      <div class="house-code-hint" style="display:none">לשימוש ידני, אם הקישור לא עובד</div>
     </div>
 
     <button id="supportBtn" type="button" data-track="settings:support" style="margin-top:16px;width:100%;padding:14px;border:1.5px solid var(--pri);border-radius:12px;background:var(--pril);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
@@ -1513,7 +1513,7 @@ function openSetup(mode){
   document.getElementById('creatorNameCard').style.display=mode==='setup'?'flex':'none';
   document.getElementById('membersCard').style.display=mode==='settings'?'block':'none';
   document.getElementById('setupActions').style.display=mode==='setup'?'flex':'none';
-  document.getElementById('supportBtn').style.display=mode==='settings'?'flex':'none';
+  document.getElementById('supportBtn').style.display='none'; // settings page does not show support; reachable from drawer
   // inline ✓ buttons removed in v1.02 — keep hidden in both modes
   const saveHN=document.getElementById('saveHouseNameBtn');if(saveHN)saveHN.style.display='none';
   const saveCN=document.getElementById('saveCreatorNameBtn');if(saveCN)saveCN.style.display='none';
