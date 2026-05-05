@@ -978,7 +978,8 @@ const APP_VERSION='1.02-rc.1';
 
 <!-- Install / Add to Home Screen -->
 <div class="overlay" id="installOverlay">
-  <div class="sheet">
+  <div class="sheet" style="position:relative">
+    <button id="installCloseX" type="button" title="סגור" style="position:absolute;top:8px;left:10px;width:36px;height:36px;border:none;background:none;color:var(--mut);font-size:22px;cursor:pointer;font-family:inherit;border-radius:50%;display:flex;align-items:center;justify-content:center">✕</button>
     <h3 id="installTitle">הוספה לדף הבית 📲</h3>
     <p id="installLead">כדי להתקין את האפליקציה על המסך:</p>
     <div class="install-steps" id="installSteps"></div>
@@ -3323,6 +3324,9 @@ function showInstallFlow(){
 document.getElementById('homeInstallBtn').addEventListener('click',showInstallFlow);
 document.getElementById('installBtn').addEventListener('click',showInstallFlow);
 document.getElementById('installDoneBtn').addEventListener('click',()=>{
+  document.getElementById('installOverlay').classList.remove('open');
+});
+document.getElementById('installCloseX').addEventListener('click',()=>{
   document.getElementById('installOverlay').classList.remove('open');
 });
 
