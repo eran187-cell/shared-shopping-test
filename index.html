@@ -548,6 +548,8 @@ a,button,input,select{touch-action:manipulation}
 }
 .qa-note-inp:focus{border-color:var(--pri);background:var(--sur)}
 .qa-note-inp::placeholder{color:var(--mut)}
+.qa-note-inp:disabled{opacity:.5;cursor:not-allowed;background:var(--bg)}
+.qa-note-inp:disabled::placeholder{color:var(--mut);opacity:.7}
 
 /* Edit-title pencil icon */
 .edit-title-btn{width:36px;height:36px;border:none;background:transparent;color:var(--txt);font-size:18px;cursor:pointer;flex-shrink:0;opacity:.55;border-radius:10px;transition:background .15s,opacity .15s,color .15s;display:flex;align-items:center;justify-content:center;padding:0}
@@ -966,7 +968,7 @@ const APP_VERSION='1.02-rc.1';
     </div>
     <div class="qa-section qa-note-urgent-row">
       <input class="qa-note-inp" id="qaNoteInp" type="text"
-             placeholder="הערה אופציונלית…" autocomplete="off" autocorrect="off"/>
+             placeholder="הערה אופציונלית…" autocomplete="off" autocorrect="off" disabled/>
       <button class="qa-urgent-mini" id="qaUrgentBtn" type="button" data-track="list:urgent" aria-pressed="false" title="סימון כדחוף">
         <span class="bell">🔔</span><span class="lbl">דחוף</span>
       </button>
@@ -2450,7 +2452,8 @@ function _resetQaMore(){
   _qaUnit="יח'";
   document.querySelectorAll('.qa-unit').forEach(b=>b.classList.toggle('active',b.dataset.unit==="יח'"));
   selMember=_myMemberId();renderQaMembers();
-  document.getElementById('qaNoteInp').value='';
+  const _noteEl=document.getElementById('qaNoteInp');
+  _noteEl.value='';_noteEl.disabled=true; // disabled until next item name is typed
   // urgent toggle resets to off after each add
   const u=document.getElementById('qaUrgentBtn');
   if(u){u.classList.remove('active');u.setAttribute('aria-pressed','false');}
@@ -2844,6 +2847,9 @@ _acInput.addEventListener('keydown',function(e){
 _acInput.addEventListener('input',function(){
   acApply(this.value);
   _acDeleting=false;
+  // Note input is enabled only while there is text in qaInput.
+  const note=document.getElementById('qaNoteInp');
+  if(note)note.disabled=!this.value.trim();
 });
 
 _acDrop.addEventListener('mousedown',e=>e.preventDefault());
