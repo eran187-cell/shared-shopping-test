@@ -793,7 +793,8 @@ const APP_VERSION='1.02-rc.1';
 <div class="view slide-right" id="setup">
   <!-- topbar shown only in settings mode -->
   <div class="setup-topbar" id="setupTopbar" style="display:none">
-    <button class="back-btn" id="settingsBack" title="שמור וצא" data-track="settings:back">&#8594;</button>
+    <!-- back arrow removed in v1.02; the ✕ on the left is the only exit -->
+    <button class="back-btn" id="settingsBack" title="שמור וצא" data-track="settings:back" style="display:none">&#8594;</button>
     <h2 style="display:none">הגדרות משפחה</h2>
     <!-- 'המלץ לחברים' moved to the global drawer; kept hidden here as a click hook -->
     <button class="setup-tell-btn" id="tellFriendsBtn" data-track="settings:tellFriends" style="display:none"></button>
