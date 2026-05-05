@@ -781,9 +781,10 @@ const APP_VERSION='1.02-rc.1';
   <!-- topbar shown only in settings mode -->
   <div class="setup-topbar" id="setupTopbar" style="display:none">
     <button class="back-btn" id="settingsBack" title="שמור וצא" data-track="settings:back">&#8594;</button>
-    <h2>הגדרות משפחה</h2>
-    <button class="setup-tell-btn" id="tellFriendsBtn" title="ספר לחברים על האפליקציה" data-track="settings:tellFriends"><svg class="share-glyph" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> המלץ לחברים</button>
-    <button class="setup-close-btn" id="setupCloseBtn" title="סגור" data-track="settings:close">✕</button>
+    <h2 style="display:none">הגדרות משפחה</h2>
+    <!-- 'המלץ לחברים' moved to the global drawer; kept hidden here as a click hook -->
+    <button class="setup-tell-btn" id="tellFriendsBtn" data-track="settings:tellFriends" style="display:none"></button>
+    <button class="setup-close-btn" id="setupCloseBtn" title="סגור" data-track="settings:close" style="margin-right:auto">✕</button>
   </div>
 
   <div class="setup-scroll" id="setupScroll">
@@ -806,7 +807,8 @@ const APP_VERSION='1.02-rc.1';
     <div class="section-card" id="membersCard">
       <h3>שותפים</h3>
       <div class="member-list" id="memberList"></div>
-      <button class="add-member-btn" id="addMemberBtn" data-track="settings:addMember">
+      <!-- '+ הוספת שותף' removed in v1.02 — joiners self-add via the invite link -->
+      <button class="add-member-btn" id="addMemberBtn" data-track="settings:addMember" style="display:none">
         <span style="font-size:20px">+</span> הוספת שותף
       </button>
       <button id="saveMembersBtn" type="button" title="שמירה" data-track="settings:saveMembers" style="display:none;margin:10px auto 0;width:48px;height:48px;border-radius:50%;border:none;background:var(--pri);color:#fff;font-size:22px;cursor:pointer;box-shadow:0 4px 14px rgba(45,186,122,.4);font-family:inherit;align-items:center;justify-content:center">✓</button>
@@ -829,7 +831,7 @@ const APP_VERSION='1.02-rc.1';
 
     <!-- house code (shown in settings mode) — moved to bottom because most join via link -->
     <div class="house-code-card" id="houseCodeCard" style="display:none">
-      <div class="house-code-label">קוד הבית שלכם 🔑</div>
+      <div class="house-code-label">קוד הבית שלכם</div>
       <div class="house-code-val" id="houseCodeDisplay">------</div>
       <div class="house-code-hint">לשימוש ידני, אם הקישור לא עובד</div>
     </div>
@@ -1532,7 +1534,7 @@ function openSetup(mode){
   // admin-only controls
   const admin=isAdmin();
   document.getElementById('houseName').disabled=!admin;
-  document.getElementById('addMemberBtn').style.display=admin?'':'none';
+  document.getElementById('addMemberBtn').style.display='none'; // hidden in v1.02
   // 'admin notice' subtitle removed in v1.02 redesign
   const oldNotice=document.getElementById('adminNotice');
   if(oldNotice)oldNotice.remove();
@@ -1653,7 +1655,7 @@ function renderMemberList(){
   });
 
   // Add-member button only visible to admin
-  document.getElementById('addMemberBtn').style.display=admin?'flex':'none';
+  document.getElementById('addMemberBtn').style.display='none'; // hidden in v1.02
 }
 
 document.getElementById('addMemberBtn').addEventListener('click',function(){
@@ -1919,9 +1921,12 @@ document.getElementById('aboutClose').addEventListener('click',function(){
   document.getElementById('aboutOverlay').classList.remove('open');
 });
 
-// Leave house — stops listener, clears houseId, returns to onboarding
+// Leave house — admins see a stronger message (means closing the group)
 document.getElementById('leaveHouseBtn').addEventListener('click',function(){
-  showConfirm('לצאת מהקבוצה? תוכל להצטרף מחדש עם קוד הבית.',function(){
+  const msg=isAdmin()
+    ? 'אתה מנהל הקבוצה. יציאה כעת תסגור את הקבוצה לכל המשתתפים.'
+    : 'לצאת מהקבוצה?';
+  showConfirm(msg,function(){
     if(_fbRef){_fbRef.off();_fbRef=null;}
     localStorage.removeItem('sl3_houseId');
     houseId=null;
@@ -1930,7 +1935,7 @@ document.getElementById('leaveHouseBtn').addEventListener('click',function(){
     document.getElementById('list').classList.add('slide-right');
     document.getElementById('qabar').classList.remove('visible');
     openSetup('setup');
-  });
+  },{yesLabel:'יציאה',noLabel:'ביטול',yesColor:'#e74c3c'});
 });
 
 /* ══ HOME VIEW ═══════════════════════════════ */
