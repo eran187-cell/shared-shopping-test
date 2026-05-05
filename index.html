@@ -1559,12 +1559,16 @@ function openSetup(mode){
   if(mode==='setup'){
     document.getElementById('setup').classList.remove('hidden','slide-right');
     document.getElementById('home').classList.add('hidden');
+    document.getElementById('list').classList.add('slide-right');
+    document.getElementById('qabar').classList.remove('visible');
   } else {
-    // from home → settings
+    // from home / list → settings
     document.getElementById('setup').classList.remove('hidden');
     document.getElementById('setup').classList.add('slide-right');
     requestAnimationFrame(()=>document.getElementById('setup').classList.remove('slide-right'));
     document.getElementById('home').classList.add('hidden');
+    document.getElementById('list').classList.add('slide-right');
+    document.getElementById('qabar').classList.remove('visible');
   }
 }
 
