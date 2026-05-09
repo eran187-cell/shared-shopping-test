@@ -2764,9 +2764,10 @@ function submitItem(){
   const input=document.getElementById('qaInput');
   const name=input.value.trim();
   if(!name){input.focus();return;}
-  // Reject when the same (pending) item already exists — show who added it.
+  // Reject when the same item already exists — including items already
+  // marked as done (so a partner can't accidentally re-add them).
   const _norm=s=>(s||'').trim().toLowerCase();
-  const _existing=(items[activeId]||[]).find(it=>it&&!it.checked&&_norm(it.name)===_norm(name));
+  const _existing=(items[activeId]||[]).find(it=>it&&_norm(it.name)===_norm(name));
   if(_existing){
     const m=getMember(_existing.assignee);
     const who=(m&&m.name)||_existing.assigneeName||'';
@@ -2776,6 +2777,14 @@ function submitItem(){
     toast(msg);
     input.value='';
     _acDrop.classList.remove('open');
+    // If the existing item lives in the other tab, switch to it so the user
+    // can actually see the card we're about to flash.
+    const _wantFilter=_existing.checked?'done':'pending';
+    if(activeFilter!==_wantFilter){
+      activeFilter=_wantFilter;
+      document.querySelectorAll('.fbtn').forEach(b=>b.classList.toggle('active',b.dataset.f===_wantFilter));
+      renderListView();
+    }
     // Scroll the existing card into view + flash it to draw attention.
     setTimeout(()=>{
       const card=document.querySelector('#itemsWrap .item-card[data-id="'+_existing.id+'"]');
@@ -2784,7 +2793,7 @@ function submitItem(){
         card.classList.add('flash-existing');
         setTimeout(()=>card.classList.remove('flash-existing'),1400);
       }
-    },50);
+    },80);
     return;
   }
   // fingerprint dedup: same name+qty+unit+list within 1500ms → ignore
