@@ -1725,6 +1725,25 @@ function commitSettings(){
   if(!hname){document.getElementById('houseName').focus();toast('שם הבית חסר');return false;}
   const validMembers=editMembers.filter(m=>m.name.trim());
   if(!validMembers.length){toast('יש להוסיף לפחות שותף אחד');return false;}
+  // Before applying member changes, freeze each removed member's identity onto
+  // every item they were assigned to — keeps historical attribution after
+  // they leave the group.
+  try{
+    const keepIds=new Set(validMembers.map(m=>m.id));
+    const oldById={};
+    (house.members||[]).forEach(m=>{if(m&&m.id)oldById[m.id]=m;});
+    Object.keys(items||{}).forEach(lid=>{
+      (items[lid]||[]).forEach(it=>{
+        if(it&&it.assignee&&!keepIds.has(it.assignee)){
+          const om=oldById[it.assignee];
+          if(om){
+            if(!it.assigneeName) it.assigneeName=om.name;
+            if(!it.assigneeColor)it.assigneeColor=om.color;
+          }
+        }
+      });
+    });
+  }catch(_){}
   house.name=hname;
   house.members=validMembers.map(m=>{
     const out={...m,name:m.name.trim()};
@@ -2001,21 +2020,32 @@ document.getElementById('leaveHouseBtn').addEventListener('click',function(){
     },{yesLabel:'סגירת קבוצה',noLabel:'ביטול',yesColor:'#e74c3c'});
     return;
   }
-  // Non-admin: remove own membership row, show "left the group" screen.
+  // Non-admin: remove own membership row via the regular save() path so the
+  // session marker is bumped and remaining devices see the update through
+  // their existing 'value' listener.
   showConfirm('לצאת מהקבוצה? תוכל להצטרף שוב רק עם קישור מיוצר הקבוצה.',function(){
-    const hid=houseId;
     const myDev=deviceId;
-    const finish=()=>{
+    // Snapshot identity onto items I was assigned to before I disappear,
+    // so my name keeps showing on past entries for everyone else.
+    const myId=(_myMemberId&&_myMemberId())||((house.members||[]).find(m=>m&&m.deviceId===myDev)||{}).id;
+    const me=(house.members||[]).find(m=>m&&m.id===myId);
+    if(me){
+      Object.keys(items||{}).forEach(lid=>{
+        (items[lid]||[]).forEach(it=>{
+          if(it&&it.assignee===myId){
+            if(!it.assigneeName) it.assigneeName=me.name;
+            if(!it.assigneeColor)it.assigneeColor=me.color;
+          }
+        });
+      });
+    }
+    house.members=(house.members||[]).filter(m=>m&&m.deviceId!==myDev&&m.id!==myId);
+    save();
+    // Wait briefly for the write to flush, then wipe local & show the screen.
+    setTimeout(()=>{
       _wipeLocalAndHide();
       document.getElementById('leftGroupOverlay').style.display='flex';
-    };
-    if(hid && firebase && firebase.database){
-      firebase.database().ref('houses/'+hid+'/members').once('value').then(snap=>{
-        const cur=snap.val()||[];
-        const next=(Array.isArray(cur)?cur:Object.values(cur)).filter(m=>m&&m.deviceId!==myDev);
-        return firebase.database().ref('houses/'+hid+'/members').set(next);
-      }).then(finish).catch(()=>finish());
-    } else { finish(); }
+    },800);
   },{yesLabel:'יציאה',noLabel:'ביטול',yesColor:'#e74c3c'});
 });
 
@@ -2436,6 +2466,12 @@ function buildCard(item){
   // Fall back to the historical snapshot when the assignee has left the group,
   // so past attributions still display the original member's name + color.
   const m=getMember(item.assignee);
+  // Opportunistic backfill: while the member is still here, freeze their
+  // identity onto the item so it survives a later removal.
+  if(m){
+    if(item.assigneeName!==m.name)item.assigneeName=m.name;
+    if(item.assigneeColor!==m.color)item.assigneeColor=m.color;
+  }
   const whoName = m ? m.name  : (item.assigneeName  || '');
   const whoColor= m ? m.color : (item.assigneeColor || '#999');
   const card=document.createElement('div');
