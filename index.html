@@ -1205,6 +1205,15 @@ const APP_VERSION='1.02-rc.1';
   </div>
 </div>
 
+<!-- Shown to non-admin members after they leave the group. -->
+<div class="overlay" id="leftGroupOverlay" style="display:none;align-items:center">
+  <div class="sheet onboard-sheet">
+    <div class="onboard-icon">👋</div>
+    <h2 class="onboard-title">יצאת מהקבוצה</h2>
+    <p class="onboard-sub" style="margin-bottom:0">ניתן יהיה להצטרף מחדש על ידי קבלת קישור מיוצר הקבוצה</p>
+  </div>
+</div>
+
 <!-- Color picker (reused) -->
 <div class="color-picker" id="colorPicker"></div>
 
@@ -1960,20 +1969,53 @@ document.getElementById('aboutClose').addEventListener('click',function(){
   document.getElementById('aboutOverlay').classList.remove('open');
 });
 
-// Leave house — admins see a stronger message (means closing the group)
+// Leave house
+//  • Admin: same as "reset app" — wipes the house from the server (members,
+//    lists, items) and returns the device to the new-house creation screen.
+//  • Member: removes only their own membership row, then shows a screen
+//    explaining how to rejoin (via a fresh link from the group creator).
+function _wipeLocalAndHide(){
+  if(_fbRef){_fbRef.off();_fbRef=null;}
+  localStorage.removeItem('sl3_houseId');
+  houseId=null;
+  house={name:'',members:[]};listTypes=[];items={};nextId=1;activeId=null;
+  document.getElementById('home').classList.add('hidden');
+  document.getElementById('list').classList.add('slide-right');
+  document.getElementById('setup').classList.add('slide-right');
+  document.getElementById('qabar').classList.remove('visible');
+  setTimeout(()=>window._refreshGlobalMenuVisibility&&window._refreshGlobalMenuVisibility(),0);
+}
 document.getElementById('leaveHouseBtn').addEventListener('click',function(){
-  const msg=isAdmin()
-    ? 'אתה מנהל הקבוצה. יציאה כעת תסגור את הקבוצה לכל המשתתפים.'
-    : 'לצאת מהקבוצה?';
-  showConfirm(msg,function(){
-    if(_fbRef){_fbRef.off();_fbRef=null;}
-    localStorage.removeItem('sl3_houseId');
-    houseId=null;
-    house={name:'',members:[]};listTypes=[];items={};nextId=1;activeId=null;
-    document.getElementById('home').classList.add('hidden');
-    document.getElementById('list').classList.add('slide-right');
-    document.getElementById('qabar').classList.remove('visible');
-    openSetup('setup');
+  if(isAdmin()){
+    showConfirm('סגירת הקבוצה תמחק את הבית, המשתתפים והרשימות. לא ניתן לשחזר.',function(){
+      const hid=houseId;
+      const finish=()=>{
+        _wipeLocalAndHide();
+        document.getElementById('onboardOverlay').style.display='flex';
+      };
+      if(hid && firebase && firebase.database){
+        firebase.database().ref('houses/'+hid).remove().then(finish).catch(err=>{
+          alert('סגירת הקבוצה נכשלה: '+(err&&err.message||err));
+        });
+      } else { finish(); }
+    },{yesLabel:'סגירת קבוצה',noLabel:'ביטול',yesColor:'#e74c3c'});
+    return;
+  }
+  // Non-admin: remove own membership row, show "left the group" screen.
+  showConfirm('לצאת מהקבוצה? תוכל להצטרף שוב רק עם קישור מיוצר הקבוצה.',function(){
+    const hid=houseId;
+    const myDev=deviceId;
+    const finish=()=>{
+      _wipeLocalAndHide();
+      document.getElementById('leftGroupOverlay').style.display='flex';
+    };
+    if(hid && firebase && firebase.database){
+      firebase.database().ref('houses/'+hid+'/members').once('value').then(snap=>{
+        const cur=snap.val()||[];
+        const next=(Array.isArray(cur)?cur:Object.values(cur)).filter(m=>m&&m.deviceId!==myDev);
+        return firebase.database().ref('houses/'+hid+'/members').set(next);
+      }).then(finish).catch(()=>finish());
+    } else { finish(); }
   },{yesLabel:'יציאה',noLabel:'ביטול',yesColor:'#e74c3c'});
 });
 
