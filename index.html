@@ -283,6 +283,8 @@ a,button,input,select{touch-action:manipulation}
 .items-wrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 16px calc(130px + var(--sab))}
 
 .item-card{background:var(--sur);border-radius:var(--r);border:1.5px solid var(--bdr);padding:13px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;overflow:hidden;max-height:120px;transition:opacity .22s,transform .22s,max-height .25s,margin-bottom .25s,padding .25s,border-color .15s,box-shadow .15s;animation:cardIn .22s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes flashExisting{0%,100%{box-shadow:0 0 0 0 rgba(45,186,122,0)}30%{box-shadow:0 0 0 4px rgba(45,186,122,.45)}60%{box-shadow:0 0 0 6px rgba(45,186,122,.2)}}
+.item-card.flash-existing{animation:flashExisting 1.4s ease;border-color:var(--pri)}
 .item-card:hover{border-color:var(--pri);box-shadow:0 2px 14px rgba(0,0,0,.08)}
 .item-card.checked{opacity:.45}
 .item-card.checked .iname{text-decoration:line-through;color:var(--mut)}
@@ -2713,6 +2715,29 @@ function submitItem(){
   const input=document.getElementById('qaInput');
   const name=input.value.trim();
   if(!name){input.focus();return;}
+  // Reject when the same (pending) item already exists — show who added it.
+  const _norm=s=>(s||'').trim().toLowerCase();
+  const _existing=(items[activeId]||[]).find(it=>it&&!it.checked&&_norm(it.name)===_norm(name));
+  if(_existing){
+    const m=getMember(_existing.assignee);
+    const who=(m&&m.name)||_existing.assigneeName||'';
+    const msg=who
+      ? 'הפריט כבר נוסף לרשימה על ידי "'+who+'". ניתן לערוך ולעדכן'
+      : 'הפריט כבר קיים ברשימה. ניתן לערוך ולעדכן';
+    toast(msg);
+    input.value='';
+    _acDrop.classList.remove('open');
+    // Scroll the existing card into view + flash it to draw attention.
+    setTimeout(()=>{
+      const card=document.querySelector('#itemsWrap .item-card[data-id="'+_existing.id+'"]');
+      if(card){
+        card.scrollIntoView({behavior:'smooth',block:'center'});
+        card.classList.add('flash-existing');
+        setTimeout(()=>card.classList.remove('flash-existing'),1400);
+      }
+    },50);
+    return;
+  }
   // fingerprint dedup: same name+qty+unit+list within 1500ms → ignore
   const fp=activeId+'|'+name+'|'+_qaQty+'|'+_qaUnit;
   const now=Date.now();
