@@ -2595,8 +2595,21 @@ function renderListView(){
   const list=filtered(activeList());
   updateProgress(activeList());
   if(!list.length){
-    wrap.innerHTML='<div class="empty-list"><div class="ei">'+lt.emoji+'</div>'
-      +'<p>'+(activeList().length?'אין פריטים בפילטר הנוכחי.':'הרשימה ריקה.<br>הוספת פריטים אפשרית למטה.')+'</p></div>';
+    // Tailored empty-state copy per tab so the user knows what to do next.
+    let msg;
+    if(!activeList().length){
+      // Whole list empty (no items at all)
+      msg='הרשימה ריקה.<br>הוספת פריטים אפשרית למטה.';
+    } else if(activeFilter==='pending'){
+      // Pending tab empty but done items exist → everything was checked off
+      msg='פריטים חדשים ניתן להוסיף מהתפריט התחתון<br>או על ידי איפוס רשימת הפריטים שבוצעו.';
+    } else if(activeFilter==='done'){
+      // Done tab empty → nothing checked off yet
+      msg='הפריטים שיסומנו יוצגו כאן.<br>ניתן לאפס את הרשימה על מנת להחזיר את הפריטים לקניה הבאה.';
+    } else {
+      msg='אין פריטים להצגה.';
+    }
+    wrap.innerHTML='<div class="empty-list"><div class="ei">'+lt.emoji+'</div><p>'+msg+'</p></div>';
     return;
   }
   wrap.innerHTML='';

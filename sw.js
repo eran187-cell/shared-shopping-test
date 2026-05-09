@@ -1,4 +1,4 @@
-const CACHE='ss-test-v79';
+const CACHE='ss-test-v80';
 self.addEventListener('install',()=>self.skipWaiting());
 self.addEventListener('activate',e=>e.waitUntil(clients.claim()));
 self.addEventListener('fetch',e=>{
