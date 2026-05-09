@@ -2433,7 +2433,11 @@ function _bumpCount(id,val){
 }
 
 function buildCard(item){
+  // Fall back to the historical snapshot when the assignee has left the group,
+  // so past attributions still display the original member's name + color.
   const m=getMember(item.assignee);
+  const whoName = m ? m.name  : (item.assigneeName  || '');
+  const whoColor= m ? m.color : (item.assigneeColor || '#999');
   const card=document.createElement('div');
   card.className='item-card'+(item.checked?' checked':'')+(item.urgent?' urgent':'');
   card.dataset.id=String(item.id);
@@ -2450,7 +2454,7 @@ function buildCard(item){
     e.stopPropagation();
     _toggleItemExpanded(card,item);
   });
-  const whoHtml=m?'<span class="who-badge" style="background:'+m.color+'">'+esc(m.name)+'</span>':'';
+  const whoHtml=whoName?'<span class="who-badge" style="background:'+whoColor+'">'+esc(whoName)+'</span>':'';
   const noteHtml=item.note?'<div class="item-note">'+esc(item.note)+'</div>':'';
   info.innerHTML='<div class="iname">'+esc(item.name)+'</div>'
     +'<div class="imeta"><span class="qty-badge">'+esc(String(item.qty))+' '+esc(item.unit)+'</span>'+whoHtml+'</div>'
@@ -2653,6 +2657,9 @@ function submitItem(){
   setTimeout(()=>{_submitLock=false;},800);
   const noteVal=document.getElementById('qaNoteInp').value.trim();
   const urgent=!!document.getElementById('qaUrgentBtn')&&document.getElementById('qaUrgentBtn').classList.contains('active');
+  // Snapshot assignee identity onto the item itself so historical attribution
+  // survives even if the member later leaves / is removed from the group.
+  const _assignedM=selMember?getMember(selMember):null;
   const item={
     id:uid(),name,
     qty:_qaQty,
@@ -2660,6 +2667,7 @@ function submitItem(){
     assignee:selMember||null,
     checked:false,
   };
+  if(_assignedM){item.assigneeName=_assignedM.name;item.assigneeColor=_assignedM.color;}
   if(noteVal)item.note=noteVal; // only set note if non-empty (Firebase rejects undefined)
   if(urgent)item.urgent=true;
   if(!items[activeId])items[activeId]=[];
@@ -2810,7 +2818,12 @@ function openItemEditor(itemId){
     b.addEventListener('click',function(){
       const mid=this.dataset.mid||null;
       const item=activeList().find(i=>i.id===_editingItemId);
-      if(item)item.assignee=mid;
+      if(item){
+        item.assignee=mid;
+        const _am=mid?getMember(mid):null;
+        if(_am){item.assigneeName=_am.name;item.assigneeColor=_am.color;}
+        else{delete item.assigneeName;delete item.assigneeColor;}
+      }
       // Re-render only chip colors, keep input/unit state
       wrap.querySelectorAll('button[data-mid]').forEach(btn=>{
         const opt=opts.find(o=>(o.id||'')===(btn.dataset.mid||''));
