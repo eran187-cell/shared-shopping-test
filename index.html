@@ -272,8 +272,10 @@ a,button,input,select{touch-action:manipulation}
 .plabel{font-size:12px;color:var(--mut);white-space:nowrap}
 
 .filters{display:flex;gap:8px;padding:12px 16px 0}
-.fbtn{padding:6px 14px;border-radius:99px;border:1.5px solid var(--bdr);background:var(--sur);font-size:13px;font-weight:500;color:var(--mut);cursor:pointer;transition:all .15s}
+.fbtn{padding:8px 22px;border-radius:99px;border:1.5px solid var(--bdr);background:var(--sur);font-size:14px;font-weight:600;color:var(--mut);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
 .fbtn.active{background:var(--pri);border-color:var(--pri);color:#fff}
+.fbtn-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 6px;border-radius:99px;background:rgba(0,0,0,.08);color:inherit;font-size:12px;font-weight:700}
+.fbtn.active .fbtn-count{background:rgba(255,255,255,.25)}
 
 /* padding-bottom = qabar height (~130px) + home indicator */
 .items-wrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 16px calc(130px + var(--sab))}
@@ -938,9 +940,8 @@ const APP_VERSION='1.02-rc.1';
   </div>
 
   <div class="filters">
-    <button class="fbtn active" data-f="all">הכל</button>
-    <button class="fbtn" data-f="pending">לקנות</button>
-    <button class="fbtn" data-f="done">בסל</button>
+    <button class="fbtn active" data-f="pending"><span class="fbtn-lbl">לקנות</span> <span class="fbtn-count" id="fcountPending">0</span></button>
+    <button class="fbtn" data-f="done"><span class="fbtn-lbl">בוצע</span> <span class="fbtn-count" id="fcountDone">0</span></button>
   </div>
 
   <div class="items-wrap" id="itemsWrap"></div>
@@ -1356,7 +1357,7 @@ function recordLogin(){
 
 /* ── state ───────────────────────────── */
 let house={name:'',members:[]};
-let listTypes=[], items={}, nextId=1, selMember=null, activeId=null, activeFilter='all', chipsExpanded=false;
+let listTypes=[], items={}, nextId=1, selMember=null, activeId=null, activeFilter='pending', chipsExpanded=false;
 let colorTargetMemberId=null;
 
 /* ── storage ─────────────────────────── */
@@ -2277,7 +2278,7 @@ function _renderListMembers(){
   el.innerHTML=members.map(m=>'<div class="av'+(m.isAdmin?' is-admin':'')+'" style="background:'+m.color+';margin-right:-8px" title="'+esc(m.name)+(m.isAdmin?' (מנהל)':'')+'">'+initials(m.name)+'</div>').join('');
 }
 function openList(id){
-  activeId=id;activeFilter='all';chipsExpanded=false;
+  activeId=id;activeFilter='pending';chipsExpanded=false;
   setTimeout(()=>window._refreshGlobalMenuVisibility&&window._refreshGlobalMenuVisibility(),0);
   _renderListMembers();
   // mark this list as seen — clears the "+N new" badge on the home page
@@ -2290,7 +2291,7 @@ function openList(id){
   const lt=getLT(id);
   document.getElementById('listEmoji').textContent=lt.emoji;
   document.getElementById('listTitle').value=lt.name;
-  document.querySelectorAll('.fbtn').forEach(b=>b.classList.toggle('active',b.dataset.f==='all'));
+  document.querySelectorAll('.fbtn').forEach(b=>b.classList.toggle('active',b.dataset.f==='pending'));
   renderListView();renderChips();
   document.getElementById('home').classList.add('hidden');
   document.getElementById('list').classList.remove('slide-right');
@@ -2344,9 +2345,12 @@ function filtered(list){
 
 function updateProgress(list){
   const total=list.length,done=list.filter(i=>i.checked).length;
+  const pending=total-done;
   const pct=total?Math.round(done/total*100):0;
   document.getElementById('pfill').style.width=pct+'%';
   document.getElementById('plabel').textContent=done+' / '+total+' בסל';
+  const cP=document.getElementById('fcountPending');if(cP)cP.textContent=pending;
+  const cD=document.getElementById('fcountDone');if(cD)cD.textContent=done;
 }
 
 function buildCard(item){
