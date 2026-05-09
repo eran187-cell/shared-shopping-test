@@ -346,6 +346,23 @@ a,button,input,select{touch-action:manipulation}
   overflow:visible; /* must stay visible so dropdown above bar isn't clipped */
 }
 .qabar.visible{display:block}
+/* Hide the qabar on the 'בוצע' tab; the floating + replaces it. */
+body[data-filter="done"] .qabar{display:none !important}
+#addItemFab{
+  position:fixed;right:max(16px,env(safe-area-inset-right,0px));
+  bottom:calc(20px + env(safe-area-inset-bottom,0px));
+  width:60px;height:60px;border-radius:50%;border:none;
+  background:var(--pri);color:#fff;cursor:pointer;display:none;
+  align-items:center;justify-content:center;
+  box-shadow:0 6px 20px rgba(45,186,122,.35),0 2px 6px rgba(0,0,0,.18);
+  z-index:35;font-family:inherit;
+  animation:fabIn .25s cubic-bezier(.34,1.56,.64,1) both;
+  transition:transform .15s,box-shadow .15s;
+}
+#addItemFab:hover{transform:scale(1.05)}
+#addItemFab:active{transform:scale(.95)}
+@keyframes fabIn{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
+body[data-filter="done"] #addItemFab{display:flex}
 /* Edit-item modal qty stepper — large tap targets */
 .qty-stepper-box{
   display:flex;align-items:stretch;gap:10px;
@@ -965,6 +982,12 @@ const APP_VERSION='1.02-rc.1';
 
   <div class="items-wrap" id="itemsWrap"></div>
 </div>
+
+<!-- Floating action button shown only on the 'בוצע' tab — taps switch to
+     'לקנות' so the user can add items via the regular qabar. -->
+<button id="addItemFab" type="button" aria-label="הוספת פריט" data-track="list:fabAdd">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
 
 <!-- Quick-add bar -->
 <div class="qabar" id="qabar">
@@ -2476,12 +2499,28 @@ function goHome(){
   document.getElementById('setup').classList.add('slide-right');
   document.getElementById('home').classList.remove('hidden');
   document.getElementById('qabar').classList.remove('visible');
+  try{document.body.dataset.filter='';}catch(_){}
   renderHome();
   setTimeout(()=>window._refreshGlobalMenuVisibility&&window._refreshGlobalMenuVisibility(),0);
 }
+// Floating "+" — visible only on the 'בוצע' tab. Switches to 'לקנות' and
+// focuses the qabar input so the user can start typing immediately.
+document.getElementById('addItemFab').addEventListener('click',function(){
+  activeFilter='pending';
+  document.body.dataset.filter='pending';
+  document.querySelectorAll('.fbtn').forEach(b=>b.classList.toggle('active',b.dataset.f==='pending'));
+  renderListView();
+  if(window._qabarExpand)window._qabarExpand();
+  setTimeout(()=>{
+    const inp=document.getElementById('qaInput');
+    if(inp)inp.focus();
+  },120);
+});
 document.getElementById('backBtn').addEventListener('click',goHome);
 
 function renderListView(){
+  // Sync body attribute so the qabar↔FAB swap is purely CSS-driven.
+  try{document.body.dataset.filter=activeFilter||'pending';}catch(_){}
   const wrap=document.getElementById('itemsWrap');
   if(!wrap)return;
   // active list may have been deleted/renamed by a remote update
