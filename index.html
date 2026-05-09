@@ -295,8 +295,11 @@ a,button,input,select{touch-action:manipulation}
 .dept-header .dept-count{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:22px;padding:0 8px;border-radius:99px;background:var(--pri);color:#fff;font-size:12px;font-weight:700;margin:0 6px}
 .dept-header .dept-chev{display:inline-block;transition:transform .25s;color:var(--mut);font-size:14px;width:16px;text-align:center}
 .dept-group.collapsed .dept-chev{transform:rotate(-90deg)}
-.dept-items{overflow:hidden;max-height:9999px;transition:max-height .3s ease,opacity .2s,margin .2s}
+.dept-items{overflow:hidden;max-height:9999px;transition:max-height .55s cubic-bezier(.65,0,.35,1),opacity .4s ease,margin .4s ease,padding .4s ease}
 .dept-group.collapsed .dept-items{max-height:0 !important;opacity:0;margin:0;pointer-events:none}
+.dept-group.collapsed .dept-header .dept-chev{transform:rotate(-90deg)}
+.dept-header{transition:background .15s,box-shadow .25s}
+.dept-header .dept-chev{transition:transform .55s cubic-bezier(.65,0,.35,1)}
 /* Magic activation effect over the list wrap */
 .items-wrap.magic-rearrange{position:relative}
 .items-wrap.magic-rearrange::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 30%,rgba(155,108,255,.25),transparent 60%);animation:magicGlow .9s ease;border-radius:12px}
@@ -2713,10 +2716,10 @@ function renderListView(){
       header.addEventListener('click',function(e){
         e.stopPropagation();
         const d=this.dataset.dept;
-        if(_deptCollapsed.has(d))_deptCollapsed.delete(d);
-        else _deptCollapsed.add(d);
         const grp=this.parentElement;
-        grp.classList.toggle('collapsed',_deptCollapsed.has(d));
+        const willCollapse=!_deptCollapsed.has(d);
+        if(willCollapse){_deptCollapsed.add(d);_animateCollapse(grp);}
+        else{_deptCollapsed.delete(d);_animateExpand(grp);}
       });
       const itemsBox=document.createElement('div');
       itemsBox.className='dept-items';
@@ -3328,8 +3331,8 @@ document.getElementById('aiSortBtn').addEventListener('click',function(){
     document.querySelectorAll('.fbtn').forEach(b=>b.classList.toggle('active',b.dataset.f==='pending'));
   }
   renderListView();
-  // Demo collapse: wait ~1.4s after the open render, then collapse every
-  // group with a staggered animation so the user sees the fold motion.
+  // Demo collapse: wait ~1.4s after the open render, then fold every group
+  // one-by-one with a smooth height animation so the user sees the motion.
   if(_aiSort){
     clearTimeout(window._aiDemoTimer);
     window._aiDemoTimer=setTimeout(()=>{
@@ -3337,8 +3340,8 @@ document.getElementById('aiSortBtn').addEventListener('click',function(){
       groups.forEach((g,i)=>{
         setTimeout(()=>{
           const d=g.dataset.dept;
-          if(d){_deptCollapsed.add(d);g.classList.add('collapsed');}
-        },i*120);
+          if(d){_deptCollapsed.add(d);_animateCollapse(g);}
+        },i*220);
       });
     },1400);
   }
@@ -3414,6 +3417,34 @@ async function acInit(){
   }
 }
 // ── AI sort helpers ─────────────────────────────
+// Smooth height-based collapse/expand. Pins the actual measured height as
+// the starting max-height so the transition has a real value to animate
+// from (CSS alone animates from `9999px` which feels jumpy).
+function _animateCollapse(grp){
+  const items=grp.querySelector('.dept-items');
+  if(!items)return;
+  // pin current height
+  items.style.maxHeight=items.scrollHeight+'px';
+  // force reflow then add the class — browser interpolates smoothly
+  void items.offsetHeight;
+  grp.classList.add('collapsed');
+  const clear=()=>{items.style.maxHeight='';};
+  items.addEventListener('transitionend',clear,{once:true});
+  setTimeout(clear,800);
+}
+function _animateExpand(grp){
+  const items=grp.querySelector('.dept-items');
+  if(!items)return;
+  // momentarily remove .collapsed and measure full height
+  grp.classList.remove('collapsed');
+  const target=items.scrollHeight;
+  items.style.maxHeight='0px';
+  void items.offsetHeight;
+  items.style.maxHeight=target+'px';
+  const clear=()=>{items.style.maxHeight='';};
+  items.addEventListener('transitionend',clear,{once:true});
+  setTimeout(clear,800);
+}
 function _itemDept(it){
   const n=(it&&it.name||'').trim();
   return _acDepts[n] || _OTHER_DEPT;
