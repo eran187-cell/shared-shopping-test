@@ -1723,8 +1723,11 @@ function renderMemberList(){
       const del=document.createElement('button');
       del.className='mem-del';del.textContent='✕';del.title='הסר';
       del.addEventListener('click',()=>{
-        editMembers=editMembers.filter(x=>x.id!==m.id);
-        renderMemberList();
+        const nm=(m.name||'').trim()||'השותף';
+        showConfirm('האם להסיר את "'+nm+'" מהקבוצה?',()=>{
+          editMembers=editMembers.filter(x=>x.id!==m.id);
+          renderMemberList();
+        },{yesLabel:'הסר',noLabel:'ביטול',yesColor:'#e74c3c'});
       });
       wrap.appendChild(del);
     }
