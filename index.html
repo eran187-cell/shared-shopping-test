@@ -66,9 +66,11 @@ window.addEventListener('error',function(ev){
 /* dark mode — overrides only colour tokens */
 body.dark{
   /* High-contrast palette: brighter text, more visible borders, stronger
-     surface lift over background, less-faded muted text. */
+     surface lift over background, less-faded muted text.
+     Reds are also brightened for legibility on dark surfaces. */
   --bg:#07120c;--sur:#1a2a22;--bdr:#3a5a48;
   --pril:#1a3d28;--txt:#f1fbf5;--mut:#9ec5b0;
+  --red:#ff7b6e;
 }
 body{
   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
@@ -308,6 +310,20 @@ a,button,input,select{touch-action:manipulation}
 .fbtn.active{background:var(--pri);border-color:var(--pri);color:#fff}
 .fbtn-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 6px;border-radius:99px;background:rgba(0,0,0,.08);color:inherit;font-size:12px;font-weight:700;transition:transform .2s}
 body.dark .fbtn-count{background:rgba(255,255,255,.15)}
+/* Dark-mode red overrides — brighten everything that hard-codes the
+   light-mode red so contrast is preserved against the dark surface. */
+body.dark .ss-field-row input.invalid,
+body.dark .ss-field-row input.invalid:focus{border-color:var(--red)}
+body.dark .ss-field-row input.invalid::placeholder{color:var(--red)}
+body.dark .setup-close-btn:hover{background:#3d1818;color:var(--red)}
+body.dark .mem-del:hover{background:#3d1818;color:var(--red)}
+body.dark .lt-del{background:var(--red)}
+body.dark .lt-del:hover{background:#ff5a4d}
+body.dark #confirmModal .conf-yes{background:var(--red)}
+body.dark .qp-trash{color:var(--red)}
+body.dark .qp-trash:active{background:#3d1818}
+body.dark .qa-urgent-mini.active{background:#3d1818;border-color:var(--red);color:var(--red)}
+body.dark .item-card.urgent{border-right-color:var(--red)}
 .fbtn.active .fbtn-count{background:rgba(255,255,255,.25)}
 @keyframes countPop{0%{transform:scale(1)}35%{transform:scale(1.45)}70%{transform:scale(.92)}100%{transform:scale(1)}}
 .fbtn-count.bump{animation:countPop .45s ease}
