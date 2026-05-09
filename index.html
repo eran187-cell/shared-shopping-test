@@ -781,7 +781,7 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
     <!-- Menu items — populated in phase 2 -->
     <nav id="drawerNav" style="padding:6px 6px;flex:1"></nav>
     <!-- Footer: version number -->
-    <div style="padding:10px 14px;font-size:11px;color:var(--mut);text-align:center;border-top:1px solid var(--bdr)">גרסה <span id="drawerVersion"></span> · build <span id="drawerBuild">…</span></div>
+    <div style="padding:10px 14px;font-size:11px;color:var(--mut);text-align:center;border-top:1px solid var(--bdr)">גרסה <span id="drawerVersion"></span></div>
   </aside>
 </div>
 <script>
@@ -4220,8 +4220,7 @@ _annInit();
     }catch(_){}
   }
   const buildLabel=cacheName||'unknown';
-  const el=document.getElementById('drawerBuild');
-  if(el)el.textContent=buildLabel;
+  // (build label not shown in the drawer; tracked only for change-detection)
   // Compare to last-seen build. On first load the key is empty → no toast.
   try{
     const last=localStorage.getItem('sl3_lastBuild')||'';
@@ -4229,7 +4228,7 @@ _annInit();
       // Show a brief confirmation toast
       setTimeout(()=>{
         if(typeof toast==='function'){
-          toast('✓ עודכן בהצלחה לגרסה '+buildLabel);
+          toast('✓ עודכן בהצלחה לגרסה החדשה');
         }
       },800);
     }
