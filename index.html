@@ -271,7 +271,35 @@ a,button,input,select{touch-action:manipulation}
 .pfill{height:100%;background:var(--pri);border-radius:99px;transition:width .4s}
 .plabel{font-size:12px;color:var(--mut);white-space:nowrap}
 
-.filters{display:flex;gap:8px;padding:12px 16px 0}
+.filters{display:flex;gap:8px;padding:12px 16px 0;align-items:center}
+.ai-fbtn{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:99px;border:1.5px solid var(--bdr);background:var(--sur);font-size:12px;font-weight:600;color:var(--mut);cursor:pointer;font-family:inherit;transition:all .2s;position:relative;overflow:hidden}
+.ai-fbtn .ai-spark{transition:transform .25s,color .2s}
+.ai-fbtn:hover{border-color:var(--pri);color:var(--pri)}
+.ai-fbtn[aria-pressed="true"]{background:linear-gradient(135deg,#9b6cff 0%,#5b4fcf 50%,#2dba7a 100%);border-color:transparent;color:#fff;box-shadow:0 3px 12px rgba(91,79,207,.35)}
+.ai-fbtn[aria-pressed="true"] .ai-spark{animation:aiSpin 1.4s linear infinite;color:#fff}
+@keyframes aiSpin{to{transform:rotate(360deg)}}
+.ai-fbtn.magic::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.6) 50%,transparent 70%);transform:translateX(-100%);animation:magicShimmer 1s ease}
+@keyframes magicShimmer{to{transform:translateX(100%)}}
+/* Department grouping (AI sort active) */
+.dept-group{margin-bottom:6px;animation:deptIn .3s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes deptIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.dept-header{display:flex;align-items:center;justify-content:space-between;width:100%;padding:10px 14px;margin:8px 0 6px;border:none;background:linear-gradient(90deg,var(--pril),transparent);border-right:4px solid var(--pri);border-radius:8px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:700;color:var(--txt);text-align:right;transition:background .15s}
+.dept-header:hover{background:linear-gradient(90deg,#d8f3e4,transparent)}
+.dept-header .dept-name{flex:1;text-align:right}
+.dept-header .dept-count{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:22px;padding:0 8px;border-radius:99px;background:var(--pri);color:#fff;font-size:12px;font-weight:700;margin:0 6px}
+.dept-header .dept-chev{display:inline-block;transition:transform .25s;color:var(--mut);font-size:14px;width:16px;text-align:center}
+.dept-group.collapsed .dept-chev{transform:rotate(-90deg)}
+.dept-items{overflow:hidden;max-height:9999px;transition:max-height .3s ease,opacity .2s,margin .2s}
+.dept-group.collapsed .dept-items{max-height:0 !important;opacity:0;margin:0;pointer-events:none}
+/* Magic activation effect over the list wrap */
+.items-wrap.magic-rearrange{position:relative}
+.items-wrap.magic-rearrange::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 30%,rgba(155,108,255,.25),transparent 60%);animation:magicGlow .9s ease;border-radius:12px}
+@keyframes magicGlow{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+/* Item flying to a collapsed category */
+.fly-clone{position:fixed;z-index:80;pointer-events:none;transition:transform .55s cubic-bezier(.45,.05,.55,.95),opacity .55s,scale .55s}
+.fly-clone.go{opacity:.2;scale:.3}
+.dept-header.pulse{animation:deptPulse .6s ease}
+@keyframes deptPulse{0%,100%{box-shadow:0 0 0 0 rgba(45,186,122,0)}50%{box-shadow:0 0 0 6px rgba(45,186,122,.35)}}
 .fbtn{padding:7px 14px;border-radius:99px;border:1.5px solid var(--bdr);background:var(--sur);font-size:13px;font-weight:600;color:var(--mut);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;justify-content:space-between;gap:10px;min-width:96px}
 .fbtn.active{background:var(--pri);border-color:var(--pri);color:#fff}
 .fbtn-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 6px;border-radius:99px;background:rgba(0,0,0,.08);color:inherit;font-size:12px;font-weight:700;transition:transform .2s}
@@ -978,6 +1006,10 @@ const APP_VERSION='1.02-rc.1';
   <div class="filters">
     <button class="fbtn active" data-f="pending"><span class="fbtn-lbl">לקנות</span> <span class="fbtn-count" id="fcountPending">0</span></button>
     <button class="fbtn" data-f="done"><span class="fbtn-lbl">בוצע</span> <span class="fbtn-count" id="fcountDone">0</span></button>
+    <button id="aiSortBtn" class="ai-fbtn" type="button" aria-pressed="false" title="סידור אוטומטי לפי מחלקות" data-track="list:aiSort">
+      <svg class="ai-spark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v6"/><path d="M12 16v6"/><path d="M2 12h6"/><path d="M16 12h6"/><path d="M5 5l3 3"/><path d="M16 16l3 3"/><path d="M5 19l3-3"/><path d="M16 8l3-3"/></svg>
+      <span class="ai-lbl">סידור אוטומטי</span>
+    </button>
   </div>
 
   <div class="items-wrap" id="itemsWrap"></div>
@@ -2538,6 +2570,34 @@ function renderListView(){
     return;
   }
   wrap.innerHTML='';
+  // AI sort renders grouped sections (only on the 'לקנות' tab).
+  if(_aiSort && activeFilter==='pending'){
+    const groups=_groupItemsByDept(list);
+    groups.forEach(([dept,arr])=>{
+      const g=document.createElement('div');
+      g.className='dept-group'+(_deptCollapsed.has(dept)?' collapsed':'');
+      g.dataset.dept=dept;
+      const header=document.createElement('button');
+      header.type='button';
+      header.className='dept-header';
+      header.dataset.dept=dept;
+      header.innerHTML='<span class="dept-name">'+esc(dept)+'</span><span class="dept-count">'+arr.length+'</span><span class="dept-chev">▼</span>';
+      header.addEventListener('click',function(e){
+        e.stopPropagation();
+        const d=this.dataset.dept;
+        if(_deptCollapsed.has(d))_deptCollapsed.delete(d);
+        else _deptCollapsed.add(d);
+        const grp=this.parentElement;
+        grp.classList.toggle('collapsed',_deptCollapsed.has(d));
+      });
+      const itemsBox=document.createElement('div');
+      itemsBox.className='dept-items';
+      arr.forEach(it=>itemsBox.appendChild(buildCard(it)));
+      g.appendChild(header);g.appendChild(itemsBox);
+      wrap.appendChild(g);
+    });
+    return;
+  }
   list.forEach(item=>wrap.appendChild(buildCard(item)));
 }
 
@@ -2877,6 +2937,22 @@ function submitItem(){
   const wrap=document.getElementById('itemsWrap');
   if(wrap){
     requestAnimationFrame(()=>{
+      // AI sort: when the new item lands inside a collapsed department,
+      // animate it flying into the (now hidden) section.
+      if(_aiSort && activeFilter==='pending'){
+        const dept=_itemDept(item);
+        if(_deptCollapsed.has(dept)){
+          // Temporarily expand the group so the card exists in the DOM, then
+          // fly it back to the collapsed-header position.
+          _deptCollapsed.delete(dept);
+          renderListView();
+          requestAnimationFrame(()=>{
+            _deptCollapsed.add(dept);
+            _flyToCollapsedDept(item.id,dept);
+          });
+          return;
+        }
+      }
       wrap.scrollTop=wrap.scrollHeight;
       const cards=wrap.querySelectorAll('.item-card');
       const last=cards[cards.length-1];
@@ -3089,6 +3165,59 @@ document.querySelector('.filters').addEventListener('click',function(e){
   activeFilter=btn.dataset.f;
   renderListView();
 });
+// Reflect AI sort state on the button.
+function _refreshAiBtn(){
+  const b=document.getElementById('aiSortBtn');if(!b)return;
+  b.setAttribute('aria-pressed',_aiSort?'true':'false');
+}
+_refreshAiBtn();
+document.getElementById('aiSortBtn').addEventListener('click',function(){
+  _aiSort=!_aiSort;
+  try{localStorage.setItem('ss_aiSort',_aiSort?'1':'0');}catch(_){}
+  _refreshAiBtn();
+  // Magic sparkle on the button + glow over the list when activating.
+  this.classList.remove('magic');void this.offsetWidth;this.classList.add('magic');
+  if(_aiSort){
+    const wrap=document.getElementById('itemsWrap');
+    if(wrap){wrap.classList.remove('magic-rearrange');void wrap.offsetWidth;wrap.classList.add('magic-rearrange');setTimeout(()=>wrap.classList.remove('magic-rearrange'),900);}
+  }
+  // Always render on 'לקנות' so the user sees the change.
+  if(activeFilter!=='pending'){
+    activeFilter='pending';
+    document.body.dataset.filter='pending';
+    document.querySelectorAll('.fbtn').forEach(b=>b.classList.toggle('active',b.dataset.f==='pending'));
+  }
+  renderListView();
+});
+// Animate a freshly-added item flying into a collapsed department header.
+function _flyToCollapsedDept(itemId,deptName){
+  const wrap=document.getElementById('itemsWrap');
+  const card=wrap&&wrap.querySelector('.item-card[data-id="'+itemId+'"]');
+  const header=wrap&&wrap.querySelector('.dept-group[data-dept="'+CSS.escape(deptName)+'"] .dept-header');
+  if(!card||!header)return;
+  const cr=card.getBoundingClientRect();
+  const hr=header.getBoundingClientRect();
+  const clone=card.cloneNode(true);
+  clone.classList.add('fly-clone');
+  clone.style.left=cr.left+'px';clone.style.top=cr.top+'px';
+  clone.style.width=cr.width+'px';clone.style.height=cr.height+'px';
+  document.body.appendChild(clone);
+  // Hide the original immediately — it would be re-rendered into the
+  // collapsed group on the next renderListView call.
+  card.style.visibility='hidden';
+  requestAnimationFrame(()=>{
+    const dx=(hr.left+hr.width/2)-(cr.left+cr.width/2);
+    const dy=(hr.top+hr.height/2)-(cr.top+cr.height/2);
+    clone.style.transform='translate('+dx+'px,'+dy+'px)';
+    clone.classList.add('go');
+  });
+  setTimeout(()=>{
+    clone.remove();
+    header.classList.remove('pulse');void header.offsetWidth;header.classList.add('pulse');
+    setTimeout(()=>header.classList.remove('pulse'),650);
+    renderListView();
+  },560);
+}
 
 /* ══ AUTOCOMPLETE — inline ghost text ════════ */
 let _acProducts=[], _acCustom=[];
@@ -3101,6 +3230,7 @@ const _acDrop=document.getElementById('acDrop'); // kept for "הוסף חדש" h
 // _acDepts maps product name → department name (used for future grouping/sorting).
 // Populated from products_by_department.json when available.
 let _acDepts={};
+let _acDeptOrder=[]; // ordered list of department names (file-order preserved)
 async function acInit(){
   // Primary source: structured catalog with departments. Fallback to the legacy
   // flat products.json if the new file is unavailable.
@@ -3109,6 +3239,7 @@ async function acInit(){
     if(!r.ok)throw 0;
     const data=await r.json();
     const depts=data&&data['מחלקות']?data['מחלקות']:{};
+    _acDeptOrder=Object.keys(depts);
     const seen=new Set();
     const flat=[];
     Object.entries(depts).forEach(([dept,arr])=>{
@@ -3120,9 +3251,39 @@ async function acInit(){
       });
     });
     _acProducts=flat;
+    // If the user already enabled AI sort, refresh now that we have the map.
+    if(_aiSort && activeId && !document.getElementById('list').classList.contains('slide-right')){
+      renderListView();
+    }
   }catch(_){
     try{const r=await fetch('./products.json');_acProducts=await r.json();}catch(e){_acProducts=[];}
   }
+}
+// ── AI sort state ─────────────────────────────
+const _OTHER_DEPT='אחרים';
+let _aiSort=(()=>{try{return localStorage.getItem('ss_aiSort')==='1';}catch(_){return false;}})();
+const _deptCollapsed=new Set();
+function _itemDept(it){
+  const n=(it&&it.name||'').trim();
+  return _acDepts[n] || _OTHER_DEPT;
+}
+function _groupItemsByDept(list){
+  const map=new Map();
+  list.forEach(it=>{
+    const d=_itemDept(it);
+    if(!map.has(d))map.set(d,[]);
+    map.get(d).push(it);
+  });
+  // Order by file order, with any unknown depts appended in first-seen order,
+  // and 'אחרים' always last.
+  const ordered=[];
+  _acDeptOrder.forEach(d=>{if(map.has(d))ordered.push([d,map.get(d)]);});
+  Array.from(map.keys()).forEach(d=>{
+    if(d===_OTHER_DEPT)return;
+    if(!_acDeptOrder.includes(d))ordered.push([d,map.get(d)]);
+  });
+  if(map.has(_OTHER_DEPT))ordered.push([_OTHER_DEPT,map.get(_OTHER_DEPT)]);
+  return ordered;
 }
 function acLoadCustom(){
   if(!houseId)return;
