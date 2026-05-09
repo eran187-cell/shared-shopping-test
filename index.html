@@ -2351,18 +2351,28 @@ function updateProgress(list){
   const pct=total?Math.round(done/total*100):0;
   document.getElementById('pfill').style.width=pct+'%';
   document.getElementById('plabel').textContent=done+' / '+total+' בסל';
-  _bumpCount('fcountPending',pending);
-  _bumpCount('fcountDone',done);
+  // Stagger: update + animate "לקנות" first, then "בוצע" after the first
+  // animation finishes — but only when something actually changed.
+  const pCh=_bumpCount('fcountPending',pending);
+  const dEl=document.getElementById('fcountDone');
+  const dChanged=dEl&&dEl.textContent!==String(done);
+  if(pCh&&dChanged){
+    clearTimeout(window._fcountDoneTimer);
+    window._fcountDoneTimer=setTimeout(()=>_bumpCount('fcountDone',done),450);
+  } else {
+    _bumpCount('fcountDone',done);
+  }
 }
 function _bumpCount(id,val){
-  const el=document.getElementById(id);if(!el)return;
+  const el=document.getElementById(id);if(!el)return false;
   const newVal=String(val);
-  if(el.textContent===newVal)return;
+  if(el.textContent===newVal)return false;
   el.textContent=newVal;
   el.classList.remove('bump');
   // force reflow so the animation restarts on consecutive updates
   void el.offsetWidth;
   el.classList.add('bump');
+  return true;
 }
 
 function buildCard(item){
