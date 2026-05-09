@@ -3192,20 +3192,20 @@ document.getElementById('resetListBtn').addEventListener('click',function(){
 
 /* ── Delete list ─────────────────────── */
 document.getElementById('deleteListBtn').addEventListener('click',function(){
-  if(listTypes.length<=1){toast('לא ניתן למחוק את הרשימה האחרונה');return;}
-  const lt=getLT(activeId);
-  document.getElementById('delMsg').textContent='האם למחוק את הרשימה "'+lt.name+'"?';
+  const list=activeList();
+  if(!list||!list.length){toast('הרשימה ריקה');return;}
+  document.getElementById('delMsg').textContent='האם לרוקן את כל הפריטים מהרשימה?';
   document.getElementById('delOverlay').classList.add('open');
 });
 document.getElementById('delCancel').addEventListener('click',()=>document.getElementById('delOverlay').classList.remove('open'));
 document.getElementById('delConfirm').addEventListener('click',function(){
   document.getElementById('delOverlay').classList.remove('open');
-  const name=(getLT(activeId)||{}).name||'';
-  listTypes=listTypes.filter(l=>l.id!==activeId);
-  delete items[activeId];
-  activeId=listTypes[0]?.id||null;
-  save();goHome();
-  toast('רשימת "'+name+'" נמחקה');
+  if(!activeId)return;
+  items[activeId]=[];
+  save();
+  renderListView();
+  updateProgress(activeList());
+  toast('הרשימה רוקנה');
 });
 
 /* ══ SHARE HOUSE CODE ════════════════════════════════ */
