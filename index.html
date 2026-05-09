@@ -2462,17 +2462,16 @@ function _buildExpandPanel(card,item){
       line.textContent=v;
     } else if(line){line.remove();}
   });
-  // Urgent toggle handled by the document-level .qa-urgent-mini listener;
-  // we just need to persist the new state on click.
+  // Urgent toggle — flip .active inline (stopPropagation here prevents the
+  // document-level handler from firing, so we do the toggle ourselves).
   ex.querySelector('.qa-urgent-mini').addEventListener('click',function(e){
     e.stopPropagation();
-    // The document-level handler flips .active before our save fires.
-    setTimeout(()=>{
-      const on=ex.querySelector('.qa-urgent-mini').classList.contains('active');
-      if(on)item.urgent=true;else delete item.urgent;
-      save();
-      card.classList.toggle('urgent',on);
-    },0);
+    const on=!this.classList.contains('active');
+    this.classList.toggle('active',on);
+    this.setAttribute('aria-pressed',on?'true':'false');
+    if(on)item.urgent=true;else delete item.urgent;
+    save();
+    card.classList.toggle('urgent',on);
   });
   return ex;
 }
