@@ -4068,6 +4068,13 @@ function _annInit(){
 }
 // Wire CTA / close
 function _annTriggerUpdate(){
+  // Show a small overlay so the user sees something is happening.
+  try{
+    const t=document.createElement('div');
+    t.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;z-index:99999;font-family:inherit;flex-direction:column;gap:12px';
+    t.innerHTML='<div style="font-size:36px">🔄</div><div>מעדכן גרסה…</div>';
+    document.body.appendChild(t);
+  }catch(_){}
   (async()=>{
     try{
       if(window.caches){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));}
@@ -4075,7 +4082,13 @@ function _annTriggerUpdate(){
         const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()));
       }
     }catch(_){}
-    location.reload(true);
+    // Cache-bust query string forces a fresh HTTP fetch on every browser
+    // (location.reload(true) is ignored by modern browsers). Strip any prior
+    // v= so the URL doesn't accumulate on repeated updates.
+    const params=new URLSearchParams(location.search);
+    params.delete('v');
+    params.set('v',String(Date.now()));
+    location.replace(location.pathname+'?'+params.toString()+location.hash);
   })();
 }
 document.getElementById('announceCtaBtn').addEventListener('click',function(){
