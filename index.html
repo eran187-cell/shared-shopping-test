@@ -2219,6 +2219,13 @@ let _ddSrc=-1;
 
 /* ══ RENDER HOME ══════════════════════ */
 function renderHome(){
+  // No house yet → never reveal the list/qabar; user must onboard first.
+  if(!houseId){
+    document.getElementById('home').classList.add('hidden');
+    document.getElementById('list').classList.add('slide-right');
+    document.getElementById('qabar').classList.remove('visible');
+    return;
+  }
   // v1.02: a single list is the only experience — skip the home picker
   // entirely when there's exactly one list and we're not in edit mode.
   if(!_editMode && Array.isArray(listTypes) && listTypes.length===1){
@@ -2717,6 +2724,15 @@ let _submitLock=false;
 let _lastAdd={fp:'',t:0};
 function submitItem(){
   if(_submitLock)return;
+  // Guard: never allow adding items without an active house. The qabar should
+  // already be hidden in this state, but submit can still be triggered via
+  // keyboard shortcuts on lingering DOM.
+  if(!houseId){
+    toast('צריך ליצור בית או להצטרף לקבוצה לפני הוספת פריטים');
+    document.getElementById('qabar').classList.remove('visible');
+    document.getElementById('onboardOverlay').style.display='flex';
+    return;
+  }
   const input=document.getElementById('qaInput');
   const name=input.value.trim();
   if(!name){input.focus();return;}
