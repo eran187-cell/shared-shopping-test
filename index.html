@@ -3314,6 +3314,10 @@ document.getElementById('aiSortBtn').addEventListener('click',function(){
   clearTimeout(window._aiSpinTimer);
   window._aiSpinTimer=setTimeout(()=>this.classList.remove('spinning'),3000);
   if(_aiSort){
+    // On activation: start with ALL categories open so the user sees the
+    // grouped items, then collapse them one-by-one — a quick visual demo
+    // showing that headers are clickable.
+    _deptCollapsed.clear();
     const wrap=document.getElementById('itemsWrap');
     if(wrap){wrap.classList.remove('magic-rearrange');void wrap.offsetWidth;wrap.classList.add('magic-rearrange');setTimeout(()=>wrap.classList.remove('magic-rearrange'),900);}
   }
@@ -3324,6 +3328,20 @@ document.getElementById('aiSortBtn').addEventListener('click',function(){
     document.querySelectorAll('.fbtn').forEach(b=>b.classList.toggle('active',b.dataset.f==='pending'));
   }
   renderListView();
+  // Demo collapse: wait ~1.4s after the open render, then collapse every
+  // group with a staggered animation so the user sees the fold motion.
+  if(_aiSort){
+    clearTimeout(window._aiDemoTimer);
+    window._aiDemoTimer=setTimeout(()=>{
+      const groups=document.querySelectorAll('#itemsWrap .dept-group');
+      groups.forEach((g,i)=>{
+        setTimeout(()=>{
+          const d=g.dataset.dept;
+          if(d){_deptCollapsed.add(d);g.classList.add('collapsed');}
+        },i*120);
+      });
+    },1400);
+  }
 });
 // Animate a freshly-added item flying into a collapsed department header.
 function _flyToCollapsedDept(itemId,deptName){
