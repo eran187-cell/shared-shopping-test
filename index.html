@@ -469,6 +469,12 @@ body[data-filter="done"] #addItemFab{display:flex}
   -webkit-appearance:none;
 }
 .qa-inp::placeholder{color:var(--mut)}
+/* type="search" inputs: suppress browser-added clear/cancel/results widgets */
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration{-webkit-appearance:none;display:none}
+input[type="search"]{-webkit-appearance:none;appearance:none}
 /* Qty separator + stepper inside input box */
 .qa-sep{width:1px;align-self:stretch;background:var(--bdr);flex-shrink:0}
 .qa-qty-btn{
@@ -875,12 +881,12 @@ const APP_VERSION='1.02-rc.1';
     </div>
 
     <div class="ss-field-row" id="houseNameRow">
-      <input id="houseName" type="text" placeholder="שם הבית/קבוצה" maxlength="30"/>
+      <input id="houseName" type="text" placeholder="שם הבית/קבוצה" maxlength="30" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="ss-house" data-form-type="other"/>
       <button id="saveHouseNameBtn" class="ss-field-save" type="button" title="שמור" data-track="setup:saveHouseName" style="display:none">✓</button>
     </div>
 
     <div class="ss-field-row" id="creatorNameCard">
-      <input id="creatorName" type="text" placeholder="השם שלי" maxlength="30"/>
+      <input id="creatorName" type="text" placeholder="השם שלי" maxlength="30" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="ss-mine" data-form-type="other"/>
       <button id="saveCreatorNameBtn" class="ss-field-save" type="button" title="שמור" data-track="setup:saveMyName" style="display:none">✓</button>
     </div>
 
@@ -1026,8 +1032,9 @@ const APP_VERSION='1.02-rc.1';
   <!-- Main row: input on visual right, qty pill in middle, WhatsApp-style send on visual left -->
   <div class="qa-row">
     <div class="qa-inp-box" id="acWrap">
-      <input class="qa-inp" id="qaInput" type="text" placeholder="הוספת פריט…"
-             autocomplete="off" autocorrect="off" spellcheck="false"/>
+      <input class="qa-inp" id="qaInput" type="search" placeholder="הוספת פריט…"
+             autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+             name="ss-item" data-form-type="other" enterkeyhint="done"/>
       <div class="ac-drop" id="acDrop"></div>
     </div>
     <div class="qty-pill qty-pill-qabar" id="qaQtyPill">
@@ -1061,8 +1068,10 @@ const APP_VERSION='1.02-rc.1';
       <div class="qa-members-row" id="qaMembersRow"></div>
     </div>
     <div class="qa-section qa-note-urgent-row">
-      <input class="qa-note-inp" id="qaNoteInp" type="text"
-             placeholder="הערה אופציונלית…" autocomplete="off" autocorrect="off" disabled/>
+      <input class="qa-note-inp" id="qaNoteInp" type="search"
+             placeholder="הערה אופציונלית…" autocomplete="off" autocorrect="off"
+             autocapitalize="off" spellcheck="false" name="ss-note"
+             data-form-type="other" enterkeyhint="done" disabled/>
       <button class="qa-urgent-mini" id="qaUrgentBtn" type="button" data-track="list:urgent" aria-pressed="false" title="סימון כדחוף">
         <span class="bell">🔔</span><span class="lbl">דחוף</span>
       </button>
@@ -1101,7 +1110,7 @@ const APP_VERSION='1.02-rc.1';
     <h3>מה שמכם?</h3>
     <p style="font-size:14px;color:var(--mut);margin-bottom:14px">השם הזה יופיע ברשימה כשתוסיפו פריטים</p>
     <div class="field">
-      <input id="joinNameInp" type="text" placeholder="לדוגמה: דנה" maxlength="30"/>
+      <input id="joinNameInp" type="text" placeholder="לדוגמה: דנה" maxlength="30" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="ss-join" data-form-type="other"/>
     </div>
     <div class="sheet-actions">
       <button class="btn-primary" id="joinNameConfirm" data-track="join:confirm" style="flex:1">המשך ←</button>
@@ -1140,7 +1149,7 @@ const APP_VERSION='1.02-rc.1';
     <h3>עריכת פריט</h3>
     <div style="display:flex;flex-direction:column;gap:10px;margin:12px 0">
       <label style="font-size:12px;color:var(--mut)">שם הפריט</label>
-      <input id="editItemName" type="text" maxlength="60" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--txt);font-size:15px"/>
+      <input id="editItemName" type="search" maxlength="60" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="ss-edit-name" data-form-type="other" enterkeyhint="done" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--txt);font-size:15px"/>
 
       <label style="font-size:12px;color:var(--mut)">כמות</label>
       <div class="qty-stepper-box">
@@ -1153,7 +1162,7 @@ const APP_VERSION='1.02-rc.1';
       <div id="editItemUnitsRow" class="qa-units-row"></div>
 
       <label style="font-size:12px;color:var(--mut)">הערה (אופציונלי)</label>
-      <input id="editItemNote" type="text" maxlength="120" placeholder="לדוגמה: חלב סויה" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--txt);font-size:14px"/>
+      <input id="editItemNote" type="search" maxlength="120" placeholder="לדוגמה: חלב סויה" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="ss-edit-note" data-form-type="other" enterkeyhint="done" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--txt);font-size:14px"/>
 
       <button class="qa-urgent-mini" id="editItemUrgentBtn" type="button" data-track="editItem:urgent" aria-pressed="false" title="סימון כדחוף" style="margin-top:6px;align-self:flex-start">
         <span class="bell">🔔</span><span class="lbl">דחוף</span>
@@ -2732,7 +2741,7 @@ function _buildExpandPanel(card,item){
     +'<div class="qa-units-row qa-units-spread">'+units.map(u=>'<button type="button" class="qa-unit'+(u===(item.unit||"יח'")?' active':'')+'" data-unit="'+esc(u)+'">'+esc(u)+'</button>').join('')+'</div>'
     +'</div>'
     +'<div class="iexpand-row qa-note-urgent-row">'
-      +'<input type="text" class="iexpand-note" maxlength="120" placeholder="הערה אופציונלית" value="'+esc(item.note||'')+'"/>'
+      +'<input type="search" class="iexpand-note" maxlength="120" placeholder="הערה אופציונלית" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="ss-inline-note" data-form-type="other" enterkeyhint="done" value="'+esc(item.note||'')+'"/>'
       +'<button type="button" class="qa-urgent-mini'+(item.urgent?' active':'')+'" aria-pressed="'+(item.urgent?'true':'false')+'" data-track="editItem:urgent" title="סימון כדחוף"><span class="bell">🔔</span><span class="lbl">דחוף</span></button>'
     +'</div>';
   // Unit picker — single select; auto-save on click
