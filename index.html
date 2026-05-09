@@ -1300,6 +1300,7 @@ const APP_VERSION='1.02-rc.1';
           <select id="annCtaAction" style="padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:13px;font-family:inherit">
             <option value="dismiss">סגירה רגילה</option>
             <option value="update">עדכון גרסה</option>
+            <option value="feedback">משוב — 2 שורות מהמשתמש</option>
           </select>
         </div>
         <button id="annSendBtn" style="padding:10px;border:none;border-radius:8px;background:var(--pri);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">📤 שלח הודעה</button>
@@ -1365,6 +1366,7 @@ const APP_VERSION='1.02-rc.1';
     <div class="ann-icon" id="announceIcon">📣</div>
     <h3 class="ann-title" id="announceTitle">הודעה מהמערכת</h3>
     <div class="ann-text" id="announceText"></div>
+    <textarea id="announceFeedback" rows="2" maxlength="240" placeholder="כתוב כאן את המשוב שלך…" style="display:none;width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--txt);font-family:inherit;font-size:14px;resize:none;margin-bottom:14px;outline:none"></textarea>
     <button type="button" class="ann-cta" id="announceCtaBtn">הבנתי ✓</button>
   </div>
 </div>
@@ -4035,7 +4037,16 @@ function _annShow(id,ann){
   document.getElementById('announceTitle').textContent=ann.title||'הודעה מהמערכת';
   document.getElementById('announceText').textContent=ann.text||'';
   const ctaBtn=document.getElementById('announceCtaBtn');
-  ctaBtn.textContent=ann.ctaLabel||'הבנתי ✓';
+  // Feedback type: show textarea and use a sensible default button label.
+  const fb=document.getElementById('announceFeedback');
+  if(ann.ctaAction==='feedback'){
+    fb.style.display='block';fb.value='';
+    ctaBtn.textContent=ann.ctaLabel||'שליחת משוב ✉';
+    setTimeout(()=>fb.focus(),120);
+  } else {
+    fb.style.display='none';
+    ctaBtn.textContent=ann.ctaLabel||'הבנתי ✓';
+  }
   document.getElementById('announceOverlay').classList.add('open');
 }
 function _annDismiss(recordResponse){
@@ -4093,6 +4104,20 @@ function _annTriggerUpdate(){
 }
 document.getElementById('announceCtaBtn').addEventListener('click',function(){
   const action=(_annCurrent&&_annCurrent.ann.ctaAction)||'dismiss';
+  if(action==='feedback'){
+    const fb=document.getElementById('announceFeedback');
+    const text=(fb.value||'').trim();
+    if(!text){fb.focus();return;}
+    if(_annDb && _annCurrent){
+      try{
+        _annDb.ref('announcements/'+_annCurrent.id+'/feedback/'+deviceId)
+              .set({text,t:Date.now()});
+      }catch(_){}
+    }
+    _annDismiss(true);
+    setTimeout(()=>{if(typeof toast==='function')toast('תודה על המשוב!');},300);
+    return;
+  }
   // record response BEFORE running action (in case action reloads page)
   _annDismiss(true);
   if(action==='update'){
@@ -4194,18 +4219,30 @@ _annInit();
       if(!entries.length){wrap.innerHTML='<div style="color:var(--mut)">אין הודעות.</div>';return;}
       wrap.innerHTML=entries.map(([id,a])=>{
         const responses=a.responses?Object.keys(a.responses).length:0;
+        const fb=a.feedback||{};
+        const fbCount=Object.keys(fb).length;
+        const fbList=Object.entries(fb).sort((x,y)=>(y[1].t||0)-(x[1].t||0));
         const tgt=(a.target==='all')?'כולם':a.target;
         const status=a.active===false?'⏸ מבוטלת':'🟢 פעילה';
+        const isFeedback=a.ctaAction==='feedback';
         return '<div style="border:1px solid var(--bdr);border-radius:8px;padding:8px 10px;margin-bottom:6px;background:var(--bg)">'
           +'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:4px">'
             +'<span>'+_esc(tgt)+' · '+_fmtTime(a.createdAt||0)+'</span>'
-            +'<span>'+status+' · 👁 '+responses+'</span>'
+            +'<span>'+status+' · 👁 '+responses+(isFeedback?(' · 💬 '+fbCount):'')+'</span>'
           +'</div>'
-          +'<div style="font-weight:600;font-size:13px;margin-bottom:2px">'+_esc(a.icon||'📣')+' '+_esc(a.title||'')+'</div>'
+          +'<div style="font-weight:600;font-size:13px;margin-bottom:2px">'+_esc(a.icon||'📣')+' '+_esc(a.title||'')+(isFeedback?' <span style="font-size:11px;color:var(--pri);font-weight:500">[משוב]</span>':'')+'</div>'
           +'<div style="font-size:12px;color:var(--mut);max-height:60px;overflow:hidden;text-overflow:ellipsis">'+_esc(a.text||'')+'</div>'
+          +(isFeedback && fbCount?(
+            '<details style="margin-top:8px;border-top:1px dashed var(--bdr);padding-top:6px">'
+            +'<summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--pri)">הצג '+fbCount+' תגובות משוב</summary>'
+            +'<div style="max-height:240px;overflow-y:auto;margin-top:6px">'
+            +fbList.map(([dev,e])=>'<div style="background:var(--sur);border:1px solid var(--bdr);border-radius:6px;padding:6px 8px;margin-bottom:4px"><div style="font-size:10px;color:var(--mut);margin-bottom:2px">'+_fmtTime(e.t||0)+' · '+_esc(dev.slice(-6))+'</div><div style="font-size:12px;white-space:pre-wrap">'+_esc(e.text||'')+'</div></div>').join('')
+            +'</div></details>'
+          ):'')
           +'<div style="margin-top:6px;display:flex;gap:6px">'
             +'<button data-ann-toggle="'+id+'" style="padding:4px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--sur);color:var(--txt);font-size:11px;cursor:pointer">'+(a.active===false?'הפעל':'בטל')+'</button>'
             +'<button data-ann-delete="'+id+'" style="padding:4px 8px;border:1px solid #e74c3c;border-radius:6px;background:transparent;color:#e74c3c;font-size:11px;cursor:pointer">מחק</button>'
+            +(isFeedback && fbCount?('<button data-ann-export="'+id+'" style="padding:4px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--sur);color:var(--txt);font-size:11px;cursor:pointer">ייצוא טקסט</button>'):'')
           +'</div>'
         +'</div>';
       }).join('');
@@ -4218,6 +4255,15 @@ _annInit();
         const id=this.dataset.annDelete;
         if(!confirm('למחוק את ההודעה לצמיתות?'))return;
         firebase.database().ref('announcements/'+id).remove().then(_annLoadHistory);
+      }));
+      wrap.querySelectorAll('[data-ann-export]').forEach(b=>b.addEventListener('click',function(){
+        const id=this.dataset.annExport;
+        const a=all[id]||{};
+        const fb=Object.entries(a.feedback||{}).sort((x,y)=>(y[1].t||0)-(x[1].t||0));
+        const out='משוב — '+(a.title||'')+'\n=================\n\n'+
+          fb.map(([dev,e])=>_fmtTime(e.t||0)+' · '+dev.slice(-6)+'\n'+(e.text||'')+'\n').join('\n---\n');
+        const w=window.open('','_blank');
+        if(w){w.document.body.style.fontFamily='monospace';w.document.body.style.whiteSpace='pre-wrap';w.document.body.style.padding='20px';w.document.body.style.direction='rtl';w.document.body.textContent=out;}
       }));
     });
   };
