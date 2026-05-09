@@ -726,11 +726,25 @@ const APP_VERSION='1.02-rc.1';
     _populate(); // refresh label
   }
   function _resetApp(){
-    if(!confirm('לאפס את האפליקציה? קוד הבית יוסר מהמכשיר ותחזרו למסך הראשי. הנתונים בענן נשמרים.'))return;
-    Object.keys(localStorage).filter(k=>k.startsWith('sl3_')||k.startsWith('ss_')).forEach(k=>localStorage.removeItem(k));
-    if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations){
-      navigator.serviceWorker.getRegistrations().then(rs=>{rs.forEach(r=>r.unregister());location.reload();});
-    } else { location.reload(); }
+    if(typeof isAdmin==='function' && !isAdmin()){
+      alert('רק מי שיצר את הבית יכול לאפס את האפליקציה.');
+      return;
+    }
+    if(!confirm('לאפס את האפליקציה? פעולה זו תמחק לצמיתות את הבית, את כל המשתתפים ואת כל הרשימות מהשרת. לא ניתן לשחזר.'))return;
+    if(!confirm('אישור אחרון: למחוק את כל הנתונים של הבית מהשרת?'))return;
+    const hid=(typeof houseId!=='undefined'&&houseId)||localStorage.getItem('sl3_houseId')||null;
+    const finish=()=>{
+      try{if(typeof _fbRef!=='undefined'&&_fbRef){_fbRef.off();}}catch(_){}
+      Object.keys(localStorage).filter(k=>k.startsWith('sl3_')||k.startsWith('ss_')).forEach(k=>localStorage.removeItem(k));
+      location.reload();
+    };
+    if(hid && typeof firebase!=='undefined' && firebase.database){
+      try{
+        firebase.database().ref('houses/'+hid).remove()
+          .then(finish)
+          .catch(err=>{alert('מחיקה מהשרת נכשלה: '+(err&&err.message||err));});
+      }catch(err){alert('שגיאה: '+(err&&err.message||err));}
+    } else { finish(); }
   }
   function _forceUpdate(){
     if(!confirm('האם לעדכן גרסה? כל הנתונים שהזנת ישמרו'))return;
@@ -763,6 +777,7 @@ const APP_VERSION='1.02-rc.1';
     const shareSlot=document.getElementById('drawerShareSlot');
     shareSlot.innerHTML='<button id="drawerTellFriends" type="button" data-track="drawer:tellFriends" style="width:100%;padding:14px;border:1.5px solid var(--pri);border-radius:12px;background:var(--pril);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px">'+_ICON.gift+' המלצה לחברים</button>';
     document.getElementById('drawerTellFriends').addEventListener('click',_bridge('tellFriendsBtn'));
+    const _isAdminNow=(typeof isAdmin==='function')?isAdmin():false;
     const items=[
       {icon:_ICON.gear,label:'הגדרות',track:'drawer:settings',action:_bridge('settingsBtn')},
       {icon:_ICON.download,label:'התקנת האפליקציה',track:'drawer:install',action:_bridge('homeInstallBtn')},
@@ -771,8 +786,8 @@ const APP_VERSION='1.02-rc.1';
       {icon:_ICON.refresh,label:'עדכון גרסה',track:'drawer:update',action:_forceUpdate},
       {icon:_ICON.envelope,label:'פניה לתמיכה',track:'drawer:support',action:_bridge('supportBtn')},
       {icon:_ICON.document,label:'תנאים',track:'drawer:about',action:_bridge('aboutLink')},
-      {icon:_ICON.trash,label:'איפוס אפליקציה',track:'drawer:resetApp',action:_resetApp}
-    ];
+      _isAdminNow?{icon:_ICON.trash,label:'איפוס אפליקציה',track:'drawer:resetApp',action:_resetApp}:null
+    ].filter(Boolean);
     const nav=document.getElementById('drawerNav');
     nav.innerHTML=items.map((it,i)=>'<button type="button" class="drawer-item" data-i="'+i+'" data-track="'+it.track+'" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:none;background:none;color:var(--txt);font-size:15px;cursor:pointer;font-family:inherit;text-align:right;border-radius:8px;min-height:48px"><span style="width:28px;display:inline-flex;align-items:center;justify-content:center;color:var(--txt)">'+it.icon+'</span><span style="flex:1">'+it.label+'</span></button>').join('');
     nav.querySelectorAll('.drawer-item').forEach(b=>{
