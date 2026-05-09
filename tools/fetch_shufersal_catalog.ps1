@@ -41,9 +41,18 @@ Step 'Locating latest PriceFull file on prices.shufersal.co.il…'
 # catID=2 = PriceFull files; storeID=0 = list all stores
 $listUrl = 'https://prices.shufersal.co.il/FileObject/UpdateCategory?catID=2&storeID=0'
 $listing = Invoke-WebRequest -Uri $listUrl -UseBasicParsing
-$gzUrl = ($listing.Links | Where-Object { $_.href -match '\.gz$' } | Select-Object -First 1).href
+# Shufersal hosts the actual files on Azure Blob; links look like
+#   https://pricesprodpublic.blob.core.windows.net/pricefull/PriceFull...gz?sv=...&sig=...
+# The href contains ".gz" before the query string, not at end-of-string.
+$gzUrl = ($listing.Links | Where-Object { $_.href -match '\.gz(\?|$)' } | Select-Object -First 1).href
+if (-not $gzUrl) {
+    # Fallback: regex over the raw HTML in case Links property dropped the match.
+    $m = [regex]::Match($listing.Content, 'href="([^"]+\.gz[^"]*)"')
+    if ($m.Success) { $gzUrl = $m.Groups[1].Value -replace '&amp;','&' }
+}
 if (-not $gzUrl) { throw "Couldn't find a .gz link in the catalog listing." }
 if ($gzUrl -notmatch '^https?://') { $gzUrl = "https://prices.shufersal.co.il/$gzUrl" }
+$gzUrl = $gzUrl -replace '&amp;','&'
 Write-Host "    -> $gzUrl"
 
 # ---- 2) Download + decompress to memory ------------------------------
