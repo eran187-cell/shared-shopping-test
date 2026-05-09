@@ -1413,6 +1413,26 @@ function applyData(d){
   items=(d.items&&typeof d.items==='object')?d.items:{};
   nextId=d.nextId||1;
   listTypes.forEach(lt=>{if(!items[lt.id])items[lt.id]=[];});
+  // Remember that this device has had a confirmed seat in this house — used
+  // later to detect "I was kicked / the house was closed".
+  if((house.members||[]).some(m=>m&&m.deviceId===deviceId)){
+    try{localStorage.setItem('sl3_wasMember','1');}catch(_){}
+  }
+}
+// Called when the remote state shows we no longer belong to the house
+// (kicked by admin, or the entire house was deleted).
+function _onKickedFromHouse(){
+  try{if(_fbRef){_fbRef.off();_fbRef=null;}}catch(_){}
+  localStorage.removeItem('sl3_houseId');
+  localStorage.removeItem('sl3_wasMember');
+  houseId=null;
+  house={name:'',members:[]};listTypes=[];items={};nextId=1;activeId=null;
+  document.getElementById('home').classList.add('hidden');
+  document.getElementById('list').classList.add('slide-right');
+  document.getElementById('setup').classList.add('slide-right');
+  document.getElementById('qabar').classList.remove('visible');
+  setTimeout(()=>window._refreshGlobalMenuVisibility&&window._refreshGlobalMenuVisibility(),0);
+  document.getElementById('leftGroupOverlay').style.display='flex';
 }
 function renderCurrent(){
   renderHome();
@@ -1425,12 +1445,23 @@ function startListener(id){
   _fbRef=db.ref('houses/'+id);
   _fbRef.on('value',snap=>{
     const d=snap.val();
-    if(!d)return;
+    if(!d){
+      // House was deleted on the server (admin closed the group).
+      if(localStorage.getItem('sl3_wasMember')==='1'){_onKickedFromHouse();}
+      return;
+    }
     _receivedRemote=true;
     // ignore only our own echo; still accept updates from other sessions
     // (even while we are in the middle of saving) so sync isn't blocked
     if(d._s===SESSION)return;
     applyData(d);
+    // Detect being removed from the members list by the admin.
+    const members=(house&&house.members)||[];
+    const stillMember=members.some(m=>m&&m.deviceId===deviceId);
+    if(!stillMember && members.length>0 && localStorage.getItem('sl3_wasMember')==='1'){
+      _onKickedFromHouse();
+      return;
+    }
     renderCurrent();
   });
   acLoadCustom();
