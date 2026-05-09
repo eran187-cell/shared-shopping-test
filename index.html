@@ -2093,9 +2093,11 @@ function renderHome(){
   if(!_editMode && Array.isArray(listTypes) && listTypes.length===1){
     if(window._installOfferDone===undefined && houseId)_scheduleInstallOffer();
     document.getElementById('home').classList.add('hidden');
-    if(activeId!==listTypes[0].id)openList(listTypes[0].id);
+    const _listEl=document.getElementById('list');
+    const _hidden=_listEl&&_listEl.classList.contains('slide-right');
+    if(activeId!==listTypes[0].id||_hidden)openList(listTypes[0].id);
     else { // already on the list view; just update members + progress
-      if(document.getElementById('list')&&!document.getElementById('list').classList.contains('slide-right'))updateProgress(activeList());
+      updateProgress(activeList());
     }
     _renderListMembers();
     return;
