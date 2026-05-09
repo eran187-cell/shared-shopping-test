@@ -778,7 +778,7 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
     <!-- Menu items — populated in phase 2 -->
     <nav id="drawerNav" style="padding:6px 6px;flex:1"></nav>
     <!-- Footer: version number -->
-    <div style="padding:10px 14px;font-size:11px;color:var(--mut);text-align:center;border-top:1px solid var(--bdr)">גרסה <span id="drawerVersion"></span></div>
+    <div style="padding:10px 14px;font-size:11px;color:var(--mut);text-align:center;border-top:1px solid var(--bdr)">גרסה <span id="drawerVersion"></span> · build <span id="drawerBuild">…</span></div>
   </aside>
 </div>
 <script>
@@ -4108,6 +4108,44 @@ document.getElementById('globalMenuBtn').addEventListener('click',function(){
 },true); // capture phase so this fires before drawer-open
 // Boot
 _annInit();
+
+/* ── Build / cache version reporter ─────────────────
+   Reads the live Service-Worker cache name and shows it in the drawer
+   footer. After a successful version update the cache name flips, so
+   on the next load we toast "עודכן לגרסה X" — the user has positive
+   confirmation that the update actually landed. */
+(async function _reportBuild(){
+  let cacheName=null;
+  try{
+    if(window.caches){
+      const keys=await caches.keys();
+      cacheName=keys.find(k=>/^ss-test-v\d+$/i.test(k))||keys[0]||null;
+    }
+  }catch(_){}
+  // Fallback: parse the registered SW URL (browsers without caches API)
+  if(!cacheName && navigator.serviceWorker){
+    try{
+      const reg=await navigator.serviceWorker.getRegistration();
+      if(reg && reg.active)cacheName='SW active';
+    }catch(_){}
+  }
+  const buildLabel=cacheName||'unknown';
+  const el=document.getElementById('drawerBuild');
+  if(el)el.textContent=buildLabel;
+  // Compare to last-seen build. On first load the key is empty → no toast.
+  try{
+    const last=localStorage.getItem('sl3_lastBuild')||'';
+    if(last && last!==buildLabel){
+      // Show a brief confirmation toast
+      setTimeout(()=>{
+        if(typeof toast==='function'){
+          toast('✓ עודכן בהצלחה לגרסה '+buildLabel);
+        }
+      },800);
+    }
+    localStorage.setItem('sl3_lastBuild',buildLabel);
+  }catch(_){}
+})();
 
 /* ── Admin: send announcements + show history ─── */
 (function(){
