@@ -4082,9 +4082,19 @@ function _annPickNext(){
   return candidates[0]||null; // [id, ann]
 }
 function _annUpdateBadge(){
-  const btn=document.getElementById('globalMenuBtn');if(!btn)return;
-  const has=!!_annPickNext();
-  btn.classList.toggle('has-announce',has);
+  const btn=document.getElementById('globalMenuBtn');
+  const next=_annPickNext();
+  const has=!!next;
+  if(btn)btn.classList.toggle('has-announce',has);
+  // PWA App Badging API — paints a dot/number on the home-screen icon
+  // (iOS 16.4+, Android Chrome, desktop Chrome). Silently ignored if the
+  // API or the install state isn't available.
+  try{
+    if('setAppBadge' in navigator){
+      if(has) navigator.setAppBadge(1).catch(()=>{});
+      else navigator.clearAppBadge().catch(()=>{});
+    }
+  }catch(_){}
 }
 function _annShow(id,ann){
   _annCurrent={id,ann};
