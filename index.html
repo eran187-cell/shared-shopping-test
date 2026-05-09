@@ -3142,7 +3142,7 @@ document.getElementById('waShareBtn').addEventListener('click', function () {
   lines.push('─'.repeat(24));
   // Include an invite link so recipients can jump straight into the app/list.
   const appUrl=location.href.split('?')[0].split('#')[0]+(houseId?'?h='+houseId:'');
-  lines.push('להצטרפות לאפליקציה: '+appUrl);
+  lines.push('לצפיה וסימון באפליקציה: '+appUrl);
 
   const text = lines.join('\n');
   if (navigator.share) {
