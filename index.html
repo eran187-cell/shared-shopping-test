@@ -3165,6 +3165,10 @@ document.querySelector('.filters').addEventListener('click',function(e){
   activeFilter=btn.dataset.f;
   renderListView();
 });
+// AI sort state (declared early so script-time calls below see it initialized).
+const _OTHER_DEPT='אחרים';
+let _aiSort=(()=>{try{return localStorage.getItem('ss_aiSort')==='1';}catch(_){return false;}})();
+const _deptCollapsed=new Set();
 // Reflect AI sort state on the button.
 function _refreshAiBtn(){
   const b=document.getElementById('aiSortBtn');if(!b)return;
@@ -3259,10 +3263,7 @@ async function acInit(){
     try{const r=await fetch('./products.json');_acProducts=await r.json();}catch(e){_acProducts=[];}
   }
 }
-// ── AI sort state ─────────────────────────────
-const _OTHER_DEPT='אחרים';
-let _aiSort=(()=>{try{return localStorage.getItem('ss_aiSort')==='1';}catch(_){return false;}})();
-const _deptCollapsed=new Set();
+// ── AI sort helpers ─────────────────────────────
 function _itemDept(it){
   const n=(it&&it.name||'').trim();
   return _acDepts[n] || _OTHER_DEPT;
