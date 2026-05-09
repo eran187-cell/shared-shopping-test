@@ -65,8 +65,10 @@ window.addEventListener('error',function(ev){
 }
 /* dark mode — overrides only colour tokens */
 body.dark{
-  --bg:#0d1a11;--sur:#152019;--bdr:#1f3329;
-  --pril:#0d2419;--txt:#d4f0e0;--mut:#4a8060;
+  /* High-contrast palette: brighter text, more visible borders, stronger
+     surface lift over background, less-faded muted text. */
+  --bg:#07120c;--sur:#1a2a22;--bdr:#3a5a48;
+  --pril:#1a3d28;--txt:#f1fbf5;--mut:#9ec5b0;
 }
 body{
   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
@@ -305,6 +307,7 @@ a,button,input,select{touch-action:manipulation}
 .fbtn{padding:7px 14px;border-radius:99px;border:1.5px solid var(--bdr);background:var(--sur);font-size:13px;font-weight:600;color:var(--mut);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;justify-content:space-between;gap:10px;min-width:96px}
 .fbtn.active{background:var(--pri);border-color:var(--pri);color:#fff}
 .fbtn-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 6px;border-radius:99px;background:rgba(0,0,0,.08);color:inherit;font-size:12px;font-weight:700;transition:transform .2s}
+body.dark .fbtn-count{background:rgba(255,255,255,.15)}
 .fbtn.active .fbtn-count{background:rgba(255,255,255,.25)}
 @keyframes countPop{0%{transform:scale(1)}35%{transform:scale(1.45)}70%{transform:scale(.92)}100%{transform:scale(1)}}
 .fbtn-count.bump{animation:countPop .45s ease}
