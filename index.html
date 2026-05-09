@@ -1415,6 +1415,34 @@ function applyData(d){
   items=(d.items&&typeof d.items==='object')?d.items:{};
   nextId=d.nextId||1;
   listTypes.forEach(lt=>{if(!items[lt.id])items[lt.id]=[];});
+  // v1.02 migration: collapse any extra list types from older versions into
+  // the single 'grocery' list. Items keep their attribution and order; the
+  // unified result is persisted on the next save() call.
+  try{
+    const TARGET='grocery';
+    const hasExtras=(listTypes||[]).some(lt=>lt&&lt.id!==TARGET) || Object.keys(items||{}).some(k=>k!==TARGET&&Array.isArray(items[k])&&items[k].length);
+    if(hasExtras){
+      if(!items[TARGET])items[TARGET]=[];
+      const seenIds=new Set(items[TARGET].map(it=>it&&it.id).filter(Boolean));
+      Object.keys(items).forEach(k=>{
+        if(k===TARGET)return;
+        const arr=items[k];
+        if(Array.isArray(arr)){
+          arr.forEach(it=>{
+            if(it && !seenIds.has(it.id)){items[TARGET].push(it);seenIds.add(it.id);}
+          });
+        }
+        delete items[k];
+      });
+      // collapse listTypes to the single grocery list
+      const grocery=(listTypes||[]).find(lt=>lt&&lt.id===TARGET) || (DEFAULT_TYPES[0]?{...DEFAULT_TYPES[0]}:{id:TARGET,name:'סופר',emoji:'🛒'});
+      listTypes=[grocery];
+      console.log('[migrate] merged legacy lists into grocery; items=',items[TARGET].length);
+      // Persist the merged state so all devices converge. Defer the write
+      // briefly to avoid clashing with the inbound 'value' event.
+      setTimeout(()=>{try{save();}catch(_){}},400);
+    }
+  }catch(err){console.warn('[migrate] failed:',err);}
   // Remember that this device has had a confirmed seat in this house — used
   // later to detect "I was kicked / the house was closed".
   if((house.members||[]).some(m=>m&&m.deviceId===deviceId)){
