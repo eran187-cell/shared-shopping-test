@@ -276,7 +276,9 @@ a,button,input,select{touch-action:manipulation}
 .ai-fbtn .ai-spark{transition:transform .25s,color .2s}
 .ai-fbtn:hover{border-color:var(--pri);color:var(--pri)}
 .ai-fbtn[aria-pressed="true"]{background:linear-gradient(135deg,#9b6cff 0%,#5b4fcf 50%,#2dba7a 100%);border-color:transparent;color:#fff;box-shadow:0 3px 12px rgba(91,79,207,.35)}
-.ai-fbtn[aria-pressed="true"] .ai-spark{animation:aiSpin 1.4s linear infinite;color:#fff}
+.ai-fbtn[aria-pressed="true"] .ai-spark{color:#fff}
+/* one-shot 3s spin on every toggle (handled via .spinning class) */
+.ai-fbtn.spinning .ai-spark{animation:aiSpin 1s linear 3}
 @keyframes aiSpin{to{transform:rotate(360deg)}}
 .ai-fbtn.magic::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.6) 50%,transparent 70%);transform:translateX(-100%);animation:magicShimmer 1s ease}
 @keyframes magicShimmer{to{transform:translateX(100%)}}
@@ -1013,8 +1015,8 @@ const APP_VERSION='1.02-rc.1';
     <button class="fbtn active" data-f="pending"><span class="fbtn-lbl">לקנות</span> <span class="fbtn-count" id="fcountPending">0</span></button>
     <button class="fbtn" data-f="done"><span class="fbtn-lbl">בוצע</span> <span class="fbtn-count" id="fcountDone">0</span></button>
     <button id="aiSortBtn" class="ai-fbtn" type="button" aria-pressed="false" title="סידור חכם לפי מחלקות" data-track="list:aiSort">
-      <svg class="ai-spark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v6"/><path d="M12 16v6"/><path d="M2 12h6"/><path d="M16 12h6"/><path d="M5 5l3 3"/><path d="M16 16l3 3"/><path d="M5 19l3-3"/><path d="M16 8l3-3"/></svg>
       <span class="ai-lbl">סידור חכם</span>
+      <svg class="ai-spark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v6"/><path d="M12 16v6"/><path d="M2 12h6"/><path d="M16 12h6"/><path d="M5 5l3 3"/><path d="M16 16l3 3"/><path d="M5 19l3-3"/><path d="M16 8l3-3"/></svg>
     </button>
   </div>
 
@@ -3190,6 +3192,10 @@ document.getElementById('aiSortBtn').addEventListener('click',function(){
   _refreshAiBtn();
   // Magic sparkle on the button + glow over the list when activating.
   this.classList.remove('magic');void this.offsetWidth;this.classList.add('magic');
+  // 3-second one-shot spin on every toggle (on or off).
+  this.classList.remove('spinning');void this.offsetWidth;this.classList.add('spinning');
+  clearTimeout(window._aiSpinTimer);
+  window._aiSpinTimer=setTimeout(()=>this.classList.remove('spinning'),3000);
   if(_aiSort){
     const wrap=document.getElementById('itemsWrap');
     if(wrap){wrap.classList.remove('magic-rearrange');void wrap.offsetWidth;wrap.classList.add('magic-rearrange');setTimeout(()=>wrap.classList.remove('magic-rearrange'),900);}
