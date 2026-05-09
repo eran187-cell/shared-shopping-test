@@ -384,6 +384,36 @@ body.dark .item-card.urgent{border-right-color:var(--red)}
 .empty-list .ei{font-size:48px;margin-bottom:12px}
 .empty-list p{font-size:15px;line-height:1.6}
 
+/* ── Announcement overlay (admin → users) ───────────── */
+#announceOverlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+#announceOverlay.open{display:flex;animation:annFadeIn .25s ease}
+@keyframes annFadeIn{from{opacity:0}to{opacity:1}}
+.announce-card{
+  background:var(--sur);border:1.5px solid var(--bdr);border-radius:16px;
+  max-width:420px;width:100%;padding:24px 22px 18px 22px;position:relative;
+  box-shadow:0 12px 40px rgba(0,0,0,.35);opacity:.95;
+  animation:annPop .3s cubic-bezier(.34,1.56,.64,1)
+}
+@keyframes annPop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:.95}}
+.announce-card .ann-close{position:absolute;top:8px;left:8px;width:34px;height:34px;border:none;border-radius:50%;background:transparent;color:var(--mut);font-size:18px;cursor:pointer;font-family:inherit}
+.announce-card .ann-close:hover{background:var(--bg);color:var(--txt)}
+.announce-card .ann-icon{font-size:32px;text-align:center;margin-bottom:8px}
+.announce-card .ann-title{font-size:18px;font-weight:700;margin:0 0 10px 0;text-align:center;color:var(--txt)}
+.announce-card .ann-text{font-size:15px;line-height:1.6;color:var(--txt);white-space:pre-wrap;word-wrap:break-word;margin-bottom:18px;text-align:right}
+.announce-card .ann-cta{display:block;width:100%;padding:13px;border:none;border-radius:12px;background:var(--pri);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;min-height:48px;transition:all .15s}
+.announce-card .ann-cta:hover{background:#26a36a;transform:translateY(-1px)}
+.announce-card .ann-cta:active{transform:translateY(0)}
+
+/* Notification badge dot on hamburger menu when there's an unread message */
+#globalMenuBtn{position:fixed}
+#globalMenuBtn .menu-badge{
+  position:absolute;top:6px;left:6px;width:12px;height:12px;border-radius:50%;
+  background:var(--red,#e74c3c);border:2px solid var(--bg);box-shadow:0 0 0 1px var(--red,#e74c3c);
+  display:none;animation:badgePulse 1.6s ease-in-out infinite
+}
+#globalMenuBtn.has-announce .menu-badge{display:block}
+@keyframes badgePulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.25);opacity:.7}}
+
 /* Quick-add bar */
 .qabar{
   position:fixed;bottom:0;left:50%;transform:translateX(-50%);
@@ -734,7 +764,7 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
 </script>
 
 <!-- Persistent hamburger (global). Hidden on first-run onboarding; shown on home/list/settings. -->
-<button id="globalMenuBtn" type="button" title="תפריט" data-track="global:menu" style="display:none;position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);right:12px;z-index:8500;width:48px;height:48px;border-radius:12px;border:none;background:transparent;color:var(--txt);font-size:24px;cursor:pointer;font-family:inherit;align-items:center;justify-content:center">☰</button>
+<button id="globalMenuBtn" type="button" title="תפריט" data-track="global:menu" style="display:none;position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);right:12px;z-index:8500;width:48px;height:48px;border-radius:12px;border:none;background:transparent;color:var(--txt);font-size:24px;cursor:pointer;font-family:inherit;align-items:center;justify-content:center">☰<span class="menu-badge" aria-hidden="true"></span></button>
 
 <!-- Right-anchored slide-in drawer (placeholder shell — populated in later phases) -->
 <div id="globalDrawer" style="display:none;position:fixed;inset:0;z-index:9000;font-family:inherit">
@@ -1246,6 +1276,42 @@ const APP_VERSION='1.02-rc.1';
     </div>
 
     <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
+      <h3 style="margin:0 0 10px 0;font-size:15px">📨 שליחת הודעה למשתמשים</h3>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <textarea id="annText" placeholder="טקסט ההודעה (תמיכה בשבירת שורות)" rows="3" style="width:100%;padding:8px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--txt);font-family:inherit;font-size:13px;resize:vertical;box-sizing:border-box"></textarea>
+        <div style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--mut);flex-wrap:wrap">
+          <span>כותרת:</span>
+          <input id="annTitle" type="text" placeholder="הודעה מהמערכת" maxlength="50" style="flex:1;min-width:120px;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:13px"/>
+          <span>אייקון:</span>
+          <input id="annIcon" type="text" placeholder="📣" maxlength="3" style="width:50px;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:14px;text-align:center"/>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--mut);flex-wrap:wrap">
+          <span>יעד:</span>
+          <select id="annTarget" style="padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:13px;font-family:inherit">
+            <option value="all">כל המשתמשים</option>
+            <option value="house">בית ספציפי</option>
+          </select>
+          <input id="annTargetHouse" type="text" placeholder="קוד בית" maxlength="12" style="display:none;flex:1;min-width:100px;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:13px;font-family:monospace;text-transform:uppercase"/>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--mut);flex-wrap:wrap">
+          <span>טקסט הכפתור:</span>
+          <input id="annCtaLabel" type="text" placeholder="הבנתי ✓" maxlength="30" style="flex:1;min-width:120px;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:13px"/>
+          <span>פעולה:</span>
+          <select id="annCtaAction" style="padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:13px;font-family:inherit">
+            <option value="dismiss">סגירה רגילה</option>
+            <option value="update">עדכון גרסה</option>
+          </select>
+        </div>
+        <button id="annSendBtn" style="padding:10px;border:none;border-radius:8px;background:var(--pri);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">📤 שלח הודעה</button>
+        <div id="annSendStatus" style="font-size:12px;color:var(--mut);min-height:16px"></div>
+      </div>
+      <div style="margin-top:14px;border-top:1px solid var(--bdr);padding-top:12px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">היסטוריית הודעות:</div>
+        <div id="annHistory" style="font-size:12px;max-height:300px;overflow-y:auto"></div>
+      </div>
+    </div>
+
+    <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
       <h3 style="margin:0 0 10px 0;font-size:15px">📣 לחצו על "ספר לחברים"</h3>
       <div id="adminTellFriends"></div>
     </div>
@@ -1289,6 +1355,17 @@ const APP_VERSION='1.02-rc.1';
     <input id="joinCodeInput" maxlength="8" style="display:none"/>
     <button id="joinHouseBtn" style="display:none">הצטרפות</button>
     <div id="joinError" class="onboard-error" style="display:none"></div>
+  </div>
+</div>
+
+<!-- Announcement overlay — broadcast message from admin to users. -->
+<div id="announceOverlay" role="dialog" aria-modal="true">
+  <div class="announce-card" id="announceCard">
+    <button type="button" class="ann-close" id="announceCloseBtn" aria-label="סגור">✕</button>
+    <div class="ann-icon" id="announceIcon">📣</div>
+    <h3 class="ann-title" id="announceTitle">הודעה מהמערכת</h3>
+    <div class="ann-text" id="announceText"></div>
+    <button type="button" class="ann-cta" id="announceCtaBtn">הבנתי ✓</button>
   </div>
 </div>
 
@@ -3922,6 +3999,179 @@ applyTheme(localStorage.getItem('sl3_dark') === '1');
 _refreshInstallBtns();
 acInit();
 
+/* ══ ANNOUNCEMENTS ═══════════════════════════════════
+   Admin can broadcast a message via the admin dashboard. Each user sees
+   it once (then dismisses with the CTA or X button). The CTA can either
+   close the message or trigger the version-update flow. A small dot on
+   the hamburger menu indicates an unread message is queued.
+*/
+const ANN_SEEN_KEY='ss_seenAnnouncements';
+let _annDb=null, _annListener=null, _annAll={}, _annCurrent=null;
+function _annLoadSeen(){try{return JSON.parse(localStorage.getItem(ANN_SEEN_KEY)||'{}');}catch(_){return {};}}
+function _annSaveSeen(seen){try{localStorage.setItem(ANN_SEEN_KEY,JSON.stringify(seen));}catch(_){}}
+function _annMatchesUser(ann){
+  if(!ann||ann.active===false)return false;
+  if(!ann.target||ann.target==='all')return true;
+  if(typeof ann.target==='string' && ann.target.indexOf('house:')===0){
+    return houseId && ann.target.slice(6).toUpperCase()===String(houseId).toUpperCase();
+  }
+  return false;
+}
+function _annPickNext(){
+  const seen=_annLoadSeen();
+  const candidates=Object.entries(_annAll||{})
+    .filter(([id,a])=>_annMatchesUser(a) && !seen[id])
+    .sort((a,b)=>(a[1].createdAt||0)-(b[1].createdAt||0));
+  return candidates[0]||null; // [id, ann]
+}
+function _annUpdateBadge(){
+  const btn=document.getElementById('globalMenuBtn');if(!btn)return;
+  const has=!!_annPickNext();
+  btn.classList.toggle('has-announce',has);
+}
+function _annShow(id,ann){
+  _annCurrent={id,ann};
+  document.getElementById('announceIcon').textContent=ann.icon||'📣';
+  document.getElementById('announceTitle').textContent=ann.title||'הודעה מהמערכת';
+  document.getElementById('announceText').textContent=ann.text||'';
+  const ctaBtn=document.getElementById('announceCtaBtn');
+  ctaBtn.textContent=ann.ctaLabel||'הבנתי ✓';
+  document.getElementById('announceOverlay').classList.add('open');
+}
+function _annDismiss(recordResponse){
+  if(!_annCurrent)return;
+  const id=_annCurrent.id;
+  const seen=_annLoadSeen();seen[id]=Date.now();_annSaveSeen(seen);
+  if(recordResponse && _annDb){
+    try{_annDb.ref('announcements/'+id+'/responses/'+deviceId).set(Date.now());}catch(_){}
+  }
+  document.getElementById('announceOverlay').classList.remove('open');
+  _annCurrent=null;
+  _annUpdateBadge();
+  // queue next message (if any) after a short delay
+  setTimeout(()=>{const next=_annPickNext();if(next)_annShow(next[0],next[1]);},400);
+}
+function _annInit(){
+  if(typeof firebase==='undefined' || !firebase.database)return;
+  _annDb=firebase.database();
+  if(_annListener){try{_annListener.off();}catch(_){}}
+  _annListener=_annDb.ref('announcements');
+  _annListener.on('value',snap=>{
+    _annAll=snap.val()||{};
+    _annUpdateBadge();
+    // auto-show if a new unseen message arrives
+    if(!_annCurrent){
+      const next=_annPickNext();
+      if(next)_annShow(next[0],next[1]);
+    }
+  });
+}
+// Wire CTA / close
+function _annTriggerUpdate(){
+  (async()=>{
+    try{
+      if(window.caches){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));}
+      if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations){
+        const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()));
+      }
+    }catch(_){}
+    location.reload(true);
+  })();
+}
+document.getElementById('announceCtaBtn').addEventListener('click',function(){
+  const action=(_annCurrent&&_annCurrent.ann.ctaAction)||'dismiss';
+  // record response BEFORE running action (in case action reloads page)
+  _annDismiss(true);
+  if(action==='update'){
+    setTimeout(_annTriggerUpdate,150);
+  }
+});
+document.getElementById('announceCloseBtn').addEventListener('click',()=>_annDismiss(false));
+// Tapping hamburger when there's a queued message also re-opens it
+document.getElementById('globalMenuBtn').addEventListener('click',function(){
+  if(_annCurrent)return; // already showing
+  const next=_annPickNext();
+  if(next){_annShow(next[0],next[1]);}
+},true); // capture phase so this fires before drawer-open
+// Boot
+_annInit();
+
+/* ── Admin: send announcements + show history ─── */
+(function(){
+  const tgtSel=document.getElementById('annTarget');
+  const tgtHouse=document.getElementById('annTargetHouse');
+  if(tgtSel){
+    tgtSel.addEventListener('change',function(){
+      tgtHouse.style.display=(this.value==='house')?'inline-block':'none';
+    });
+  }
+  const sendBtn=document.getElementById('annSendBtn');
+  if(sendBtn){
+    sendBtn.addEventListener('click',function(){
+      const status=document.getElementById('annSendStatus');
+      const text=(document.getElementById('annText').value||'').trim();
+      if(!text){status.textContent='⚠ הזן טקסט הודעה';status.style.color='#e74c3c';return;}
+      const title=(document.getElementById('annTitle').value||'').trim()||'הודעה מהמערכת';
+      const icon=(document.getElementById('annIcon').value||'').trim()||'📣';
+      const ctaLabel=(document.getElementById('annCtaLabel').value||'').trim()||'הבנתי ✓';
+      const ctaAction=document.getElementById('annCtaAction').value||'dismiss';
+      let target='all';
+      if(tgtSel.value==='house'){
+        const h=(tgtHouse.value||'').trim().toUpperCase();
+        if(!h){status.textContent='⚠ הזן קוד בית';status.style.color='#e74c3c';return;}
+        target='house:'+h;
+      }
+      const payload={text,title,icon,target,ctaLabel,ctaAction,active:true,createdAt:Date.now()};
+      status.textContent='שולח...';status.style.color='var(--mut)';
+      const ref=firebase.database().ref('announcements').push();
+      ref.set(payload).then(()=>{
+        status.textContent='✓ נשלח בהצלחה';status.style.color='var(--pri)';
+        document.getElementById('annText').value='';
+        _annLoadHistory();
+      }).catch(err=>{
+        status.textContent='שליחה נכשלה: '+(err.message||err);status.style.color='#e74c3c';
+      });
+    });
+  }
+  function _esc(s){return String(s||'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'})[c]);}
+  function _fmtTime(ts){const d=new Date(ts);return d.toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}
+  window._annLoadHistory=function(){
+    const wrap=document.getElementById('annHistory');if(!wrap)return;
+    firebase.database().ref('announcements').orderByChild('createdAt').once('value').then(snap=>{
+      const all=snap.val()||{};
+      const entries=Object.entries(all).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
+      if(!entries.length){wrap.innerHTML='<div style="color:var(--mut)">אין הודעות.</div>';return;}
+      wrap.innerHTML=entries.map(([id,a])=>{
+        const responses=a.responses?Object.keys(a.responses).length:0;
+        const tgt=(a.target==='all')?'כולם':a.target;
+        const status=a.active===false?'⏸ מבוטלת':'🟢 פעילה';
+        return '<div style="border:1px solid var(--bdr);border-radius:8px;padding:8px 10px;margin-bottom:6px;background:var(--bg)">'
+          +'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:4px">'
+            +'<span>'+_esc(tgt)+' · '+_fmtTime(a.createdAt||0)+'</span>'
+            +'<span>'+status+' · 👁 '+responses+'</span>'
+          +'</div>'
+          +'<div style="font-weight:600;font-size:13px;margin-bottom:2px">'+_esc(a.icon||'📣')+' '+_esc(a.title||'')+'</div>'
+          +'<div style="font-size:12px;color:var(--mut);max-height:60px;overflow:hidden;text-overflow:ellipsis">'+_esc(a.text||'')+'</div>'
+          +'<div style="margin-top:6px;display:flex;gap:6px">'
+            +'<button data-ann-toggle="'+id+'" style="padding:4px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--sur);color:var(--txt);font-size:11px;cursor:pointer">'+(a.active===false?'הפעל':'בטל')+'</button>'
+            +'<button data-ann-delete="'+id+'" style="padding:4px 8px;border:1px solid #e74c3c;border-radius:6px;background:transparent;color:#e74c3c;font-size:11px;cursor:pointer">מחק</button>'
+          +'</div>'
+        +'</div>';
+      }).join('');
+      wrap.querySelectorAll('[data-ann-toggle]').forEach(b=>b.addEventListener('click',function(){
+        const id=this.dataset.annToggle;
+        const cur=all[id]||{};
+        firebase.database().ref('announcements/'+id+'/active').set(cur.active===false).then(_annLoadHistory);
+      }));
+      wrap.querySelectorAll('[data-ann-delete]').forEach(b=>b.addEventListener('click',function(){
+        const id=this.dataset.annDelete;
+        if(!confirm('למחוק את ההודעה לצמיתות?'))return;
+        firebase.database().ref('announcements/'+id).remove().then(_annLoadHistory);
+      }));
+    });
+  };
+})();
+
 // default: init types so DEFAULT_TYPES exist before any render
 listTypes=DEFAULT_TYPES.map(x=>({...x}));
 listTypes.forEach(lt=>{if(!items[lt.id])items[lt.id]=[];});
@@ -3948,6 +4198,8 @@ function fmtBytes(n){
 async function loadAdminStats(){
   document.getElementById('adminError').textContent='';
   document.getElementById('adminTime').textContent='טוען...';
+  // Refresh announcements history alongside stats
+  if(typeof _annLoadHistory==='function'){try{_annLoadHistory();}catch(_){}}
   try{
     const snap=await db.ref('stats').once('value');
     const s=snap.val()||{};
