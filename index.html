@@ -1847,15 +1847,20 @@ function _completeInitialSetup(opts){
   return true;
 }
 // Defer the install offer until the page is visible (share sheet closed).
-// Always fires once per page load when not already in standalone mode.
+// Fires only once ever per device — and only while the app isn't installed.
+// Users can still trigger it manually from the drawer menu.
 let _installOfferDone=false;
+const _INSTALL_SHOWN_KEY='ss_installOffered';
 function _scheduleInstallOffer(delay){
   if(_installOfferDone)return;
   if(typeof _isStandalone==='function' && _isStandalone())return;
+  try{if(localStorage.getItem(_INSTALL_SHOWN_KEY)==='1'){_installOfferDone=true;return;}}catch(_){}
   delay=delay||1500;
   function fire(){
     if(_installOfferDone)return;
+    if(typeof _isStandalone==='function' && _isStandalone()){_installOfferDone=true;return;}
     _installOfferDone=true;
+    try{localStorage.setItem(_INSTALL_SHOWN_KEY,'1');}catch(_){}
     document.removeEventListener('visibilitychange',onVis);
     try{showInstallFlow();}catch(_){}
   }
