@@ -1313,6 +1313,12 @@ const APP_VERSION='1.02-rc.1';
     </div>
 
     <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
+      <h3 style="margin:0 0 10px 0;font-size:15px">📬 משובים מהמשתמשים</h3>
+      <div style="font-size:12px;color:var(--mut);margin-bottom:8px">כל המשובים שהתקבלו מכל ההודעות, מהחדש לישן.</div>
+      <div id="annFeedbackAll"></div>
+    </div>
+
+    <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
       <h3 style="margin:0 0 10px 0;font-size:15px">📣 לחצו על "ספר לחברים"</h3>
       <div id="adminTellFriends"></div>
     </div>
@@ -4211,10 +4217,54 @@ _annInit();
   }
   function _esc(s){return String(s||'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'})[c]);}
   function _fmtTime(ts){const d=new Date(ts);return d.toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}
+  function _renderAggregateFeedback(all){
+    const aw=document.getElementById('annFeedbackAll');if(!aw)return;
+    // Flatten all feedback entries across all announcements
+    const flat=[];
+    Object.entries(all||{}).forEach(([annId,a])=>{
+      const fb=a.feedback||{};
+      Object.entries(fb).forEach(([dev,e])=>{
+        flat.push({annId,annTitle:a.title||'(ללא כותרת)',annIcon:a.icon||'📣',dev,t:e.t||0,text:e.text||''});
+      });
+    });
+    flat.sort((x,y)=>(y.t||0)-(x.t||0));
+    if(!flat.length){
+      aw.innerHTML='<div style="color:var(--mut);padding:12px;text-align:center">אין משובים עדיין. שלח הודעה מסוג "משוב" כדי לאסוף.</div>';
+      return;
+    }
+    aw.innerHTML=
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+        +'<div style="font-size:12px;color:var(--mut)">סה"כ '+flat.length+' משובים</div>'
+        +'<button id="annExportAll" style="padding:4px 10px;border:1px solid var(--bdr);border-radius:6px;background:var(--sur);color:var(--txt);font-size:11px;cursor:pointer">ייצוא הכל</button>'
+      +'</div>'
+      +'<div style="max-height:400px;overflow-y:auto">'
+      +flat.map(e=>(
+        '<div style="background:var(--bg);border:1px solid var(--bdr);border-radius:8px;padding:8px 10px;margin-bottom:6px">'
+          +'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:4px">'
+            +'<span>'+_esc(e.annIcon)+' '+_esc(e.annTitle)+'</span>'
+            +'<span>'+_fmtTime(e.t)+' · '+_esc(e.dev.slice(-6))+'</span>'
+          +'</div>'
+          +'<div style="font-size:13px;white-space:pre-wrap;line-height:1.5">'+_esc(e.text)+'</div>'
+        +'</div>'
+      )).join('')
+      +'</div>';
+    const exp=document.getElementById('annExportAll');
+    if(exp){
+      exp.addEventListener('click',()=>{
+        const out='כל המשובים\n=================\n\n'+flat.map(e=>
+          _fmtTime(e.t)+' · '+e.dev.slice(-6)+' · '+e.annTitle+'\n'+e.text+'\n'
+        ).join('\n---\n');
+        const w=window.open('','_blank');
+        if(w){w.document.body.style.cssText='font-family:monospace;white-space:pre-wrap;padding:20px;direction:rtl';w.document.body.textContent=out;}
+      });
+    }
+  }
   window._annLoadHistory=function(){
     const wrap=document.getElementById('annHistory');if(!wrap)return;
     firebase.database().ref('announcements').orderByChild('createdAt').once('value').then(snap=>{
       const all=snap.val()||{};
+      // Aggregate feedback panel
+      _renderAggregateFeedback(all);
       const entries=Object.entries(all).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
       if(!entries.length){wrap.innerHTML='<div style="color:var(--mut)">אין הודעות.</div>';return;}
       wrap.innerHTML=entries.map(([id,a])=>{
