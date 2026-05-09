@@ -785,7 +785,7 @@ document.getElementById('testResetBtn').addEventListener('click',function(){
   </aside>
 </div>
 <script>
-const APP_VERSION='1.02-rc.1';
+const APP_VERSION='1.02-rc.2';
 (function(){
   const btn=document.getElementById('globalMenuBtn');
   const drawer=document.getElementById('globalDrawer');
@@ -877,7 +877,8 @@ const APP_VERSION='1.02-rc.1';
     refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10"/><path d="M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>',
     envelope:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>',
     document:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
-    trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
+    trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
+    sparkles:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3z"/><path d="M19 14l.7 2 2 .8-2 .7-.7 2-.7-2-2-.7 2-.8L19 14z"/><path d="M5 16l.5 1.5 1.5.5-1.5.5L5 20l-.5-1.5L3 18l1.5-.5L5 16z"/></svg>'
   };
   function _populate(){
     const isDark=document.body.classList.contains('dark');
@@ -886,6 +887,7 @@ const APP_VERSION='1.02-rc.1';
     document.getElementById('drawerTellFriends').addEventListener('click',_bridge('tellFriendsBtn'));
     const _isAdminNow=(typeof isAdmin==='function')?isAdmin():false;
     const items=[
+      {icon:_ICON.sparkles,label:'מה חדש',track:'drawer:whatsnew',action:()=>{const c=document.getElementById('globalDrawerClose');if(c)c.click();setTimeout(()=>{if(typeof window._showWhatsNew==='function')window._showWhatsNew(true);},200);}},
       {icon:_ICON.gear,label:'הגדרות',track:'drawer:settings',action:_bridge('settingsBtn')},
       {icon:_ICON.download,label:'התקנת האפליקציה',track:'drawer:install',action:_bridge('homeInstallBtn')},
       {icon:isDark?_ICON.sun:_ICON.moon,label:isDark?'תצוגה בהירה':'תצוגה כהה',track:'drawer:theme',action:_toggleDark},
@@ -986,16 +988,55 @@ const APP_VERSION='1.02-rc.1';
 </div>
 
 <div class="overlay" id="aboutOverlay">
-  <div class="sheet">
-    <h3>מידע ופרטיות</h3>
-    <p style="font-size:13px;line-height:1.65;color:var(--txt);text-align:right">
-      האפליקציה נמצאת בשלב בטא. יתכנו תקלות, באגים ושינויי התנהגות בלי הודעה מראש. אם משהו לא עובד אפשר לסגור ולפתוח מחדש או לפנות לבעלי האפליקציה.
+  <div class="sheet" style="max-height:80vh;overflow-y:auto">
+    <h3>תנאי שימוש ומידע</h3>
+
+    <p style="font-size:13px;line-height:1.7;color:var(--txt);text-align:right;margin-top:8px">
+      <b>📱 התאמה למובייל.</b> השירות מותאם בעיקר לעבודה דרך דפדפן בטלפון הנייד.
+      ניתן להפעיל גם בדפדפן במחשב — אך חוויית המשתמש האופטימלית מתקבלת על מסך נייד,
+      ובמיוחד כאשר האפליקציה מותקנת כקיצור-דרך במסך הבית (PWA).
     </p>
-    <p style="font-size:13px;line-height:1.65;color:var(--txt);text-align:right;margin-top:10px">
-      הנתונים שמוזנים (שמות, פריטים, רשימות) נשמרים בענן של Firebase כדי לאפשר סנכרון בין מכשירים. אין שמירה של סיסמאות או מספרי כרטיס אשראי. השימוש באפליקציה נמדד בכלי אנליטיקה (Microsoft Clarity) לצרכי שיפור חוויית המשתמש, בלי איסוף פרטים מזהים.
+
+    <p style="font-size:13px;line-height:1.7;color:var(--txt);text-align:right;margin-top:10px">
+      <b>🚧 שלב בטא.</b> האפליקציה נמצאת בשלב בטא פעיל. ייתכנו תקלות, באגים ושינויי התנהגות
+      בלי הודעה מראש. אם משהו לא עובד — אפשר לסגור ולפתוח מחדש, להפעיל "עדכון גרסה"
+      מהתפריט, או לפנות לבעלי האפליקציה.
     </p>
-    <p style="font-size:13px;line-height:1.65;color:var(--txt);text-align:right;margin-top:10px">
-      המשך השימוש מהווה אישור לתנאים האלה.
+
+    <p style="font-size:13px;line-height:1.7;color:var(--txt);text-align:right;margin-top:10px">
+      <b>☁️ נתונים בענן.</b> הנתונים שמוזנים (שמות חברי הבית, רשימות הקניות, פריטים, הערות)
+      נשמרים בענן של Firebase של Google כדי לאפשר סנכרון בזמן אמת בין כל המכשירים בקבוצה.
+      <span style="color:var(--mut)">אין שמירה של סיסמאות או מספרי כרטיס אשראי. אין הצפנה
+      end-to-end — צוות התחזוקה רואה את הנתונים בעת הצורך לתמיכה.</span>
+    </p>
+
+    <p style="font-size:13px;line-height:1.7;color:var(--txt);text-align:right;margin-top:10px">
+      <b>🔐 פרטיות.</b> מי שמכיר את קוד הבית של הקבוצה יכול להצטרף — חשוב לא לשתף את
+      הקישור עם זרים. ניתן בכל עת להוציא משתתף מהקבוצה דרך מסך ההגדרות, או לסגור את
+      הקבוצה (יוצר הקבוצה בלבד).
+    </p>
+
+    <p style="font-size:13px;line-height:1.7;color:var(--txt);text-align:right;margin-top:10px">
+      <b>📊 אנליטיקה.</b> השימוש באפליקציה נמדד בכלי אנליטיקה אנונימי (Microsoft Clarity)
+      לצרכי שיפור חוויית המשתמש. אין איסוף של פרטים מזהים, מיקומים או רשימות אנשי קשר.
+      בנוסף, נתוני שימוש מצטברים נאספים כדי לאתר רכיבים אהובים: מונה לחיצות לכל כפתור,
+      פריטים פופולריים (במניין בלבד, ללא שם משתמש), וזמני התחברות יומיים.
+    </p>
+
+    <p style="font-size:13px;line-height:1.7;color:var(--txt);text-align:right;margin-top:10px">
+      <b>📨 הודעות מהמערכת.</b> צוות האפליקציה עשוי לשלוח הודעות מערכת תוך-יישומיות
+      (עדכוני גרסה, סקרי משוב). ניתן לזהות הודעה לפי סימון אדום על כפתור התפריט.
+      תגובות למשובים נאספות בצורה אנונימית.
+    </p>
+
+    <p style="font-size:13px;line-height:1.7;color:var(--txt);text-align:right;margin-top:10px">
+      <b>🛒 מאגר מוצרים.</b> רשימת המוצרים להשלמה אוטומטית מבוססת על נתוני שקיפות מחירים
+      ציבוריים של רשתות הקמעונאות בישראל ועל הזנה ידנית של צוות האפליקציה. שמות מותגים
+      המופיעים במאגר הם לצרכי השלמת חיפוש בלבד — אין קשר מסחרי עם היצרנים.
+    </p>
+
+    <p style="font-size:13px;line-height:1.7;color:var(--txt);text-align:right;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bdr)">
+      <b>המשך השימוש באפליקציה מהווה אישור לתנאים אלה.</b>
     </p>
     <div class="sheet-actions">
       <button class="btn-primary" id="aboutClose">סגירה</button>
@@ -1259,6 +1300,11 @@ const APP_VERSION='1.02-rc.1';
     </div>
 
     <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
+      <h3 style="margin:0 0 10px 0;font-size:15px">🏷️ פילוח גרסאות</h3>
+      <div id="adminVersionDist" style="font-size:13px"></div>
+    </div>
+
+    <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
       <h3 style="margin:0 0 10px 0;font-size:15px">🏠 רשימת בתים</h3>
       <div style="display:flex;gap:6px;margin-bottom:8px;align-items:stretch">
         <input id="adminDelCode" type="text" placeholder="קוד בית למחיקה (4-12 תווים)" maxlength="12"
@@ -1365,6 +1411,17 @@ const APP_VERSION='1.02-rc.1';
     <input id="joinCodeInput" maxlength="8" style="display:none"/>
     <button id="joinHouseBtn" style="display:none">הצטרפות</button>
     <div id="joinError" class="onboard-error" style="display:none"></div>
+  </div>
+</div>
+
+<!-- "What's new" overlay — release notes shown when WHATSNEW_ID changes. -->
+<div class="overlay" id="whatsNewOverlay">
+  <div class="sheet" style="max-height:82vh;overflow-y:auto">
+    <h3 style="display:flex;align-items:center;gap:8px"><span>✨</span> <span>מה חדש בגרסה</span> <span id="whatsNewVersion" style="font-size:13px;color:var(--mut);font-weight:500"></span></h3>
+    <div id="whatsNewBody" style="font-size:14px;line-height:1.65;color:var(--txt);text-align:right;margin-top:10px"></div>
+    <div class="sheet-actions">
+      <button class="btn-primary" id="whatsNewClose">הבנתי, תודה ✓</button>
+    </div>
   </div>
 </div>
 
@@ -1479,7 +1536,8 @@ async function recordHouseStat(){
         d:doneItems,
         l:(listTypes||[]).length,
         t:now,
-        cr:(curr&&curr.cr)||now // preserve creation time on subsequent writes
+        cr:(curr&&curr.cr)||now, // preserve creation time on subsequent writes
+        v:(typeof APP_VERSION==='string')?APP_VERSION:'unknown' // app version of last writer
       };
       if(cleanName)next.n=cleanName;
       else if(curr&&curr.n)next.n=curr.n; // keep last known name if blank
@@ -4056,6 +4114,65 @@ applyTheme(localStorage.getItem('sl3_dark') === '1');
 _refreshInstallBtns();
 acInit();
 
+/* ══ WHAT'S NEW ═══════════════════════════════════════
+   Bullet-list of changes per release. Bump WHATSNEW_ID whenever a new
+   block is added — devices that haven't seen the latest ID will see the
+   notification dot on the hamburger menu and (on next open) get the
+   modal automatically.
+*/
+const WHATSNEW_ID='2026-05-10';
+const WHATSNEW_VERSION='1.02';
+const WHATSNEW_BULLETS=[
+  '🛒 רשימה מאוחדת אחת — הסופר. כל הרשימות הישנות נמזגו לרשימה אחת',
+  '✨ "סידור חכם" — מיון אוטומטי לפי מחלקות עם פתיחה/סגירה חלקה',
+  '📱 שני טאבים מובהקים: "לקנות" ו"בוצע" עם מונים חיים ואנימציה',
+  '➕ כפתור צף ירוק להוספת פריט מהמסך "בוצע"',
+  '🔔 סימון פריט כ"דחוף" גם בעריכת פריט קיים',
+  '🚪 יציאה מהקבוצה: יוצר הקבוצה סוגר את הבית; משתתף יוצא וחוזר למסך ההצטרפות',
+  '👥 מנהל יכול להסיר משתתף — והפריטים שהוא הזין שומרים את שמו',
+  '🤝 התראה אם פריט שמוזן כבר קיים, כולל מי הוסיף אותו',
+  '🌙 תצוגה כהה משופרת עם ניגודיות גבוהה ואדום בהיר יותר',
+  '📨 קבלת הודעות מערכת ומשובים בתוך האפליקציה',
+  '📦 מאגר מוצרים הורחב פי שניים (~2150 פריטים) עם סינון מותגים',
+  '🔇 ביטול הצעות autofill (כתובת/כרטיסים) על iOS ואנדרואיד',
+  '⏱ ההצעה להתקנת האפליקציה מופיעה רק פעם אחת',
+];
+const _WHATSNEW_KEY='sl3_whatsnewSeen';
+function _whatsNewUnread(){
+  try{return localStorage.getItem(_WHATSNEW_KEY)!==WHATSNEW_ID;}catch(_){return false;}
+}
+function _whatsNewBuildBody(){
+  return '<div style="font-size:13px;color:var(--mut);margin-bottom:10px">סיכום החידושים בגרסה זו:</div>'
+    +'<ul style="padding-right:18px;margin:0;list-style:none">'
+    +WHATSNEW_BULLETS.map(b=>'<li style="margin-bottom:8px;line-height:1.55">'+b+'</li>').join('')
+    +'</ul>';
+}
+window._showWhatsNew=function(manual){
+  document.getElementById('whatsNewVersion').textContent=WHATSNEW_VERSION;
+  document.getElementById('whatsNewBody').innerHTML=_whatsNewBuildBody();
+  document.getElementById('whatsNewOverlay').classList.add('open');
+  if(!manual){/* opened automatically — leave seen flag until user closes */}
+};
+document.getElementById('whatsNewClose').addEventListener('click',function(){
+  try{localStorage.setItem(_WHATSNEW_KEY,WHATSNEW_ID);}catch(_){}
+  document.getElementById('whatsNewOverlay').classList.remove('open');
+  if(typeof _annUpdateBadge==='function')_annUpdateBadge();
+});
+// Auto-popup once per WHATSNEW_ID — but defer until after onboarding.
+setTimeout(function _maybeAutoShowWhatsNew(){
+  if(!_whatsNewUnread())return;
+  // Don't pop on top of onboarding, setup, or another overlay.
+  const onboard=document.getElementById('onboardOverlay');
+  const setup=document.getElementById('setup');
+  const onboardOpen=onboard&&getComputedStyle(onboard).display!=='none';
+  const setupOpen=setup&&!setup.classList.contains('slide-right')&&!setup.classList.contains('hidden');
+  if(onboardOpen||setupOpen){setTimeout(_maybeAutoShowWhatsNew,2000);return;}
+  if(typeof _showWhatsNew==='function')_showWhatsNew(false);
+  if(typeof _annUpdateBadge==='function')_annUpdateBadge();
+},2500);
+// Refresh badge once at load to reflect unread state immediately
+setTimeout(()=>{if(typeof _annUpdateBadge==='function')_annUpdateBadge();},800);
+
 /* ══ ANNOUNCEMENTS ═══════════════════════════════════
    Admin can broadcast a message via the admin dashboard. Each user sees
    it once (then dismisses with the CTA or X button). The CTA can either
@@ -4084,7 +4201,7 @@ function _annPickNext(){
 function _annUpdateBadge(){
   const btn=document.getElementById('globalMenuBtn');
   const next=_annPickNext();
-  const has=!!next;
+  const has=!!next || (typeof _whatsNewUnread==='function' && _whatsNewUnread());
   if(btn)btn.classList.toggle('has-announce',has);
   // PWA App Badging API — paints a dot/number on the home-screen icon
   // (iOS 16.4+, Android Chrome, desktop Chrome). Silently ignored if the
@@ -4416,6 +4533,7 @@ async function loadAdminStats(){
     let totalFamilies=0,totalUsers=0,totalItems=0,totalDone=0,totalLists=0,latestUpdate=0,newToday=0;
     const startOfToday=new Date();startOfToday.setHours(0,0,0,0);
     const startMs=startOfToday.getTime();
+    const versionCounts={};
     Object.values(houses).forEach(h=>{
       totalFamilies++;
       totalUsers+=(h.m||0);
@@ -4424,7 +4542,30 @@ async function loadAdminStats(){
       totalLists+=(h.l||0);
       if((h.t||0)>latestUpdate)latestUpdate=h.t;
       if(h.cr && h.cr>=startMs)newToday++;
+      const v=h.v||'(לא ידוע)';
+      versionCounts[v]=(versionCounts[v]||0)+1;
     });
+    // Render version distribution card
+    const verEl=document.getElementById('adminVersionDist');
+    if(verEl){
+      const verEntries=Object.entries(versionCounts).sort((a,b)=>b[1]-a[1]);
+      const total=verEntries.reduce((n,[,c])=>n+c,0)||1;
+      verEl.innerHTML=verEntries.length
+        ?verEntries.map(([v,c])=>{
+          const pct=Math.round(c*100/total);
+          const isLatest=v===APP_VERSION;
+          return '<div style="margin-bottom:10px">'
+            +'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">'
+              +'<span><b>'+esc(v)+'</b>'+(isLatest?' <span style="font-size:10px;background:var(--pri);color:#fff;padding:1px 6px;border-radius:6px;margin-right:4px">עדכני</span>':'')+'</span>'
+              +'<span style="color:var(--mut)">'+c+' בתים · '+pct+'%</span>'
+            +'</div>'
+            +'<div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden">'
+              +'<div style="height:100%;width:'+pct+'%;background:'+(isLatest?'var(--pri)':'var(--mut)')+'"></div>'
+            +'</div>'
+          +'</div>';
+        }).join('')
+        :'<div style="color:var(--mut)">אין עדיין נתוני גרסאות.</div>';
+    }
 
     // ── today's logins
     const today=new Date().toISOString().slice(0,10);
@@ -4549,9 +4690,10 @@ async function loadAdminStats(){
         const isNewToday=h.cr && h.cr>=startMs;
         const newBadge=isNewToday?'<span style="font-size:10px;font-weight:700;background:var(--pri);color:#fff;padding:2px 6px;border-radius:6px;margin-right:4px">חדש</span>':'';
         const rowBg=isNewToday?'background:rgba(45,186,122,.10);':'';
+        const verLabel=h.v?'<span style="font-size:10px;background:var(--bg);color:var(--mut);padding:1px 6px;border-radius:6px;font-family:monospace">v '+esc(h.v)+'</span>':'';
         return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bdr);'+rowBg+'">'
           +'<span style="font-size:12px;color:var(--mut);min-width:24px;text-align:center">'+(i+1)+'</span>'
-          +'<span style="font-size:14px;font-weight:600;flex:1;display:flex;align-items:center;gap:4px">'+newBadge+displayName+codeChip+'</span>'
+          +'<span style="font-size:14px;font-weight:600;flex:1;display:flex;align-items:center;gap:4px">'+newBadge+displayName+codeChip+verLabel+'</span>'
           +'<span style="font-size:12px;color:var(--mut)">👥 '+(h.m||0)+'</span>'
           +'<span style="font-size:12px;color:var(--mut)">🛒 '+(h.i||0)+'</span>'
           +'<span style="font-size:11px;color:'+ageColor+';min-width:70px;text-align:left">'+ageLabel+'</span>'
