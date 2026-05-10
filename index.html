@@ -281,8 +281,9 @@ a,button,input,select{touch-action:manipulation}
 .ai-fbtn:hover{border-color:var(--pri);color:var(--pri)}
 .ai-fbtn[aria-pressed="true"]{background:linear-gradient(135deg,#9b6cff 0%,#5b4fcf 50%,#2dba7a 100%);border-color:transparent;color:#fff;box-shadow:0 3px 12px rgba(91,79,207,.35)}
 .ai-fbtn[aria-pressed="true"] .ai-spark{color:#fff}
-/* one-shot 3s spin on every toggle (handled via .spinning class) */
+/* spin animations: long (3s) when activating, short (.5s) when deactivating */
 .ai-fbtn.spinning .ai-spark{animation:aiSpin 1s linear 3}
+.ai-fbtn.spinning-fast .ai-spark{animation:aiSpin .5s linear 1}
 @keyframes aiSpin{to{transform:rotate(360deg)}}
 .ai-fbtn.magic::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.6) 50%,transparent 70%);transform:translateX(-100%);animation:magicShimmer 1s ease}
 @keyframes magicShimmer{to{transform:translateX(100%)}}
@@ -3419,12 +3420,14 @@ document.getElementById('aiSortBtn').addEventListener('click',function(){
   _aiSort=!_aiSort;
   try{localStorage.setItem('ss_aiSort',_aiSort?'1':'0');}catch(_){}
   _refreshAiBtn();
-  // Magic sparkle on the button + glow over the list when activating.
-  this.classList.remove('magic');void this.offsetWidth;this.classList.add('magic');
-  // 3-second one-shot spin on every toggle (on or off).
-  this.classList.remove('spinning');void this.offsetWidth;this.classList.add('spinning');
+  // Magic sparkle on the button — only when activating (off→on)
+  if(_aiSort){this.classList.remove('magic');void this.offsetWidth;this.classList.add('magic');}
+  // Spin: 3s long flourish when activating, .5s quick spin when deactivating
+  const spinClass=_aiSort?'spinning':'spinning-fast';
+  const spinMs=_aiSort?3000:500;
+  this.classList.remove('spinning','spinning-fast');void this.offsetWidth;this.classList.add(spinClass);
   clearTimeout(window._aiSpinTimer);
-  window._aiSpinTimer=setTimeout(()=>this.classList.remove('spinning'),3000);
+  window._aiSpinTimer=setTimeout(()=>this.classList.remove(spinClass),spinMs);
   if(_aiSort){
     // On activation: start with ALL categories open so the user sees the
     // grouped items, then collapse them one-by-one — a quick visual demo
