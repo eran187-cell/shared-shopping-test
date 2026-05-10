@@ -1350,6 +1350,22 @@ const APP_VERSION='1.02-rc.2';
   </div>
 </div>
 
+<!-- ══ ADMIN AUTH GATE — random "grandma" question ═════════ -->
+<div id="adminAuthOverlay" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,#0a1812 0%,#152a1f 100%);z-index:99999;align-items:center;justify-content:center;padding:20px;direction:rtl;font-family:inherit">
+  <div id="adminAuthCard" style="background:rgba(255,255,255,.08);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid rgba(255,255,255,.15);border-radius:24px;padding:32px 28px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);transition:transform .2s">
+    <div style="font-size:42px;margin-bottom:10px">🔐</div>
+    <h2 style="margin:0 0 6px 0;font-size:20px;color:#fff;font-weight:800">אימות זהות</h2>
+    <div style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:24px">שאלה אקראית מתוך 10</div>
+    <div id="adminAuthQ" style="font-size:18px;color:#fff;font-weight:700;background:rgba(0,0,0,.25);padding:14px 16px;border-radius:14px;margin-bottom:14px;min-height:24px">…</div>
+    <input id="adminAuthInp" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="התשובה שלך…" style="width:100%;box-sizing:border-box;padding:14px 16px;border:1.5px solid rgba(255,255,255,.2);border-radius:12px;background:rgba(0,0,0,.3);color:#fff;font-size:16px;outline:none;text-align:center;font-family:inherit;margin-bottom:8px"/>
+    <div id="adminAuthErr" style="font-size:13px;color:#ff7b6e;min-height:18px;margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px">
+      <button id="adminAuthSubmit" style="flex:1;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#2dba7a,#1f9b62);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(45,186,122,.35)">אישור ✓</button>
+      <button id="adminAuthSkip" style="padding:13px 16px;border:1.5px solid rgba(255,255,255,.2);border-radius:12px;background:transparent;color:rgba(255,255,255,.85);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">שאלה אחרת</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ ADMIN DASHBOARD (aggregate stats only) ═════════ -->
 <div id="adminPanel" style="display:none;position:fixed;inset:0;z-index:9999;overflow-y:auto;font-family:inherit;color:var(--txt)">
   <div class="admin-container">
@@ -4863,13 +4879,117 @@ if(_deeplink) history.replaceState(null,'',location.pathname);
 
 /* ══ ADMIN DASHBOARD — aggregate stats only ═════════ */
 const _isAdmin=new URLSearchParams(location.search).has('admin');
-function showAdmin(){
+
+// SHA-256 hashes of normalised (trim+lowercase) answers. The plaintext
+// answers are NOT in source — only one-way hashes.
+const ADMIN_QA=[
+  {q:'דגם הרכב הראשון',h:'e0760eeb6d8bc5b20e27b350040d4d1855f882ae8bdb991a6d1700c019fab700'},
+  {q:'בית ספר יסודי',h:'4b15edef361416d8b20494a2ff6dec4a25e1c8451612e61c3cf9a640ec3aca2e'},
+  {q:'בסיס בצבא',h:'b73134db7f32999162dad48fab1910ea49f74df186918fbabdbfa2766e69a5f2'},
+  {q:'הכלבה שקיבלה מוצץ',h:'c43dce234ae5f99464edff7d4f04cc6ac9d6b41fee928fd43af47c3222c0a5ec'},
+  {q:'כלבה אחרונה',h:'8a1e1aa5cc878fd5eba2a8591d6f3d36e74854033aec8b608313bb933743b02e'},
+  {q:'אין לנו יונדאי אבל יש',h:'c12f3eaf6dc9568f974d9917ca11c9f492733c79d390bef70a3a41ed02e5213b'},
+  {q:'איפה אביגיל',h:'1c77d17f48740ea11769e2b475e64a6ea99d6757cb4cd124491fe86e6f5b21f5'},
+  {q:'כמה צבאים בסלון',h:'ef2d127de37b942baad06145e54b0c619a1f22327b2ebbcfbec78f5564afe39d'},
+  {q:'עידו מ',h:'66c49db8cb870f58d1c43a2fd63bcda7d3bd43817935ec1c701eb7b49393bf08'},
+  {q:'אורית מ',h:'8bf9290d54562893f66f70dd7ac4d31e30e51afec5890e04e9c074ddd671ccf9'}
+];
+let _adminAuthIdx=-1;
+let _adminAuthFails=0;
+let _adminAuthLockUntil=0;
+function _pickAdminQuestion(prevIdx){
+  // pick a random index different from prevIdx
+  if(ADMIN_QA.length<=1)return 0;
+  let i=prevIdx;
+  while(i===prevIdx)i=Math.floor(Math.random()*ADMIN_QA.length);
+  return i;
+}
+function _showAdminAuth(){
+  _adminAuthIdx=_pickAdminQuestion(_adminAuthIdx);
+  document.getElementById('adminAuthQ').textContent=ADMIN_QA[_adminAuthIdx].q;
+  document.getElementById('adminAuthInp').value='';
+  document.getElementById('adminAuthErr').textContent='';
+  document.getElementById('adminAuthOverlay').style.display='flex';
+  setTimeout(()=>document.getElementById('adminAuthInp').focus(),100);
+}
+async function _checkAdminAnswer(answer){
+  const norm=(answer||'').trim().toLowerCase();
+  if(!norm)return false;
+  // Hash and compare to stored hash for the current question
+  const buf=new TextEncoder().encode(norm);
+  const hbuf=await crypto.subtle.digest('SHA-256',buf);
+  const hex=Array.from(new Uint8Array(hbuf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  return hex===ADMIN_QA[_adminAuthIdx].h;
+}
+function _adminAuthShake(){
+  const c=document.getElementById('adminAuthCard');
+  c.style.transform='translateX(0)';
+  c.animate(
+    [{transform:'translateX(0)'},{transform:'translateX(-8px)'},{transform:'translateX(8px)'},{transform:'translateX(-6px)'},{transform:'translateX(0)'}],
+    {duration:380,easing:'ease-in-out'}
+  );
+}
+function _adminAuthLockMessage(){
+  const remain=Math.max(0,Math.ceil((_adminAuthLockUntil-Date.now())/1000));
+  return remain>0?('יותר מדי ניסיונות שגויים. נסה שוב בעוד '+remain+' שניות.'):'';
+}
+async function _onAdminAuthSubmit(){
+  const errEl=document.getElementById('adminAuthErr');
+  if(Date.now()<_adminAuthLockUntil){errEl.textContent=_adminAuthLockMessage();return;}
+  const inp=document.getElementById('adminAuthInp');
+  const ok=await _checkAdminAnswer(inp.value);
+  if(ok){
+    try{sessionStorage.setItem('admin_ok','1');}catch(_){}
+    _adminAuthFails=0;
+    document.getElementById('adminAuthOverlay').style.display='none';
+    _showAdminPanel();
+    return;
+  }
+  _adminAuthFails++;
+  if(_adminAuthFails>=3){
+    _adminAuthLockUntil=Date.now()+60*1000;
+    _adminAuthFails=0;
+    errEl.textContent=_adminAuthLockMessage();
+    inp.disabled=true;
+    setTimeout(()=>{inp.disabled=false;errEl.textContent='';_showAdminAuth();},60*1000);
+    _adminAuthShake();
+    return;
+  }
+  errEl.textContent='תשובה שגויה. נסה שאלה אחרת.';
+  _adminAuthShake();
+  // Auto-rotate to a different question after a wrong answer
+  setTimeout(()=>{
+    _adminAuthIdx=_pickAdminQuestion(_adminAuthIdx);
+    document.getElementById('adminAuthQ').textContent=ADMIN_QA[_adminAuthIdx].q;
+    inp.value='';inp.focus();
+  },600);
+}
+document.getElementById('adminAuthSubmit').addEventListener('click',_onAdminAuthSubmit);
+document.getElementById('adminAuthInp').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();_onAdminAuthSubmit();}});
+document.getElementById('adminAuthSkip').addEventListener('click',function(){
+  _adminAuthIdx=_pickAdminQuestion(_adminAuthIdx);
+  document.getElementById('adminAuthQ').textContent=ADMIN_QA[_adminAuthIdx].q;
+  document.getElementById('adminAuthInp').value='';
+  document.getElementById('adminAuthErr').textContent='';
+  document.getElementById('adminAuthInp').focus();
+});
+
+function _showAdminPanel(){
   hideSplash();
   document.getElementById('home').classList.add('hidden');
   document.getElementById('setup').classList.add('slide-right');
   document.getElementById('onboardOverlay').style.display='none';
   document.getElementById('adminPanel').style.display='block';
   loadAdminStats();
+}
+function showAdmin(){
+  // Already authenticated this session → straight to dashboard
+  if(sessionStorage.getItem('admin_ok')==='1'){_showAdminPanel();return;}
+  hideSplash();
+  document.getElementById('home').classList.add('hidden');
+  document.getElementById('setup').classList.add('slide-right');
+  document.getElementById('onboardOverlay').style.display='none';
+  _showAdminAuth();
 }
 function fmtBytes(n){
   if(n<1024)return n+' B';
