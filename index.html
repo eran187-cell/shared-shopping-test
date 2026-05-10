@@ -2292,6 +2292,18 @@ document.getElementById('tellFriendsBtn').addEventListener('click',async functio
   _bumpHouseStat('tf');
   const url=location.href.split('?')[0].split('#')[0];
   const message='אפליקציית רשימת קניות משותפת לכל המשפחה. כל אחד מוסיף, כולם רואים בזמן אמת. הצטרפו לראשונים שמתנסים בפיילוט: '+url;
+  // Prefer the native share sheet (WhatsApp, SMS, mail, etc.). Fall back to
+  // clipboard copy only if navigator.share isn't available or the user
+  // cancels.
+  if(navigator.share){
+    try{
+      await navigator.share({title:'Shared Shopping',text:message,url});
+      return;
+    }catch(err){
+      // User canceled — don't fall back unless it was a real failure
+      if(err && err.name==='AbortError')return;
+    }
+  }
   try{
     await navigator.clipboard.writeText(message);
     toast('הקישור הועתק, ניתן לשתף עם החברים');
@@ -2300,7 +2312,7 @@ document.getElementById('tellFriendsBtn').addEventListener('click',async functio
   }
 });
 
-// Support button — open mail app with house code + device info in subject
+// Support button — open mail app with house code + device info pre-filled
 document.getElementById('supportBtn').addEventListener('click',function(){
   const ua=navigator.userAgent;
   let device='לא ידוע';
@@ -2313,8 +2325,19 @@ document.getElementById('supportBtn').addEventListener('click',function(){
   else if(/Macintosh/.test(ua))device='Mac';
   else if(/Windows/.test(ua))device='Windows';
   const code=houseId||'ללא בית';
+  const ver=(typeof APP_VERSION==='string')?APP_VERSION:'';
   const subject='תמיכה - בית '+code+' - '+device;
-  location.href='mailto:comigo2022@gmail.com?subject='+encodeURIComponent(subject);
+  // Pre-filled body with auto-collected context so the user only needs to
+  // describe the issue
+  const body='\n\n\n— נא לכתוב מעל לקו —\n\nפרטי המכשיר (אוטומטי):\n'
+    +'בית: '+code+'\n'
+    +'מכשיר: '+device+'\n'
+    +(ver?'גרסה: '+ver+'\n':'')
+    +'דפדפן: '+ua;
+  const href='mailto:comigo2022@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  // window.open is more reliable than setting location.href on iOS PWAs
+  const w=window.open(href,'_self');
+  if(!w)location.href=href;
 });
 
 // About / privacy overlay
