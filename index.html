@@ -380,8 +380,10 @@ body.dark .item-card.urgent{border-right-color:var(--red)}
 .iexpand-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .iexpand-row label{font-size:12px;color:var(--mut);min-width:54px;flex-shrink:0}
 .iexpand-row .qa-units-row{flex:1;min-width:0}
-.iexpand-row input[type=text]{flex:1;min-width:0;padding:10px 12px;border:1px solid var(--bdr);border-radius:10px;background:var(--bg);color:var(--txt);font-size:14px;font-family:inherit;outline:none;min-height:44px;box-sizing:border-box}
-.iexpand-row input[type=text]:focus{border-color:var(--pri)}
+.iexpand-row input[type=text],
+.iexpand-row input[type=search]{flex:1;min-width:0;padding:13px 12px;border:1.5px solid var(--bdr);border-radius:12px;background:var(--bg);color:var(--txt);font-size:16px;font-family:inherit;outline:none;min-height:46px;box-sizing:border-box;-webkit-appearance:none;transition:border-color .15s,background .15s}
+.iexpand-row input[type=text]:focus,
+.iexpand-row input[type=search]:focus{border-color:var(--pri);background:var(--sur)}
 
 .empty-list{text-align:center;padding:60px 20px;color:var(--mut)}
 .empty-list .ei{font-size:48px;margin-bottom:12px}
@@ -650,12 +652,14 @@ input[type="search"]{-webkit-appearance:none;appearance:none}
   transition:all .12s;flex-shrink:0;
 }
 .qa-none-btn.selected{border-color:var(--pri);color:var(--pri);background:var(--pril)}
-/* Note input */
+/* Note input — matches the visual style of the main item-name input
+   (qa-inp-box): 1.5px border, 12px radius, var(--bg) → var(--sur) on focus,
+   16px font (prevents iOS zoom on focus). */
 .qa-note-inp{
-  width:100%;padding:10px 12px;border-radius:10px;
+  width:100%;padding:13px 12px;border-radius:12px;
   border:1.5px solid var(--bdr);background:var(--bg);
-  font-size:15px;color:var(--txt);outline:none;font-family:inherit;
-  -webkit-appearance:none;transition:border .15s;
+  font-size:16px;color:var(--txt);outline:none;font-family:inherit;
+  -webkit-appearance:none;transition:border-color .15s,background .15s;
 }
 .qa-note-inp:focus{border-color:var(--pri);background:var(--sur)}
 .qa-note-inp::placeholder{color:var(--mut)}
@@ -1235,7 +1239,7 @@ const APP_VERSION='1.02-rc.2';
     <h3>עריכת פריט</h3>
     <div style="display:flex;flex-direction:column;gap:10px;margin:12px 0">
       <label style="font-size:12px;color:var(--mut)">שם הפריט</label>
-      <input id="editItemName" type="search" maxlength="60" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="ss-edit-name" data-form-type="other" enterkeyhint="done" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--txt);font-size:15px"/>
+      <input id="editItemName" type="search" maxlength="60" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="ss-edit-name" data-form-type="other" enterkeyhint="done" class="qa-note-inp"/>
 
       <label style="font-size:12px;color:var(--mut)">כמות</label>
       <div class="qty-stepper-box">
@@ -1248,7 +1252,7 @@ const APP_VERSION='1.02-rc.2';
       <div id="editItemUnitsRow" class="qa-units-row"></div>
 
       <label style="font-size:12px;color:var(--mut)">הערה (אופציונלי)</label>
-      <input id="editItemNote" type="search" maxlength="120" placeholder="לדוגמה: חלב סויה" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="ss-edit-note" data-form-type="other" enterkeyhint="done" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--txt);font-size:14px"/>
+      <input id="editItemNote" type="search" maxlength="120" placeholder="לדוגמה: חלב סויה" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="ss-edit-note" data-form-type="other" enterkeyhint="done" class="qa-note-inp"/>
 
       <button class="qa-urgent-mini" id="editItemUrgentBtn" type="button" data-track="editItem:urgent" aria-pressed="false" title="סימון כדחוף" style="margin-top:6px;align-self:flex-start">
         <span class="bell">🔔</span><span class="lbl">דחוף</span>
