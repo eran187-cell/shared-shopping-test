@@ -1338,9 +1338,29 @@ const APP_VERSION='1.02-rc.2';
           <span>יעד:</span>
           <select id="annTarget" style="padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:13px;font-family:inherit">
             <option value="all">כל המשתמשים</option>
-            <option value="house">בית ספציפי</option>
+            <option value="filter">לפי סינון</option>
+            <option value="manual">בחירה ידנית</option>
+            <option value="house">קוד בית בודד</option>
           </select>
-          <input id="annTargetHouse" type="text" placeholder="קוד בית" maxlength="12" style="display:none;flex:1;min-width:100px;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:13px;font-family:monospace;text-transform:uppercase"/>
+          <span id="annTargetCount" style="font-size:11px;color:var(--pri);font-weight:700"></span>
+        </div>
+        <input id="annTargetHouse" type="text" placeholder="קוד בית" maxlength="12" style="display:none;width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:13px;font-family:monospace;text-transform:uppercase"/>
+        <div id="annFilterRow" style="display:none;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--mut)">
+          <span>קריטריון:</span>
+          <select id="annFilterKind" style="padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:13px;font-family:inherit">
+            <option value="today">פעילים היום</option>
+            <option value="week">פעילים בשבוע האחרון</option>
+            <option value="month">פעילים בחודש האחרון</option>
+            <option value="stale">לא פעילים מעל 30 ימים</option>
+            <option value="versionOld">לא על הגרסה האחרונה</option>
+          </select>
+        </div>
+        <div id="annManualWrap" style="display:none;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);max-height:180px;overflow-y:auto;padding:6px">
+          <div style="display:flex;gap:8px;font-size:11px;margin-bottom:4px">
+            <button type="button" id="annPickAll" style="padding:2px 8px;border:1px solid var(--bdr);background:var(--sur);color:var(--txt);border-radius:6px;font-size:11px;cursor:pointer">סמן הכל</button>
+            <button type="button" id="annPickNone" style="padding:2px 8px;border:1px solid var(--bdr);background:var(--sur);color:var(--txt);border-radius:6px;font-size:11px;cursor:pointer">נקה</button>
+          </div>
+          <div id="annHouseChecklist" style="font-size:12px"></div>
         </div>
         <div style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--mut);flex-wrap:wrap">
           <span>טקסט הכפתור:</span>
@@ -1354,6 +1374,16 @@ const APP_VERSION='1.02-rc.2';
         </div>
         <button id="annSendBtn" style="padding:10px;border:none;border-radius:8px;background:var(--pri);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">📤 שלח הודעה</button>
         <div id="annSendStatus" style="font-size:12px;color:var(--mut);min-height:16px"></div>
+        <div style="font-size:12px;color:var(--mut);margin-top:6px;padding-top:8px;border-top:1px dashed var(--bdr)">תצוגה מקדימה:</div>
+        <div id="annPreview" style="background:rgba(0,0,0,.04);border:1px dashed var(--bdr);border-radius:12px;padding:14px 12px;display:flex;justify-content:center;align-items:flex-start">
+          <div id="annPreviewCard" style="background:var(--sur);border:1.5px solid var(--bdr);border-radius:14px;max-width:320px;width:100%;padding:18px 16px 14px 16px;box-shadow:0 6px 20px rgba(0,0,0,.18);position:relative">
+            <div id="annPreviewIcon" style="font-size:24px;text-align:center;margin-bottom:6px">📣</div>
+            <div id="annPreviewTitle" style="font-size:15px;font-weight:700;text-align:center;margin-bottom:8px;color:var(--txt)">הודעה מהמערכת</div>
+            <div id="annPreviewText" style="font-size:13px;line-height:1.55;color:var(--txt);white-space:pre-wrap;text-align:right;margin-bottom:12px;min-height:18px;color:var(--mut);font-style:italic">(ההודעה תופיע כאן)</div>
+            <div id="annPreviewFb" style="display:none;width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--mut);font-size:12px;margin-bottom:10px;font-style:italic">כתוב כאן את המשוב שלך…</div>
+            <button type="button" id="annPreviewCta" disabled style="display:block;width:100%;padding:10px;border:none;border-radius:10px;background:var(--pri);color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:default">הבנתי ✓</button>
+          </div>
+        </div>
       </div>
       <div style="margin-top:14px;border-top:1px solid var(--bdr);padding-top:12px">
         <div style="font-size:13px;font-weight:700;margin-bottom:8px">היסטוריית הודעות:</div>
@@ -4186,8 +4216,19 @@ function _annSaveSeen(seen){try{localStorage.setItem(ANN_SEEN_KEY,JSON.stringify
 function _annMatchesUser(ann){
   if(!ann||ann.active===false)return false;
   if(!ann.target||ann.target==='all')return true;
+  if(!houseId)return false;
+  const myCode=String(houseId).toUpperCase();
+  // Single house: 'house:<CODE>'
   if(typeof ann.target==='string' && ann.target.indexOf('house:')===0){
-    return houseId && ann.target.slice(6).toUpperCase()===String(houseId).toUpperCase();
+    return ann.target.slice(6).toUpperCase()===myCode;
+  }
+  // Multi-house: array of codes (Firebase serialises arrays as objects with
+  // numeric keys, so accept both forms).
+  if(Array.isArray(ann.target)){
+    return ann.target.some(c=>String(c||'').toUpperCase()===myCode);
+  }
+  if(typeof ann.target==='object'){
+    return Object.values(ann.target).some(c=>String(c||'').toUpperCase()===myCode);
   }
   return false;
 }
@@ -4357,11 +4398,122 @@ _annInit();
 (function(){
   const tgtSel=document.getElementById('annTarget');
   const tgtHouse=document.getElementById('annTargetHouse');
-  if(tgtSel){
-    tgtSel.addEventListener('change',function(){
-      tgtHouse.style.display=(this.value==='house')?'inline-block':'none';
+  const filterRow=document.getElementById('annFilterRow');
+  const filterKind=document.getElementById('annFilterKind');
+  const manualWrap=document.getElementById('annManualWrap');
+  const checklist=document.getElementById('annHouseChecklist');
+  const targetCount=document.getElementById('annTargetCount');
+  // Cache of houses fetched from /stats/houses for the checkbox list
+  let _adminHousesCache=[];
+  function _loadHousesForPicker(){
+    return firebase.database().ref('stats/houses').once('value').then(snap=>{
+      const all=snap.val()||{};
+      _adminHousesCache=Object.entries(all)
+        .map(([hash,h])=>({hash,c:h.c||'',n:h.n||'',m:h.m||0,t:h.t||0,v:h.v||''}))
+        .filter(h=>h.c) // need code to address
+        .sort((a,b)=>(b.t||0)-(a.t||0));
+      _renderHouseChecklist();
+      _updateTargetCount();
+    }).catch(()=>{});
+  }
+  // expose so loadAdminStats() can pre-populate the picker on dashboard open
+  window._annLoadHousesForPicker=_loadHousesForPicker;
+  function _renderHouseChecklist(){
+    if(!checklist)return;
+    checklist.innerHTML=_adminHousesCache.map((h,i)=>{
+      const ageDays=h.t?Math.floor((Date.now()-h.t)/86400000):null;
+      const ageLabel=ageDays===null?'—':ageDays===0?'היום':ageDays===1?'אתמול':'לפני '+ageDays+'י';
+      const name=(h.n||'').trim()||'בית #'+h.hash.slice(0,4);
+      return '<label style="display:flex;gap:6px;align-items:center;padding:4px 6px;border-radius:6px;cursor:pointer" data-h="'+h.c+'">'
+        +'<input type="checkbox" data-house-code="'+h.c+'" style="margin:0"/>'
+        +'<span style="flex:1">'+_esc(name)+'</span>'
+        +'<code style="font-size:10px;background:var(--sur);color:var(--mut);padding:1px 4px;border-radius:4px">'+_esc(h.c)+'</code>'
+        +'<span style="font-size:10px;color:var(--mut)">'+ageLabel+'</span>'
+        +'</label>';
+    }).join('');
+    checklist.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+      cb.addEventListener('change',_updateTargetCount);
     });
   }
+  function _filterHousesByKind(kind){
+    const now=Date.now();const day=86400000;
+    return _adminHousesCache.filter(h=>{
+      if(!h.c)return false;
+      if(kind==='today')return h.t && (now-h.t)<day;
+      if(kind==='week')return h.t && (now-h.t)<7*day;
+      if(kind==='month')return h.t && (now-h.t)<30*day;
+      if(kind==='stale')return h.t && (now-h.t)>=30*day;
+      if(kind==='versionOld')return h.v && h.v!==APP_VERSION;
+      return true;
+    });
+  }
+  function _resolveTarget(){
+    const mode=tgtSel.value;
+    if(mode==='all')return {target:'all', count:_adminHousesCache.length};
+    if(mode==='house'){
+      const h=(tgtHouse.value||'').trim().toUpperCase();
+      return {target:h?'house:'+h:'', count:h?1:0};
+    }
+    if(mode==='filter'){
+      const arr=_filterHousesByKind(filterKind.value).map(h=>h.c);
+      return {target:arr, count:arr.length};
+    }
+    if(mode==='manual'){
+      const arr=Array.from(checklist.querySelectorAll('input:checked')).map(cb=>cb.dataset.houseCode);
+      return {target:arr, count:arr.length};
+    }
+    return {target:'all', count:0};
+  }
+  function _updateTargetCount(){
+    const {count}=_resolveTarget();
+    targetCount.textContent=count?'→ '+count+' בתים':'';
+  }
+  if(tgtSel){
+    tgtSel.addEventListener('change',function(){
+      tgtHouse.style.display=(this.value==='house')?'block':'none';
+      filterRow.style.display=(this.value==='filter')?'flex':'none';
+      manualWrap.style.display=(this.value==='manual')?'block':'none';
+      if((this.value==='filter'||this.value==='manual') && !_adminHousesCache.length){_loadHousesForPicker().then(_updateTargetCount);}
+      _updateTargetCount();
+    });
+  }
+  if(filterKind)filterKind.addEventListener('change',_updateTargetCount);
+  if(tgtHouse)tgtHouse.addEventListener('input',_updateTargetCount);
+  document.getElementById('annPickAll')?.addEventListener('click',()=>{
+    checklist.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=true);_updateTargetCount();
+  });
+  document.getElementById('annPickNone')?.addEventListener('click',()=>{
+    checklist.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.checked=false);_updateTargetCount();
+  });
+
+  // ── Live preview ───────────────────────────
+  function _refreshPreview(){
+    const text=(document.getElementById('annText').value||'').trim();
+    const title=(document.getElementById('annTitle').value||'').trim()||'הודעה מהמערכת';
+    const icon=(document.getElementById('annIcon').value||'').trim()||'📣';
+    const ctaLabel=(document.getElementById('annCtaLabel').value||'').trim()||'הבנתי ✓';
+    const ctaAction=document.getElementById('annCtaAction').value||'dismiss';
+    document.getElementById('annPreviewIcon').textContent=icon;
+    document.getElementById('annPreviewTitle').textContent=title;
+    const txtEl=document.getElementById('annPreviewText');
+    if(text){
+      txtEl.textContent=text;
+      txtEl.style.color='var(--txt)';txtEl.style.fontStyle='normal';
+    }else{
+      txtEl.textContent='(ההודעה תופיע כאן)';
+      txtEl.style.color='var(--mut)';txtEl.style.fontStyle='italic';
+    }
+    document.getElementById('annPreviewFb').style.display=(ctaAction==='feedback')?'block':'none';
+    const ctaBtn=document.getElementById('annPreviewCta');
+    ctaBtn.textContent=ctaLabel||(ctaAction==='feedback'?'שליחת משוב ✉':'הבנתי ✓');
+    if(ctaAction==='feedback' && !ctaLabel.trim())ctaBtn.textContent='שליחת משוב ✉';
+  }
+  ['annText','annTitle','annIcon','annCtaLabel'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.addEventListener('input',_refreshPreview);
+  });
+  document.getElementById('annCtaAction')?.addEventListener('change',_refreshPreview);
+  setTimeout(_refreshPreview,0);
+
   const sendBtn=document.getElementById('annSendBtn');
   if(sendBtn){
     sendBtn.addEventListener('click',function(){
@@ -4372,18 +4524,16 @@ _annInit();
       const icon=(document.getElementById('annIcon').value||'').trim()||'📣';
       const ctaLabel=(document.getElementById('annCtaLabel').value||'').trim()||'הבנתי ✓';
       const ctaAction=document.getElementById('annCtaAction').value||'dismiss';
-      let target='all';
-      if(tgtSel.value==='house'){
-        const h=(tgtHouse.value||'').trim().toUpperCase();
-        if(!h){status.textContent='⚠ הזן קוד בית';status.style.color='#e74c3c';return;}
-        target='house:'+h;
-      }
+      const {target,count}=_resolveTarget();
+      if(!target || (Array.isArray(target)&&!target.length)){status.textContent='⚠ אף בית לא נבחר';status.style.color='#e74c3c';return;}
+      if(Array.isArray(target) && count>1 && !confirm('לשלוח הודעה ל-'+count+' בתים?'))return;
       const payload={text,title,icon,target,ctaLabel,ctaAction,active:true,createdAt:Date.now()};
       status.textContent='שולח...';status.style.color='var(--mut)';
       const ref=firebase.database().ref('announcements').push();
       ref.set(payload).then(()=>{
-        status.textContent='✓ נשלח בהצלחה';status.style.color='var(--pri)';
+        status.textContent='✓ נשלח בהצלחה ('+count+' בתים)';status.style.color='var(--pri)';
         document.getElementById('annText').value='';
+        _refreshPreview();
         _annLoadHistory();
       }).catch(err=>{
         status.textContent='שליחה נכשלה: '+(err.message||err);status.style.color='#e74c3c';
@@ -4447,7 +4597,12 @@ _annInit();
         const fb=a.feedback||{};
         const fbCount=Object.keys(fb).length;
         const fbList=Object.entries(fb).sort((x,y)=>(y[1].t||0)-(x[1].t||0));
-        const tgt=(a.target==='all')?'כולם':a.target;
+        let tgt;
+        if(a.target==='all')tgt='כולם';
+        else if(typeof a.target==='string')tgt=a.target;
+        else if(Array.isArray(a.target))tgt=a.target.length+' בתים';
+        else if(a.target&&typeof a.target==='object')tgt=Object.keys(a.target).length+' בתים';
+        else tgt='—';
         const status=a.active===false?'⏸ מבוטלת':'🟢 פעילה';
         const isFeedback=a.ctaAction==='feedback';
         return '<div style="border:1px solid var(--bdr);border-radius:8px;padding:8px 10px;margin-bottom:6px;background:var(--bg)">'
@@ -4522,6 +4677,8 @@ async function loadAdminStats(){
   document.getElementById('adminTime').textContent='טוען...';
   // Refresh announcements history alongside stats
   if(typeof _annLoadHistory==='function'){try{_annLoadHistory();}catch(_){}}
+  // Refresh the announcement target-picker cache so the live count works
+  if(typeof window._annLoadHousesForPicker==='function'){try{window._annLoadHousesForPicker();}catch(_){}}
   try{
     const snap=await db.ref('stats').once('value');
     const s=snap.val()||{};
