@@ -766,7 +766,8 @@ input[type="search"]{-webkit-appearance:none;appearance:none}
 /* ════ ADMIN DASHBOARD — WOW look ════════════════════════════════════
    Full-bleed gradient backdrop with mesh-blur orbs, sticky glass header,
    colorful KPI tiles, modern cards with hover lift, theme toggle. */
-#adminPanel{padding:0 !important;background:#f0faf5 !important;position:relative}
+#adminPanel{padding:0 !important;background:#f0faf5 !important;position:relative;transition:filter .4s ease}
+#adminPanel.locked{filter:blur(18px) saturate(.6) brightness(.85);pointer-events:none;user-select:none;-webkit-user-select:none}
 body.dark #adminPanel{background:#07120c !important}
 /* Decorative gradient blobs in the backdrop */
 #adminPanel::before,#adminPanel::after{content:"";position:fixed;border-radius:50%;filter:blur(80px);opacity:.45;pointer-events:none;z-index:0}
@@ -1351,7 +1352,7 @@ const APP_VERSION='1.02-rc.2';
 </div>
 
 <!-- ══ ADMIN AUTH GATE — random "grandma" question ═════════ -->
-<div id="adminAuthOverlay" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,#0a1812 0%,#152a1f 100%);z-index:99999;align-items:center;justify-content:center;padding:20px;direction:rtl;font-family:inherit">
+<div id="adminAuthOverlay" style="display:none;position:fixed;inset:0;background:rgba(7,18,12,.4);backdrop-filter:saturate(.7);-webkit-backdrop-filter:saturate(.7);z-index:99999;align-items:center;justify-content:center;padding:20px;direction:rtl;font-family:inherit">
   <div id="adminAuthCard" style="background:rgba(255,255,255,.08);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid rgba(255,255,255,.15);border-radius:24px;padding:32px 28px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);transition:transform .2s;font-family:inherit">
     <div style="font-size:42px;margin-bottom:10px;font-family:inherit">🔐</div>
     <h2 style="margin:0 0 6px 0;font-size:20px;color:#fff;font-weight:800;font-family:inherit">אימות זהות</h2>
@@ -4941,8 +4942,9 @@ async function _onAdminAuthSubmit(){
   if(ok){
     try{sessionStorage.setItem('admin_ok','1');}catch(_){}
     _adminAuthFails=0;
-    document.getElementById('adminAuthOverlay').style.display='none';
-    _showAdminPanel();
+    // Smooth unblur of the dashboard, then dismiss the lock overlay
+    document.getElementById('adminPanel').classList.remove('locked');
+    setTimeout(()=>{document.getElementById('adminAuthOverlay').style.display='none';},250);
     return;
   }
   _adminAuthFails++;
@@ -4989,6 +4991,10 @@ function showAdmin(){
   document.getElementById('home').classList.add('hidden');
   document.getElementById('setup').classList.add('slide-right');
   document.getElementById('onboardOverlay').style.display='none';
+  // Render the dashboard behind the lock screen, but apply a strong blur
+  // so the data is illegible until the user authenticates.
+  _showAdminPanel();
+  document.getElementById('adminPanel').classList.add('locked');
   _showAdminAuth();
 }
 function fmtBytes(n){
