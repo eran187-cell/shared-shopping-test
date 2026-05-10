@@ -4,12 +4,12 @@
   "supportEmail": "comigo2022@gmail.com",
   "appVersion": "1.0",
   "firebaseConfig": {
-    "apiKey": "REPLACE_ME",
-    "authDomain": "shared-shopping.firebaseapp.com",
-    "databaseURL": "https://shared-shopping-default-rtdb.europe-west1.firebasedatabase.app",
-    "projectId": "shared-shopping",
-    "storageBucket": "shared-shopping.firebasestorage.app",
-    "messagingSenderId": "REPLACE_ME",
-    "appId": "REPLACE_ME"
+    "apiKey": "AIzaSyA3Kn724RvTn-c-5zoSsWGXapTGWRUw7bM",
+    "authDomain": "shared-shopping-deb8e.firebaseapp.com",
+    "databaseURL": "https://shared-shopping-deb8e-default-rtdb.europe-west1.firebasedatabase.app",
+    "projectId": "shared-shopping-deb8e",
+    "storageBucket": "shared-shopping-deb8e.firebasestorage.app",
+    "messagingSenderId": "748313112480",
+    "appId": "1:748313112480:web:c0584264011442ae42fec5"
   }
 }
