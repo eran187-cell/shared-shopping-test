@@ -2312,13 +2312,15 @@ document.getElementById('tellFriendsBtn').addEventListener('click',async functio
   }
 });
 
-// Support button — open mail app with house code + device info pre-filled
+// Support button — open Gmail compose with house code + device info pre-filled
 document.getElementById('supportBtn').addEventListener('click',function(){
   const ua=navigator.userAgent;
+  const isAndroid=/Android/i.test(ua);
+  const isIOS=/iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
   let device='לא ידוע';
   if(/iPad/.test(ua))device='iPad';
   else if(/iPhone/.test(ua))device='iPhone';
-  else if(/Android/.test(ua)){
+  else if(isAndroid){
     const m=ua.match(/Android[^;]*;\s*([^)]+?)(?:Build|\))/);
     device=m?'Android ('+m[1].trim()+')':'Android';
   }
@@ -2327,17 +2329,25 @@ document.getElementById('supportBtn').addEventListener('click',function(){
   const code=houseId||'ללא בית';
   const ver=(typeof APP_VERSION==='string')?APP_VERSION:'';
   const subject='תמיכה - בית '+code+' - '+device;
-  // Pre-filled body with auto-collected context so the user only needs to
-  // describe the issue
   const body='\n\n\n— נא לכתוב מעל לקו —\n\nפרטי המכשיר (אוטומטי):\n'
     +'בית: '+code+'\n'
     +'מכשיר: '+device+'\n'
     +(ver?'גרסה: '+ver+'\n':'')
     +'דפדפן: '+ua;
-  const href='mailto:comigo2022@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
-  // window.open is more reliable than setting location.href on iOS PWAs
-  const w=window.open(href,'_self');
-  if(!w)location.href=href;
+  const to='comigo2022@gmail.com';
+  // On Android, mailto: triggers a chooser that lists every messaging app
+  // (SMS, WhatsApp, etc.). The Gmail web compose URL bypasses that and
+  // opens straight into Gmail (web or app, whichever handles the host).
+  if(isAndroid){
+    const gmailUrl='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(to)
+      +'&su='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+    window.open(gmailUrl,'_blank','noopener');
+    return;
+  }
+  // iOS / desktop: mailto: opens the system default mail app cleanly.
+  const mailtoUrl='mailto:'+to+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  if(isIOS){location.href=mailtoUrl;}
+  else{window.open(mailtoUrl,'_self');}
 });
 
 // About / privacy overlay
