@@ -1566,9 +1566,9 @@ async function recordHouseStat(){
         d:doneItems,
         l:(listTypes||[]).length,
         t:now,
-        cr:(curr&&curr.cr)||now, // preserve creation time on subsequent writes
-        v:(typeof APP_VERSION==='string')?APP_VERSION:'unknown' // app version of last writer
+        cr:(curr&&curr.cr)||now // preserve creation time on subsequent writes
       };
+      // Versions are tracked per-device under /stats/houses/<hash>/devs/.
       if(cleanName)next.n=cleanName;
       else if(curr&&curr.n)next.n=curr.n; // keep last known name if blank
       // preserve incremental counters managed by _bumpHouseStat
@@ -1587,23 +1587,26 @@ async function _bumpHouseStat(field){
       if(!curr)return curr; // abort: can't satisfy the validate rule from scratch here
       const next={...curr};
       next[field]=(next[field]||0)+1;
-      // refresh the recorded version on every counter bump
-      if(typeof APP_VERSION==='string')next.v=APP_VERSION;
       return next;
     }).catch(err=>console.warn('[stats bump]',field,err.code||err.message));
   }catch(e){console.warn('[stats bump]',e);}
 }
-// Tiny helper: write current APP_VERSION to the existing stats record without
-// touching counters. Used at app load when `recordHouseStat()` is too heavy.
-async function _stampHouseVersion(){
+// Per-device version stamp. Versions are pinned to the device, not the
+// house, so the dashboard can show how many *users* are on each version.
+let _deviceHash=null;
+async function _getDeviceHash(){
+  if(_deviceHash)return _deviceHash;
+  _deviceHash=(await _sha256hex('sl3-dev-'+deviceId)).slice(0,16);
+  return _deviceHash;
+}
+async function _stampDeviceVersion(){
   if(!houseId)return;
   try{
-    const hash=await _getHouseHash();
-    db.ref('stats/houses/'+hash).transaction(curr=>{
-      if(!curr)return curr;
-      if(typeof APP_VERSION==='string' && curr.v!==APP_VERSION){curr.v=APP_VERSION;return curr;}
-      return undefined; // no change
-    }).catch(()=>{});
+    const hh=await _getHouseHash();
+    const dh=await _getDeviceHash();
+    if(!hh||!dh)return;
+    const v=(typeof APP_VERSION==='string')?APP_VERSION:'unknown';
+    db.ref('stats/houses/'+hh+'/devs/'+dh).set({v,t:Date.now()}).catch(()=>{});
   }catch(_){}
 }
 // Per-button click counter: /stats/houses/{hash}/clicks/{screen}/{button}
@@ -1763,7 +1766,7 @@ function startListener(id){
     // opens the app to look at the list.
     if(!_versionStamped){
       _versionStamped=true;
-      setTimeout(()=>{try{_stampHouseVersion();}catch(_){}},2000);
+      setTimeout(()=>{try{_stampDeviceVersion();}catch(_){}},2000);
     }
     // ignore only our own echo; still accept updates from other sessions
     // (even while we are in the middle of saving) so sync isn't blocked
@@ -4713,7 +4716,7 @@ async function loadAdminStats(){
     let totalFamilies=0,totalUsers=0,totalItems=0,totalDone=0,totalLists=0,latestUpdate=0,newToday=0;
     const startOfToday=new Date();startOfToday.setHours(0,0,0,0);
     const startMs=startOfToday.getTime();
-    const versionCounts={};
+    const versionCounts={}; // devices per version (across all houses)
     Object.values(houses).forEach(h=>{
       totalFamilies++;
       totalUsers+=(h.m||0);
@@ -4722,10 +4725,14 @@ async function loadAdminStats(){
       totalLists+=(h.l||0);
       if((h.t||0)>latestUpdate)latestUpdate=h.t;
       if(h.cr && h.cr>=startMs)newToday++;
-      const v=h.v||'(לא ידוע)';
-      versionCounts[v]=(versionCounts[v]||0)+1;
+      // Aggregate per-device version stamps from /stats/houses/<hash>/devs/
+      const devs=h.devs||{};
+      Object.values(devs).forEach(d=>{
+        const v=(d&&d.v)||'(לא ידוע)';
+        versionCounts[v]=(versionCounts[v]||0)+1;
+      });
     });
-    // Render version distribution card
+    // Render version distribution card — devices, not houses
     const verEl=document.getElementById('adminVersionDist');
     if(verEl){
       const verEntries=Object.entries(versionCounts).sort((a,b)=>b[1]-a[1]);
@@ -4737,7 +4744,7 @@ async function loadAdminStats(){
           return '<div style="margin-bottom:10px">'
             +'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">'
               +'<span><b>'+esc(v)+'</b>'+(isLatest?' <span style="font-size:10px;background:var(--pri);color:#fff;padding:1px 6px;border-radius:6px;margin-right:4px">עדכני</span>':'')+'</span>'
-              +'<span style="color:var(--mut)">'+c+' בתים · '+pct+'%</span>'
+              +'<span style="color:var(--mut)">'+c+' מכשירים · '+pct+'%</span>'
             +'</div>'
             +'<div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden">'
               +'<div style="height:100%;width:'+pct+'%;background:'+(isLatest?'var(--pri)':'var(--mut)')+'"></div>'
@@ -4870,7 +4877,18 @@ async function loadAdminStats(){
         const isNewToday=h.cr && h.cr>=startMs;
         const newBadge=isNewToday?'<span style="font-size:10px;font-weight:700;background:var(--pri);color:#fff;padding:2px 6px;border-radius:6px;margin-right:4px">חדש</span>':'';
         const rowBg=isNewToday?'background:rgba(45,186,122,.10);':'';
-        const verLabel=h.v?'<span style="font-size:10px;background:var(--bg);color:var(--mut);padding:1px 6px;border-radius:6px;font-family:monospace">v '+esc(h.v)+'</span>':'';
+        // Per-house device-version summary chip (e.g. "1.02×2 · 1.01×1")
+        const devs=h.devs||{};
+        const devVerCounts={};
+        Object.values(devs).forEach(d=>{
+          const v=(d&&d.v)||'?';
+          devVerCounts[v]=(devVerCounts[v]||0)+1;
+        });
+        const devVerEntries=Object.entries(devVerCounts).sort((a,b)=>b[1]-a[1]);
+        const verLabel=devVerEntries.length
+          ?'<span style="font-size:10px;background:var(--bg);color:var(--mut);padding:1px 6px;border-radius:6px;font-family:monospace" title="גרסאות לפי מכשירים">'
+            +devVerEntries.map(([v,c])=>esc(v)+'×'+c).join(' · ')+'</span>'
+          :'';
         return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bdr);'+rowBg+'">'
           +'<span style="font-size:12px;color:var(--mut);min-width:24px;text-align:center">'+(i+1)+'</span>'
           +'<span style="font-size:14px;font-weight:600;flex:1;display:flex;align-items:center;gap:4px">'+newBadge+displayName+codeChip+verLabel+'</span>'
