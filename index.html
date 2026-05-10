@@ -1500,6 +1500,18 @@ const APP_VERSION='1.02-rc.2';
   </div>
 </div>
 
+<!-- Drill-down list of devices on a single version (admin) -->
+<div class="overlay" id="versionDrillOverlay">
+  <div class="sheet" style="max-height:82vh;overflow-y:auto">
+    <h3 id="vdTitle" style="display:flex;align-items:center;gap:8px"><span>🏷️</span><span>משתמשים בגרסה</span></h3>
+    <div id="vdList" style="font-size:13px;margin-top:10px"></div>
+    <div class="sheet-actions">
+      <button id="vdSendMsg" class="btn-primary">📨 שליחת הודעה למשתמשים אלה</button>
+      <button id="vdClose" class="btn-cancel">סגירה</button>
+    </div>
+  </div>
+</div>
+
 <!-- "What's new" overlay — release notes shown when WHATSNEW_ID changes. -->
 <div class="overlay" id="whatsNewOverlay">
   <div class="sheet" style="max-height:82vh;overflow-y:auto">
@@ -4516,6 +4528,62 @@ _annInit();
   }
   // expose so loadAdminStats() can pre-populate the picker on dashboard open
   window._annLoadHousesForPicker=_loadHousesForPicker;
+  // expose count update so drill-down can refresh after programmatic checks
+  window._annUpdateTargetCount=_updateTargetCount;
+  // Drill-down: show device list for a single version + offer to message them.
+  window._showVersionDrill=function(version){
+    const items=(window._adminVersionDevices||{})[version]||[];
+    document.getElementById('vdTitle').innerHTML='<span>🏷️</span><span>גרסה <b>'+_esc(version)+'</b> · '+items.length+' מכשירים</span>';
+    const list=document.getElementById('vdList');
+    if(!items.length){
+      list.innerHTML='<div style="color:var(--mut);text-align:center;padding:20px">אין מכשירים בגרסה זו.</div>';
+    } else {
+      list.innerHTML=items.sort((a,b)=>(b.t||0)-(a.t||0)).map(d=>{
+        const ageDays=d.t?Math.floor((Date.now()-d.t)/86400000):null;
+        const ageLabel=ageDays===null?'—':ageDays===0?'היום':ageDays===1?'אתמול':'לפני '+ageDays+' ימים';
+        const name=(d.name||'').trim()||'בית #'+d.hash.slice(0,4);
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--bdr);font-size:13px">'
+          +'<span style="flex:1"><b>'+_esc(name)+'</b>'+(d.code?' <code style="font-size:10px;background:var(--bg);padding:1px 5px;border-radius:4px;color:var(--mut);margin-right:4px">'+_esc(d.code)+'</code>':'')+'</span>'
+          +'<span style="font-size:11px;color:var(--mut)">'+_esc(d.devHash.slice(-6))+'</span>'
+          +'<span style="font-size:11px;color:var(--mut);min-width:80px;text-align:left">'+ageLabel+'</span>'
+          +'</div>';
+      }).join('');
+    }
+    document.getElementById('versionDrillOverlay').classList.add('open');
+    document.getElementById('vdSendMsg').onclick=function(){
+      const codes=Array.from(new Set(items.map(d=>d.code).filter(Boolean)));
+      if(!codes.length){alert('לא ניתן לשלוח — אין קודי בית זמינים למכשירים אלו.');return;}
+      document.getElementById('versionDrillOverlay').classList.remove('open');
+      if(typeof window._annPrepareForHouses==='function')window._annPrepareForHouses(codes);
+    };
+  };
+  document.getElementById('vdClose').addEventListener('click',()=>{
+    document.getElementById('versionDrillOverlay').classList.remove('open');
+  });
+  // Pre-populate the announcement form for a list of house codes
+  // (used by the version-pie drill-down "send message to these users").
+  window._annPrepareForHouses=function(codes){
+    const tgt=document.getElementById('annTarget');
+    tgt.value='manual';
+    tgt.dispatchEvent(new Event('change'));
+    const set=new Set((codes||[]).filter(Boolean));
+    const tryCheck=(attempts)=>{
+      const list=document.getElementById('annHouseChecklist');
+      if(!list||!list.children.length){
+        if(attempts<15)setTimeout(()=>tryCheck(attempts+1),200);
+        return;
+      }
+      list.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+        cb.checked=set.has(cb.dataset.houseCode);
+      });
+      _updateTargetCount();
+      // Scroll the announcement form into view
+      const card=document.getElementById('annText').closest('.admin-card');
+      if(card)card.scrollIntoView({behavior:'smooth',block:'center'});
+      setTimeout(()=>document.getElementById('annText').focus(),400);
+    };
+    setTimeout(()=>tryCheck(0),200);
+  };
   function _renderHouseChecklist(){
     if(!checklist)return;
     checklist.innerHTML=_adminHousesCache.map((h,i)=>{
@@ -4789,7 +4857,8 @@ async function loadAdminStats(){
     const startOfToday=new Date();startOfToday.setHours(0,0,0,0);
     const startMs=startOfToday.getTime();
     const versionCounts={}; // devices per version (across all houses)
-    Object.values(houses).forEach(h=>{
+    const versionDevices={}; // detailed list per version for drill-down
+    Object.entries(houses).forEach(([hash,h])=>{
       totalFamilies++;
       totalUsers+=(h.m||0);
       totalItems+=(h.i||0);
@@ -4797,13 +4866,23 @@ async function loadAdminStats(){
       totalLists+=(h.l||0);
       if((h.t||0)>latestUpdate)latestUpdate=h.t;
       if(h.cr && h.cr>=startMs)newToday++;
-      // Aggregate per-device version stamps from /stats/houses/<hash>/devs/
       const devs=h.devs||{};
-      Object.values(devs).forEach(d=>{
+      Object.entries(devs).forEach(([dh,d])=>{
         const v=(d&&d.v)||'(לא ידוע)';
         versionCounts[v]=(versionCounts[v]||0)+1;
+        if(!versionDevices[v])versionDevices[v]=[];
+        versionDevices[v].push({
+          hash,
+          code:h.c||'',
+          name:h.n||'',
+          devHash:dh,
+          t:(d&&d.t)||0,
+          members:h.m||0
+        });
       });
     });
+    // Expose for drill-down handler
+    window._adminVersionDevices=versionDevices;
     // ── Capacity monitoring (Firebase Spark plan limits) ─────────────
     (function _renderCapacity(){
       const el=document.getElementById('adminCapacity');if(!el)return;
@@ -4859,26 +4938,62 @@ async function loadAdminStats(){
        +row('חיבורים סימולטניים',connPct,activeDevices+' מכשירים פעילים ב-5 דקות אחרונות מתוך 100')
        +row('Bandwidth חודשי (הערכה)',bwPct,bwMB.toFixed(0)+' MB מתוך 10240 MB ('+monthlyDevices+' מכשירים פעילים החודש)');
     })();
-    // Render version distribution card — devices, not houses
+    // Render version distribution card — donut pie with clickable slices
     const verEl=document.getElementById('adminVersionDist');
     if(verEl){
       const verEntries=Object.entries(versionCounts).sort((a,b)=>b[1]-a[1]);
       const total=verEntries.reduce((n,[,c])=>n+c,0)||1;
-      verEl.innerHTML=verEntries.length
-        ?verEntries.map(([v,c])=>{
+      const PALETTE_VER=['#2dba7a','#5b4fcf','#e91e8c','#00bcd4','#e67e22','#9b59b6','#2980b9','#f39c12','#16a085','#c0392b'];
+      const colorOf=(v,i)=>v==='(לא ידוע)'?'#888':PALETTE_VER[i%PALETTE_VER.length];
+      if(!verEntries.length){
+        verEl.innerHTML='<div style="color:var(--mut)">אין עדיין נתוני גרסאות.</div>';
+      } else {
+        // Build donut: each slice is a circle with stroke-dasharray on a r=15.91 circle (circumference≈100)
+        let acc=0;
+        const slices=verEntries.map(([v,c],i)=>{
+          const pct=c*100/total;
+          const seg='<circle data-version="'+esc(v)+'" cx="21" cy="21" r="15.9155" fill="transparent" '
+            +'stroke="'+colorOf(v,i)+'" stroke-width="6" '
+            +'stroke-dasharray="'+pct.toFixed(2)+' '+(100-pct).toFixed(2)+'" '
+            +'stroke-dashoffset="'+(25-acc).toFixed(2)+'" '
+            +'style="cursor:pointer;transition:stroke-width .15s" />';
+          acc+=pct;
+          return seg;
+        }).join('');
+        const legend=verEntries.map(([v,c],i)=>{
           const pct=Math.round(c*100/total);
           const isLatest=v===APP_VERSION;
-          return '<div style="margin-bottom:10px">'
-            +'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">'
-              +'<span><b>'+esc(v)+'</b>'+(isLatest?' <span style="font-size:10px;background:var(--pri);color:#fff;padding:1px 6px;border-radius:6px;margin-right:4px">עדכני</span>':'')+'</span>'
-              +'<span style="color:var(--mut)">'+c+' מכשירים · '+pct+'%</span>'
-            +'</div>'
-            +'<div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden">'
-              +'<div style="height:100%;width:'+pct+'%;background:'+(isLatest?'var(--pri)':'var(--mut)')+'"></div>'
-            +'</div>'
+          return '<div data-version="'+esc(v)+'" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;transition:background .15s" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'transparent\'">'
+            +'<span style="width:12px;height:12px;border-radius:3px;background:'+colorOf(v,i)+';flex-shrink:0"></span>'
+            +'<span style="flex:1;font-weight:600">'+esc(v)+(isLatest?' <span style="font-size:9px;background:var(--pri);color:#fff;padding:1px 5px;border-radius:4px;margin-right:3px">עדכני</span>':'')+'</span>'
+            +'<span style="color:var(--mut);font-size:11px">'+c+' · '+pct+'%</span>'
           +'</div>';
-        }).join('')
-        :'<div style="color:var(--mut)">אין עדיין נתוני גרסאות.</div>';
+        }).join('');
+        verEl.innerHTML=
+          '<div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center">'
+            +'<div style="position:relative;width:160px;height:160px;flex-shrink:0">'
+              +'<svg viewBox="0 0 42 42" width="160" height="160" style="transform:rotate(0deg)" id="adminVersionPie">'+slices+'</svg>'
+              +'<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">'
+                +'<div style="font-size:24px;font-weight:800;color:var(--txt);line-height:1">'+total+'</div>'
+                +'<div style="font-size:11px;color:var(--mut)">מכשירים</div>'
+              +'</div>'
+            +'</div>'
+            +'<div style="flex:1;min-width:160px;font-size:12px">'+legend+'</div>'
+          +'</div>'
+          +'<div style="font-size:11px;color:var(--mut);margin-top:10px;text-align:center">לחץ על מקטע / שורה כדי לראות את המכשירים ולשלוח להם הודעה</div>';
+        // Wire clicks (slice + legend row)
+        const handler=function(){
+          const v=this.dataset.version;
+          if(v && typeof window._showVersionDrill==='function')window._showVersionDrill(v);
+        };
+        verEl.querySelectorAll('[data-version]').forEach(el=>{
+          el.addEventListener('click',handler);
+        });
+        verEl.querySelectorAll('circle[data-version]').forEach(c=>{
+          c.addEventListener('mouseenter',function(){this.setAttribute('stroke-width','8');});
+          c.addEventListener('mouseleave',function(){this.setAttribute('stroke-width','6');});
+        });
+      }
     }
 
     // ── today's logins
