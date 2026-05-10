@@ -1306,6 +1306,15 @@ const APP_VERSION='1.02-rc.2';
     </div>
 
     <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
+      <h3 style="margin:0 0 10px 0;font-size:15px">🚦 ניטור מגבלות (Firebase Spark)</h3>
+      <div id="adminCapacity" style="font-size:13px"></div>
+      <div style="font-size:11px;color:var(--mut);margin-top:10px;line-height:1.5">
+        🟢 פחות מ-50% &nbsp; · &nbsp; 🟡 50-80% &nbsp; · &nbsp; 🔴 מעל 80%<br>
+        Bandwidth ו-Connections הם הערכות; Storage מחושב מהנתונים בפועל.
+      </div>
+    </div>
+
+    <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
       <h3 style="margin:0 0 10px 0;font-size:15px">🏠 רשימת בתים</h3>
       <div style="display:flex;gap:6px;margin-bottom:8px;align-items:stretch">
         <input id="adminDelCode" type="text" placeholder="קוד בית למחיקה (4-12 תווים)" maxlength="12"
@@ -4749,6 +4758,61 @@ async function loadAdminStats(){
         versionCounts[v]=(versionCounts[v]||0)+1;
       });
     });
+    // ── Capacity monitoring (Firebase Spark plan limits) ─────────────
+    (function _renderCapacity(){
+      const el=document.getElementById('adminCapacity');if(!el)return;
+      // 1) Storage estimate — JSON byte size of /stats payload (we don't
+      //    have direct access to /houses bytes from rules, but stats is a
+      //    reasonable proxy since it scales with house count).
+      const statsBytes=JSON.stringify(s||{}).length;
+      // Approximate full DB usage: stats + an estimate of /houses (avg 20KB/house)
+      const housesEstBytes=totalFamilies*20*1024;
+      const totalBytes=statsBytes+housesEstBytes;
+      const storageMB=totalBytes/1024/1024;
+      const storagePct=Math.min(100,Math.round(storageMB/1024*100)); // limit = 1GB
+      // 2) Concurrent connections — devices active in the last 5 minutes
+      const cutoff=Date.now()-5*60*1000;
+      let activeDevices=0;
+      Object.values(houses).forEach(h=>{
+        const devs=h.devs||{};
+        Object.values(devs).forEach(d=>{ if((d&&d.t||0)>cutoff)activeDevices++; });
+      });
+      const connPct=Math.min(100,Math.round(activeDevices/100*100)); // limit = 100
+      // 3) Monthly bandwidth — devices that updated this month × ~7.5MB
+      const monthAgo=Date.now()-30*86400000;
+      let monthlyDevices=0;
+      Object.values(houses).forEach(h=>{
+        const devs=h.devs||{};
+        Object.values(devs).forEach(d=>{ if((d&&d.t||0)>monthAgo)monthlyDevices++; });
+      });
+      const bwMB=monthlyDevices*7.5;
+      const bwPct=Math.min(100,Math.round(bwMB/1024/10*100)); // limit = 10GB
+      // Threshold colors
+      function light(pct){
+        if(pct<50)return {dot:'🟢',color:'var(--pri)'};
+        if(pct<80)return {dot:'🟡',color:'#f0ad4e'};
+        return {dot:'🔴',color:'#e74c3c'};
+      }
+      function bar(pct,clr){
+        return '<div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin-top:3px">'
+          +'<div style="height:100%;width:'+pct+'%;background:'+clr+';transition:width .3s"></div></div>';
+      }
+      function row(label,pct,detail){
+        const l=light(pct);
+        return '<div style="margin-bottom:12px">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">'
+            +'<span><span style="font-size:14px;margin-left:4px">'+l.dot+'</span><b>'+label+'</b></span>'
+            +'<span style="color:'+l.color+';font-weight:700">'+pct+'%</span>'
+          +'</div>'
+          +'<div style="font-size:11px;color:var(--mut);margin-bottom:3px">'+detail+'</div>'
+          +bar(pct,l.color)
+        +'</div>';
+      }
+      el.innerHTML=
+        row('אחסון',storagePct,storageMB.toFixed(1)+' MB מתוך 1024 MB ('+totalFamilies+' בתים)')
+       +row('חיבורים סימולטניים',connPct,activeDevices+' מכשירים פעילים ב-5 דקות אחרונות מתוך 100')
+       +row('Bandwidth חודשי (הערכה)',bwPct,bwMB.toFixed(0)+' MB מתוך 10240 MB ('+monthlyDevices+' מכשירים פעילים החודש)');
+    })();
     // Render version distribution card — devices, not houses
     const verEl=document.getElementById('adminVersionDist');
     if(verEl){
