@@ -4940,11 +4940,12 @@ async function _onAdminAuthSubmit(){
   const inp=document.getElementById('adminAuthInp');
   const ok=await _checkAdminAnswer(inp.value);
   if(ok){
-    try{sessionStorage.setItem('admin_ok','1');}catch(_){}
+    try{sessionStorage.setItem('admin_ok','1');sessionStorage.setItem('admin_ok_t',String(Date.now()));}catch(_){}
     _adminAuthFails=0;
     // Smooth unblur of the dashboard, then dismiss the lock overlay
     document.getElementById('adminPanel').classList.remove('locked');
     setTimeout(()=>{document.getElementById('adminAuthOverlay').style.display='none';},250);
+    _startAdminTimeoutMonitor();
     return;
   }
   _adminAuthFails++;
@@ -4984,9 +4985,51 @@ function _showAdminPanel(){
   document.getElementById('adminPanel').style.display='block';
   loadAdminStats();
 }
+// ── Auto-lock after 30 minutes of inactivity ─────────────
+const ADMIN_IDLE_MS=30*60*1000;
+let _adminLastActivity=0;
+let _adminIdleInterval=null;
+function _bumpAdminActivity(){_adminLastActivity=Date.now();}
+function _stopAdminTimeoutMonitor(){
+  if(_adminIdleInterval){clearInterval(_adminIdleInterval);_adminIdleInterval=null;}
+  _adminLastActivity=0;
+}
+function _startAdminTimeoutMonitor(){
+  _bumpAdminActivity();
+  if(_adminIdleInterval)clearInterval(_adminIdleInterval);
+  _adminIdleInterval=setInterval(()=>{
+    if(!_adminLastActivity)return;
+    if(Date.now()-_adminLastActivity>ADMIN_IDLE_MS){
+      // Idle timeout → re-lock
+      try{sessionStorage.removeItem('admin_ok');sessionStorage.removeItem('admin_ok_t');}catch(_){}
+      _stopAdminTimeoutMonitor();
+      document.getElementById('adminPanel').classList.add('locked');
+      const errEl=document.getElementById('adminAuthErr');
+      if(errEl)errEl.textContent='לאחר 30 דקות חוסר פעילות — נדרשת הזדהות מחדש';
+      _showAdminAuth();
+    }
+  },30*1000);
+  // Reset the timer on any user interaction with the admin panel
+  const panel=document.getElementById('adminPanel');
+  if(panel && !panel._idleWired){
+    ['mousedown','mousemove','keydown','touchstart','scroll','focus','wheel'].forEach(ev=>{
+      panel.addEventListener(ev,_bumpAdminActivity,{passive:true,capture:true});
+    });
+    panel._idleWired=true;
+  }
+}
 function showAdmin(){
-  // Already authenticated this session → straight to dashboard
-  if(sessionStorage.getItem('admin_ok')==='1'){_showAdminPanel();return;}
+  // Already authenticated this session AND not expired → straight to dashboard
+  if(sessionStorage.getItem('admin_ok')==='1'){
+    const t=parseInt(sessionStorage.getItem('admin_ok_t')||'0',10);
+    if(t && (Date.now()-t)<ADMIN_IDLE_MS){
+      _showAdminPanel();
+      _startAdminTimeoutMonitor();
+      return;
+    }
+    // expired — fall through to re-auth
+    try{sessionStorage.removeItem('admin_ok');}catch(_){}
+  }
   hideSplash();
   document.getElementById('home').classList.add('hidden');
   document.getElementById('setup').classList.add('slide-right');
