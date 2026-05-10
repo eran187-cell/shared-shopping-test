@@ -56,7 +56,7 @@ window.addEventListener('error',function(ev){
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#f0faf5;--sur:#fff;--bdr:#bdd9cc;
+  --bg:#f0faf5;--sur:#fff;--bdr:#dde2df;
   --pri:#2dba7a;--pril:#e4f7ed;
   --txt:#1a2e24;--mut:#5d8a7a;
   --red:#e74c3c;--r:14px;
@@ -330,7 +330,7 @@ body.dark .qp-trash{color:var(--red)}
 body.dark .qp-trash:active{background:#3d1818}
 body.dark .qa-urgent-mini.active{background:#3d1818;border-color:var(--red);color:var(--red)}
 body.dark .item-card.urgent{border-right-color:var(--red)}
-.fbtn.active .fbtn-count{background:rgba(255,255,255,.25)}
+.fbtn.active .fbtn-count{background:#fff;color:var(--pri)}
 @keyframes countPop{0%{transform:scale(1)}35%{transform:scale(1.45)}70%{transform:scale(.92)}100%{transform:scale(1)}}
 .fbtn-count.bump{animation:countPop .45s ease}
 
@@ -357,9 +357,10 @@ body.dark .item-card.urgent{border-right-color:var(--red)}
 .chk.on{background:var(--pri);border-color:var(--pri)}
 .chk.on::after{content:'✓';color:#fff;font-size:13px;font-weight:700}
 .iinfo{flex:1;min-width:0}
-.iname{font-size:15px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.imeta{font-size:12px;color:var(--mut);margin-top:3px;display:flex;gap:6px;align-items:center}
-.qty-badge{background:var(--bg);border-radius:6px;padding:1px 8px;font-size:12px;font-weight:600;color:var(--txt)}
+.iname{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.imeta{font-size:12px;color:var(--mut);margin-top:4px;display:flex;gap:6px;align-items:center}
+.qty-badge{background:rgba(0,0,0,.05);border-radius:6px;padding:1px 8px;font-size:12px;font-weight:600;color:var(--txt)}
+body.dark .qty-badge{background:rgba(255,255,255,.08)}
 .who-badge{padding:1px 8px;border-radius:6px;font-size:11px;font-weight:600;color:#fff}
 .item-note{font-size:12px;color:var(--mut);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .adot{width:22px;height:22px;border-radius:50%;font-size:10px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
