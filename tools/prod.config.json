@@ -1,0 +1,15 @@
+{
+  "_comment": "Production deploy config. Fill in firebaseConfig from Firebase Console → Project Settings → Web App.",
+  "prodRepoPath": "C:\\Users\\topel\\shared-shopping",
+  "supportEmail": "comigo2022@gmail.com",
+  "appVersion": "1.0",
+  "firebaseConfig": {
+    "apiKey": "REPLACE_ME",
+    "authDomain": "shared-shopping.firebaseapp.com",
+    "databaseURL": "https://shared-shopping-default-rtdb.europe-west1.firebasedatabase.app",
+    "projectId": "shared-shopping",
+    "storageBucket": "shared-shopping.firebasestorage.app",
+    "messagingSenderId": "REPLACE_ME",
+    "appId": "REPLACE_ME"
+  }
+}
