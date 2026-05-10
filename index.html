@@ -811,8 +811,10 @@ body.dark .admin-card:hover{box-shadow:0 8px 28px rgba(0,0,0,.55)}
 .admin-grid-2-1{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
 @media (max-width:900px){.admin-grid-2,.admin-grid-3,.admin-grid-2-1{grid-template-columns:1fr}}
 
-/* KPI tiles — colorful, vibrant */
-#adminSummary{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:22px}
+/* KPI tiles — colorful, vibrant — 6 in a row on desktop */
+#adminSummary{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:22px}
+@media (max-width:900px){#adminSummary{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:520px){#adminSummary{grid-template-columns:repeat(2,1fr)}}
 .kpi-tile{background:var(--sur);border:1px solid var(--bdr);border-radius:16px;padding:16px 16px 14px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s,border-color .15s;cursor:default}
 .kpi-tile:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,.08)}
 body.dark .kpi-tile:hover{box-shadow:0 12px 30px rgba(0,0,0,.5)}
@@ -5047,18 +5049,18 @@ async function loadAdminStats(){
 
     // ── summary tiles
     document.getElementById('adminSummary').innerHTML=[
-      ['🏠',totalFamilies,'בתים'],
-      ['🆕',newToday,'בתים חדשים היום'],
-      ['👥',totalUsers,'משתמשים'],
-      ['🛒',totalItems,'פריטים פעילים'],
-      ['✅',totalDone,'הושלמו'],
-      ['📅',todayLogins,'כניסות היום'],
-      ['📋',totalLists,'רשימות']
-    ].map(([icon,val,label],i)=>
+      ['🏠',totalFamilies,'בתים', newToday>0?('+'+newToday+' חדשים היום'):''],
+      ['👥',totalUsers,'משתמשים',''],
+      ['🛒',totalItems,'פריטים פעילים',''],
+      ['✅',totalDone,'הושלמו',''],
+      ['📅',todayLogins,'כניסות היום',''],
+      ['📋',totalLists,'רשימות','']
+    ].map(([icon,val,label,sub],i)=>
       '<div class="kpi-tile kpi-c'+(i%7)+'">'
       +'<div class="kpi-icon">'+icon+'</div>'
       +'<div class="kpi-label">'+label+'</div>'
       +'<div class="kpi-value">'+val+'</div>'
+      +(sub?'<div class="kpi-sub">'+sub+'</div>':'')
       +'</div>'
     ).join('');
 
