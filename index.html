@@ -23,6 +23,14 @@
 if('serviceWorker' in navigator){
   try{navigator.serviceWorker.register('./sw.js').catch(()=>{});}catch(_){}
 }
+// Lock orientation to portrait when running as installed PWA. The Screen
+// Orientation API only works in fullscreen / standalone contexts; the call
+// is silently rejected in regular browser tabs, which is fine.
+try{
+  if(screen.orientation && typeof screen.orientation.lock==='function'){
+    screen.orientation.lock('portrait').catch(()=>{});
+  }
+}catch(_){}
 // Hard safety net: ALWAYS hide the splash after 6 seconds, no matter what.
 // Runs even if the main bundle fails to load — protects against in-app
 // browsers (WhatsApp/Instagram) where Firebase or other deps may hang.
