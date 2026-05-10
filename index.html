@@ -754,6 +754,48 @@ input[type="search"]{-webkit-appearance:none;appearance:none}
 #splash .sp-dots span:nth-child(2){animation-delay:.2s}
 #splash .sp-dots span:nth-child(3){animation-delay:.4s}
 @keyframes dotPulse{0%,80%,100%{transform:scale(1);opacity:.5}40%{transform:scale(1.3);opacity:1}}
+
+/* ════ ADMIN DASHBOARD — premium look ════════════════════════════════
+   Wider layout, gradient backdrop, sticky branded header, modern cards
+   with subtle hover, grid arrangements, KPI tiles with accent stripes. */
+#adminPanel{padding:0 !important;background:linear-gradient(180deg,#f0faf5 0%,#e8f7ee 100%) !important}
+body.dark #adminPanel{background:linear-gradient(180deg,#07120c 0%,#0d1f15 100%) !important}
+.admin-container{max-width:1280px;margin:0 auto;padding:24px 20px 60px;direction:rtl}
+@media (max-width:640px){.admin-container{padding:14px 12px 40px}}
+.admin-topbar{position:sticky;top:0;z-index:20;background:var(--sur);border-bottom:1px solid var(--bdr);padding:12px 20px;margin:-24px -20px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(0,0,0,.05);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+@media (max-width:640px){.admin-topbar{margin:-14px -12px 16px;padding:10px 12px}}
+body.dark .admin-topbar{box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.admin-topbar .admin-logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--pri) 0%,#1f9b62 100%);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;box-shadow:0 3px 10px rgba(45,186,122,.35)}
+.admin-topbar h2{margin:0;font-size:20px;font-weight:800;letter-spacing:-.3px}
+.admin-topbar .admin-test-tag{display:inline-block;font-size:9px;font-weight:800;background:#e74c3c;color:#fff;padding:3px 7px;border-radius:5px;margin-right:6px;letter-spacing:.5px;vertical-align:middle}
+.admin-topbar .admin-time{margin-right:auto;font-size:12px;color:var(--mut)}
+.admin-topbar .admin-actions{display:flex;gap:6px;flex-shrink:0}
+.admin-topbar .admin-actions button{padding:8px 14px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.admin-topbar .admin-btn-primary{background:var(--pri);color:#fff;box-shadow:0 2px 6px rgba(45,186,122,.3)}
+.admin-topbar .admin-btn-primary:hover{background:#26a36a;transform:translateY(-1px)}
+.admin-topbar .admin-btn-ghost{background:transparent;color:var(--txt);border:1.5px solid var(--bdr) !important}
+.admin-topbar .admin-btn-ghost:hover{background:var(--bg)}
+
+.admin-card{background:var(--sur);border:1px solid var(--bdr);border-radius:16px;padding:18px 18px;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:box-shadow .2s,transform .2s}
+.admin-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.06)}
+body.dark .admin-card{box-shadow:0 1px 4px rgba(0,0,0,.3)}
+body.dark .admin-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.5)}
+.admin-card h3{margin:0 0 14px 0;font-size:14px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:8px}
+.admin-card h3 .ico{font-size:18px}
+
+.admin-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.admin-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.admin-grid-2-1{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
+@media (max-width:900px){.admin-grid-2,.admin-grid-3,.admin-grid-2-1{grid-template-columns:1fr}}
+
+/* KPI tiles for the summary row */
+#adminSummary{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:20px}
+#adminSummary .kpi-tile{background:var(--sur);border:1px solid var(--bdr);border-radius:14px;padding:14px 14px 12px;position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s}
+#adminSummary .kpi-tile:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.07)}
+#adminSummary .kpi-tile::before{content:"";position:absolute;top:0;right:0;left:0;height:3px;background:linear-gradient(90deg,var(--pri),#1f9b62)}
+#adminSummary .kpi-tile .kpi-label{font-size:11px;font-weight:600;color:var(--mut);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+#adminSummary .kpi-tile .kpi-value{font-size:28px;font-weight:800;color:var(--txt);line-height:1.1;letter-spacing:-.5px}
+#adminSummary .kpi-tile .kpi-sub{font-size:11px;color:var(--mut);margin-top:4px}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -1275,47 +1317,48 @@ const APP_VERSION='1.02-rc.2';
 </div>
 
 <!-- ══ ADMIN DASHBOARD (aggregate stats only) ═════════ -->
-<div id="adminPanel" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:9999;overflow-y:auto;padding:20px;font-family:inherit;color:var(--txt)">
-  <div style="max-width:760px;margin:0 auto">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
-      <span style="font-size:28px">📊</span>
-      <h2 style="margin:0;font-size:22px">Shared Shopping <span style="color:#e74c3c;font-size:14px">TEST</span></h2>
-      <span id="adminTime" style="margin-right:auto;font-size:12px;color:var(--mut)"></span>
-    </div>
-
-    <div style="display:flex;gap:8px;margin-bottom:16px">
-      <button id="adminRefreshBtn" class="btn-primary" style="flex:1">🔄 רענן</button>
-      <button id="adminBackBtn" class="btn-cancel">חזרה לאפליקציה</button>
-    </div>
-
-    <div id="adminSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px"></div>
-
-    <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
-      <h3 style="margin:0 0 10px 0;font-size:15px">📅 כניסות יומיות (7 ימים אחרונים)</h3>
-      <div id="adminLoginsChart"></div>
-    </div>
-
-    <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
-      <h3 style="margin:0 0 10px 0;font-size:15px">📊 התפלגות חיבורים אחרונים</h3>
-      <div id="adminLoginPie"></div>
-    </div>
-
-    <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
-      <h3 style="margin:0 0 10px 0;font-size:15px">🏷️ פילוח גרסאות</h3>
-      <div id="adminVersionDist" style="font-size:13px"></div>
-    </div>
-
-    <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
-      <h3 style="margin:0 0 10px 0;font-size:15px">🚦 ניטור מגבלות (Firebase Spark)</h3>
-      <div id="adminCapacity" style="font-size:13px"></div>
-      <div style="font-size:11px;color:var(--mut);margin-top:10px;line-height:1.5">
-        🟢 פחות מ-50% &nbsp; · &nbsp; 🟡 50-80% &nbsp; · &nbsp; 🔴 מעל 80%<br>
-        Bandwidth ו-Connections הם הערכות; Storage מחושב מהנתונים בפועל.
+<div id="adminPanel" style="display:none;position:fixed;inset:0;z-index:9999;overflow-y:auto;font-family:inherit;color:var(--txt)">
+  <div class="admin-container">
+    <div class="admin-topbar">
+      <div class="admin-logo">📊</div>
+      <h2>Shared Shopping<span class="admin-test-tag">TEST</span></h2>
+      <span id="adminTime" class="admin-time"></span>
+      <div class="admin-actions">
+        <button id="adminRefreshBtn" class="admin-btn-primary">🔄 רענן</button>
+        <button id="adminBackBtn" class="admin-btn-ghost">← חזרה</button>
       </div>
     </div>
 
-    <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
-      <h3 style="margin:0 0 10px 0;font-size:15px">🏠 רשימת בתים</h3>
+    <div id="adminSummary"></div>
+
+    <div class="admin-grid-2">
+      <div class="admin-card">
+        <h3><span class="ico">🚦</span>ניטור מגבלות (Firebase Spark)</h3>
+        <div id="adminCapacity" style="font-size:13px"></div>
+        <div style="font-size:11px;color:var(--mut);margin-top:10px;line-height:1.5">
+          🟢 פחות מ-50% &nbsp;·&nbsp; 🟡 50-80% &nbsp;·&nbsp; 🔴 מעל 80%<br>
+          Bandwidth ו-Connections הם הערכות; Storage מחושב מהנתונים בפועל.
+        </div>
+      </div>
+      <div class="admin-card">
+        <h3><span class="ico">🏷️</span>פילוח גרסאות</h3>
+        <div id="adminVersionDist" style="font-size:13px"></div>
+      </div>
+    </div>
+
+    <div class="admin-grid-2">
+      <div class="admin-card">
+        <h3><span class="ico">📅</span>כניסות יומיות (7 ימים אחרונים)</h3>
+        <div id="adminLoginsChart"></div>
+      </div>
+      <div class="admin-card">
+        <h3><span class="ico">📊</span>התפלגות חיבורים אחרונים</h3>
+        <div id="adminLoginPie"></div>
+      </div>
+    </div>
+
+    <div class="admin-card" style="margin-bottom:16px">
+      <h3><span class="ico">🏠</span>רשימת בתים</h3>
       <div style="display:flex;gap:6px;margin-bottom:8px;align-items:stretch">
         <input id="adminDelCode" type="text" placeholder="קוד בית למחיקה (4-12 תווים)" maxlength="12"
           style="flex:1;padding:8px 10px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--txt);font-family:monospace;font-size:13px;text-transform:uppercase"/>
@@ -1334,8 +1377,8 @@ const APP_VERSION='1.02-rc.2';
       <div id="adminHouseList"></div>
     </div>
 
-    <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
-      <h3 style="margin:0 0 10px 0;font-size:15px">📨 שליחת הודעה למשתמשים</h3>
+    <div class="admin-card" style="margin-bottom:16px">
+      <h3><span class="ico">📨</span>שליחת הודעה למשתמשים</h3>
       <div style="display:flex;flex-direction:column;gap:8px">
         <textarea id="annText" placeholder="טקסט ההודעה (תמיכה בשבירת שורות)" rows="3" style="width:100%;padding:8px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--txt);font-family:inherit;font-size:13px;resize:vertical;box-sizing:border-box"></textarea>
         <div style="display:flex;gap:6px;align-items:center;font-size:12px;color:var(--mut);flex-wrap:wrap">
@@ -1401,40 +1444,42 @@ const APP_VERSION='1.02-rc.2';
       </div>
     </div>
 
-    <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
-      <h3 style="margin:0 0 10px 0;font-size:15px">📬 משובים מהמשתמשים</h3>
+    <div class="admin-card" style="margin-bottom:16px">
+      <h3><span class="ico">📬</span>משובים מהמשתמשים</h3>
       <div style="font-size:12px;color:var(--mut);margin-bottom:8px">כל המשובים שהתקבלו מכל ההודעות, מהחדש לישן.</div>
       <div id="annFeedbackAll"></div>
     </div>
 
-    <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
-      <h3 style="margin:0 0 10px 0;font-size:15px">📣 לחצו על "ספר לחברים"</h3>
-      <div id="adminTellFriends"></div>
-    </div>
-
-    <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
-      <h3 style="margin:0 0 10px 0;font-size:15px">📲 התקנות אפליקציה</h3>
-      <div id="adminInstalls"></div>
-    </div>
-
-    <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
-      <h3 style="margin:0 0 10px 0;font-size:15px">🖱️ מפת לחיצות</h3>
-      <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;font-size:12px;color:var(--mut)">
-        <span>בית:</span>
-        <select id="adminClickHouse" style="flex:1;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:13px;font-family:inherit">
-          <option value="">כל הבתים (אגרגטיבי)</option>
-        </select>
+    <div class="admin-grid-2">
+      <div class="admin-card">
+        <h3><span class="ico">📣</span>לחצו על "ספר לחברים"</h3>
+        <div id="adminTellFriends"></div>
       </div>
-      <div id="adminClicks"></div>
+      <div class="admin-card">
+        <h3><span class="ico">📲</span>התקנות אפליקציה</h3>
+        <div id="adminInstalls"></div>
+      </div>
     </div>
 
-    <div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;margin-bottom:16px">
-      <h3 style="margin:0 0 10px 0;font-size:15px">🔥 20 הפריטים הנפוצים ביותר</h3>
-      <div id="adminTopItems"></div>
+    <div class="admin-grid-2">
+      <div class="admin-card">
+        <h3><span class="ico">🖱️</span>מפת לחיצות</h3>
+        <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;font-size:12px;color:var(--mut)">
+          <span>בית:</span>
+          <select id="adminClickHouse" style="flex:1;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:13px;font-family:inherit">
+            <option value="">כל הבתים (אגרגטיבי)</option>
+          </select>
+        </div>
+        <div id="adminClicks"></div>
+      </div>
+      <div class="admin-card">
+        <h3><span class="ico">🔥</span>20 הפריטים הנפוצים ביותר</h3>
+        <div id="adminTopItems"></div>
+      </div>
     </div>
 
     <div id="adminError" style="color:#e74c3c;font-size:13px;margin-top:12px"></div>
-    <div style="font-size:11px;color:var(--mut);margin-top:14px;line-height:1.5">
+    <div style="font-size:11px;color:var(--mut);margin-top:18px;line-height:1.6;text-align:center;padding:14px;background:var(--sur);border:1px solid var(--bdr);border-radius:12px">
       🔒 כל הנתונים אנונימיים: קודי בתים מוצפנים (SHA-256), שמות חברים אינם נשמרים, ולפריטים נשמר רק מונה תדירות גלובלי.
     </div>
   </div>
@@ -4858,10 +4903,9 @@ async function loadAdminStats(){
       ['📅',todayLogins,'כניסות היום'],
       ['📋',totalLists,'רשימות']
     ].map(([icon,val,label])=>
-      '<div style="background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px;text-align:center">'
-      +'<div style="font-size:24px;margin-bottom:4px">'+icon+'</div>'
-      +'<div style="font-size:22px;font-weight:700;color:var(--pri)">'+val+'</div>'
-      +'<div style="font-size:11px;color:var(--mut);margin-top:2px">'+label+'</div>'
+      '<div class="kpi-tile">'
+      +'<div class="kpi-label">'+icon+' '+label+'</div>'
+      +'<div class="kpi-value">'+val+'</div>'
       +'</div>'
     ).join('');
 
