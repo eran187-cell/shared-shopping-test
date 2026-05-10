@@ -69,8 +69,12 @@ Ok "APP_VERSION → '$ver'"
 Step 'Removing TEST badges and indicators…'
 $html = $html -replace '<title>Shared Shopping \(TEST\)</title>', '<title>Shared Shopping</title>'
 $html = $html -replace 'content="Shared Shopping TEST"', 'content="Shared Shopping"'
-# Remove the entire test banner wrapper (comment + div + inner button/badge)
-$html = [regex]::Replace($html, '(?s)<!--\s*TEST environment[^>]*-->\s*<div id="testBanner"[^>]*>.*?</div>', '')
+# Remove the entire test banner: comment + wrapper div + the script block
+# that wires the reset button. All three reference testResetBtn / testBanner
+# and would crash in prod if any one is left orphaned.
+$html = [regex]::Replace($html, '(?s)<!--\s*TEST environment[^>]*-->\s*<div id="testBanner"[^>]*>.*?</div>\s*<script>[^<]*testResetBtn[^<]*</script>', '')
+# Safety net: drop any remaining standalone script that references testResetBtn
+$html = [regex]::Replace($html, '(?s)<script>[^<]*testResetBtn[^<]*</script>', '')
 # Splash TEST badge (the small red TEST chip + the inline TEST in name)
 $html = [regex]::Replace($html, '\s*<span style="background:#e74c3c;color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;padding:3px 10px;border-radius:0 0 8px 8px">TEST</span>', '')
 $html = $html -replace '<div class="sp-name">Shared Shopping <span style="color:#e74c3c">TEST</span></div>', '<div class="sp-name">Shared Shopping</div>'
