@@ -1352,11 +1352,11 @@ const APP_VERSION='1.02-rc.2';
 
 <!-- ══ ADMIN AUTH GATE — random "grandma" question ═════════ -->
 <div id="adminAuthOverlay" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,#0a1812 0%,#152a1f 100%);z-index:99999;align-items:center;justify-content:center;padding:20px;direction:rtl;font-family:inherit">
-  <div id="adminAuthCard" style="background:rgba(255,255,255,.08);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid rgba(255,255,255,.15);border-radius:24px;padding:32px 28px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);transition:transform .2s">
-    <div style="font-size:42px;margin-bottom:10px">🔐</div>
-    <h2 style="margin:0 0 6px 0;font-size:20px;color:#fff;font-weight:800">אימות זהות</h2>
-    <div style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:24px">שאלה אקראית מתוך 10</div>
-    <div id="adminAuthQ" style="font-size:18px;color:#fff;font-weight:700;background:rgba(0,0,0,.25);padding:14px 16px;border-radius:14px;margin-bottom:14px;min-height:24px">…</div>
+  <div id="adminAuthCard" style="background:rgba(255,255,255,.08);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:1px solid rgba(255,255,255,.15);border-radius:24px;padding:32px 28px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);transition:transform .2s;font-family:inherit">
+    <div style="font-size:42px;margin-bottom:10px;font-family:inherit">🔐</div>
+    <h2 style="margin:0 0 6px 0;font-size:20px;color:#fff;font-weight:800;font-family:inherit">אימות זהות</h2>
+    <div style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:24px;font-family:inherit">שאלה אקראית מתוך 10</div>
+    <div id="adminAuthQ" style="font-size:18px;color:#fff;font-weight:700;background:rgba(0,0,0,.25);padding:14px 16px;border-radius:14px;margin-bottom:14px;min-height:24px;font-family:inherit">…</div>
     <input id="adminAuthInp" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="התשובה שלך…" style="width:100%;box-sizing:border-box;padding:14px 16px;border:1.5px solid rgba(255,255,255,.2);border-radius:12px;background:rgba(0,0,0,.3);color:#fff;font-size:16px;outline:none;text-align:center;font-family:inherit;margin-bottom:8px"/>
     <div id="adminAuthErr" style="font-size:13px;color:#ff7b6e;min-height:18px;margin-bottom:10px"></div>
     <div style="display:flex;gap:8px">
