@@ -178,7 +178,8 @@ a,button,input,select{touch-action:manipulation}
 .setup-tell-btn:hover{background:var(--pri);color:#fff}
 
 /* ══ HOME view ═══════════════════════════════════════ */
-#home .topbar{background:var(--sur);padding:calc(14px + var(--sat)) 20px 12px;border-bottom:1px solid var(--bdr);display:flex;flex-direction:column;align-items:stretch;position:sticky;top:0;z-index:10}
+#home .topbar{background:var(--sur);padding:calc(14px + var(--sat)) 20px 12px;border-bottom:1px solid var(--bdr);display:flex;flex-direction:column;align-items:stretch;position:sticky;top:0;z-index:10;box-shadow:0 2px 4px rgba(0,0,0,.06)}
+body.dark #home .topbar{box-shadow:0 2px 6px rgba(0,0,0,.45)}
 .house-name{font-size:18px;font-weight:700;color:var(--txt);margin-bottom:6px}
 .topbar-row2{display:flex;align-items:center;justify-content:space-between}
 .topbar-right{display:flex;align-items:center;gap:4px}
@@ -265,7 +266,8 @@ a,button,input,select{touch-action:manipulation}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
 /* ══ LIST view ═══════════════════════════════════════ */
-#list .topbar{background:var(--sur);padding:calc(14px + var(--sat)) 16px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10;min-height:calc(60px + var(--sat));box-sizing:border-box}
+#list .topbar{background:var(--sur);padding:calc(14px + var(--sat)) 16px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10;min-height:calc(60px + var(--sat));box-sizing:border-box;box-shadow:0 2px 4px rgba(0,0,0,.06)}
+body.dark #list .topbar{box-shadow:0 2px 6px rgba(0,0,0,.45)}
 .back-btn{width:48px;height:48px;border-radius:12px;border:none;background:var(--bg);color:var(--txt);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
 .back-btn:hover{background:var(--bdr)}
 #list .topbar h2{font-size:18px;font-weight:700;flex:1}
