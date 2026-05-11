@@ -819,6 +819,52 @@ body.dark .admin-card:hover{box-shadow:0 8px 28px rgba(0,0,0,.55)}
 #adminSummary{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:22px}
 @media (max-width:900px){#adminSummary{grid-template-columns:repeat(3,1fr)}}
 @media (max-width:520px){#adminSummary{grid-template-columns:repeat(2,1fr)}}
+
+/* ── Mobile dashboard polish (≤640px) ──────────────────────────────── */
+@media (max-width:640px){
+  .admin-container{padding:10px 10px 30px}
+  /* Topbar: tighter, less crowded */
+  .admin-topbar{padding:10px 12px;gap:8px;border-radius:14px}
+  .admin-topbar .admin-logo{width:38px;height:38px;font-size:20px;border-radius:11px}
+  .admin-topbar h2{font-size:15px}
+  .admin-topbar .admin-test-tag{font-size:8px;padding:2px 5px}
+  .admin-topbar .admin-sub{font-size:10px}
+  .admin-topbar .admin-time{display:none} /* save real estate */
+  .admin-topbar .admin-actions{gap:4px}
+  .admin-topbar .admin-actions button{padding:7px 10px;font-size:12px;border-radius:9px}
+  .admin-topbar .admin-btn-icon{width:34px;height:34px;font-size:14px}
+  /* Cards: tighter padding */
+  .admin-card{padding:14px;border-radius:14px;margin-bottom:0}
+  .admin-grid-2,.admin-grid-3,.admin-grid-2-1{gap:12px;margin-bottom:12px}
+  .admin-card h3{font-size:13px;margin-bottom:12px}
+  .admin-card h3 .ico{font-size:16px}
+  /* KPI tiles: keep proud but compact */
+  #adminSummary{gap:10px;margin-bottom:16px}
+  .kpi-tile{padding:12px 12px 10px;border-radius:13px}
+  .kpi-tile .kpi-icon{width:32px;height:32px;font-size:16px;margin-bottom:6px;border-radius:9px}
+  .kpi-tile .kpi-value{font-size:22px}
+  .kpi-tile .kpi-label{font-size:10px}
+  .kpi-tile .kpi-sub{font-size:10px}
+  /* Pie chart: smaller + legend full width below */
+  #adminVersionDist > div[style*="display:flex"]{flex-direction:column !important;gap:14px !important}
+  #adminVersionDist svg{width:140px !important;height:140px !important}
+  /* Houses list rows: 2-line layout */
+  #adminHouseList > div{flex-wrap:wrap !important;gap:6px !important;padding:10px 4px !important}
+  #adminHouseList > div > span:first-child{order:1}  /* index */
+  #adminHouseList > div > span:nth-child(2){order:2;flex:1 1 100% !important;font-size:13px !important}  /* name */
+  /* Click map / form rows: stack inputs */
+  .admin-card select,.admin-card input[type="text"]{font-size:14px}
+  /* Capacity rows still readable */
+  #adminCapacity > div > div:first-child{flex-wrap:wrap}
+}
+/* Tiny phones (≤380px) — even tighter */
+@media (max-width:380px){
+  .admin-topbar h2{font-size:14px}
+  .admin-topbar .admin-actions button{padding:6px 8px;font-size:11px}
+  .admin-topbar .admin-btn-primary span,.admin-topbar .admin-btn-primary{padding:6px 10px}
+  .kpi-tile .kpi-value{font-size:20px}
+  .admin-card{padding:12px}
+}
 .kpi-tile{background:var(--sur);border:1px solid var(--bdr);border-radius:16px;padding:16px 16px 14px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s,border-color .15s;cursor:default}
 .kpi-tile:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,.08)}
 body.dark .kpi-tile:hover{box-shadow:0 12px 30px rgba(0,0,0,.5)}
