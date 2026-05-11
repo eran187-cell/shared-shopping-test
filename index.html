@@ -1604,7 +1604,7 @@ const APP_VERSION='1.02-rc.2';
 </div>
 
 <!-- Admin: confirmation summary before broadcasting an announcement -->
-<div class="overlay" id="annConfirmOverlay">
+<div class="overlay" id="annConfirmOverlay" style="z-index:10000">
   <div class="sheet" style="max-height:82vh;overflow-y:auto">
     <h3 style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span>📨</span><span>אישור שליחת הודעה</span></h3>
     <div style="font-size:13px;color:var(--mut);margin-bottom:14px">לפני שליחה, אנא וודא שכל הפרטים נכונים:</div>
@@ -1621,7 +1621,7 @@ const APP_VERSION='1.02-rc.2';
 </div>
 
 <!-- Drill-down list of devices on a single version (admin) -->
-<div class="overlay" id="versionDrillOverlay">
+<div class="overlay" id="versionDrillOverlay" style="z-index:10000">
   <div class="sheet" style="max-height:82vh;overflow-y:auto">
     <h3 id="vdTitle" style="display:flex;align-items:center;gap:8px"><span>🏷️</span><span>משתמשים בגרסה</span></h3>
     <div id="vdList" style="font-size:13px;margin-top:10px"></div>
