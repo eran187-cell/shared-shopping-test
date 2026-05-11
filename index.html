@@ -1557,6 +1557,23 @@ const APP_VERSION='1.02-rc.2';
   </div>
 </div>
 
+<!-- Admin: confirmation summary before broadcasting an announcement -->
+<div class="overlay" id="annConfirmOverlay">
+  <div class="sheet" style="max-height:82vh;overflow-y:auto">
+    <h3 style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span>📨</span><span>אישור שליחת הודעה</span></h3>
+    <div style="font-size:13px;color:var(--mut);margin-bottom:14px">לפני שליחה, אנא וודא שכל הפרטים נכונים:</div>
+    <div style="display:flex;flex-direction:column;gap:10px;font-size:13px">
+      <div><span style="color:var(--mut);font-size:11px;display:block;margin-bottom:3px">ההודעה:</span><div id="annConfirmText" style="background:var(--bg);border:1px solid var(--bdr);border-radius:8px;padding:10px;white-space:pre-wrap;line-height:1.5"></div></div>
+      <div><span style="color:var(--mut);font-size:11px;display:block;margin-bottom:3px">עם כפתור:</span><div id="annConfirmCta" style="font-weight:700"></div></div>
+      <div><span style="color:var(--mut);font-size:11px;display:block;margin-bottom:3px">תישלח אל:</span><div id="annConfirmTarget" style="font-weight:700;color:var(--pri)"></div></div>
+    </div>
+    <div class="sheet-actions">
+      <button id="annConfirmSend" class="btn-primary">✓ אישור שליחה</button>
+      <button id="annConfirmCancel" class="btn-cancel">ביטול</button>
+    </div>
+  </div>
+</div>
+
 <!-- Drill-down list of devices on a single version (admin) -->
 <div class="overlay" id="versionDrillOverlay">
   <div class="sheet" style="max-height:82vh;overflow-y:auto">
@@ -4737,6 +4754,17 @@ _annInit();
   document.getElementById('annCtaAction')?.addEventListener('change',_refreshPreview);
   setTimeout(_refreshPreview,0);
 
+  // Cache for the in-flight payload that the confirm modal needs to send
+  let _pendingAnn=null;
+  function _describeTarget(target,count){
+    if(target==='all')return 'כל המשתמשים ('+count+' בתים)';
+    if(typeof target==='string' && target.indexOf('house:')===0)return 'בית '+target.slice(6);
+    if(Array.isArray(target))return count+' בתים נבחרים';
+    return count+' יעדים';
+  }
+  function _describeCtaAction(action){
+    return action==='update'?'עדכון גרסה':action==='feedback'?'משוב — 2 שורות מהמשתמש':'סגירה רגילה';
+  }
   const sendBtn=document.getElementById('annSendBtn');
   if(sendBtn){
     sendBtn.addEventListener('click',function(){
@@ -4749,20 +4777,37 @@ _annInit();
       const ctaAction=document.getElementById('annCtaAction').value||'dismiss';
       const {target,count}=_resolveTarget();
       if(!target || (Array.isArray(target)&&!target.length)){status.textContent='⚠ אף בית לא נבחר';status.style.color='#e74c3c';return;}
-      if(Array.isArray(target) && count>1 && !confirm('לשלוח הודעה ל-'+count+' בתים?'))return;
-      const payload={text,title,icon,target,ctaLabel,ctaAction,active:true,createdAt:Date.now()};
-      status.textContent='שולח...';status.style.color='var(--mut)';
-      const ref=firebase.database().ref('announcements').push();
-      ref.set(payload).then(()=>{
-        status.textContent='✓ נשלח בהצלחה ('+count+' בתים)';status.style.color='var(--pri)';
-        document.getElementById('annText').value='';
-        _refreshPreview();
-        _annLoadHistory();
-      }).catch(err=>{
-        status.textContent='שליחה נכשלה: '+(err.message||err);status.style.color='#e74c3c';
-      });
+      // Build the summary modal
+      _pendingAnn={text,title,icon,target,ctaLabel,ctaAction,count};
+      document.getElementById('annConfirmText').textContent=icon+' '+title+'\n\n'+text;
+      document.getElementById('annConfirmCta').textContent='"'+ctaLabel+'"  ·  '+_describeCtaAction(ctaAction);
+      document.getElementById('annConfirmTarget').textContent=_describeTarget(target,count);
+      document.getElementById('annConfirmOverlay').classList.add('open');
     });
   }
+  function _executeAnnSend(){
+    if(!_pendingAnn)return;
+    const status=document.getElementById('annSendStatus');
+    const {text,title,icon,target,ctaLabel,ctaAction,count}=_pendingAnn;
+    const payload={text,title,icon,target,ctaLabel,ctaAction,active:true,createdAt:Date.now()};
+    status.textContent='שולח...';status.style.color='var(--mut)';
+    document.getElementById('annConfirmOverlay').classList.remove('open');
+    const ref=firebase.database().ref('announcements').push();
+    ref.set(payload).then(()=>{
+      status.textContent='✓ נשלח בהצלחה ('+count+' יעדים)';status.style.color='var(--pri)';
+      document.getElementById('annText').value='';
+      _pendingAnn=null;
+      _refreshPreview();
+      _annLoadHistory();
+    }).catch(err=>{
+      status.textContent='שליחה נכשלה: '+(err.message||err);status.style.color='#e74c3c';
+    });
+  }
+  document.getElementById('annConfirmSend').addEventListener('click',_executeAnnSend);
+  document.getElementById('annConfirmCancel').addEventListener('click',function(){
+    document.getElementById('annConfirmOverlay').classList.remove('open');
+    _pendingAnn=null;
+  });
   function _esc(s){return String(s||'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'})[c]);}
   function _fmtTime(ts){const d=new Date(ts);return d.toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}
   function _renderAggregateFeedback(all){
