@@ -2480,24 +2480,25 @@ document.getElementById('creatorName').addEventListener('input',function(){this.
 document.getElementById('tellFriendsBtn').addEventListener('click',async function(){
   _bumpHouseStat('tf');
   const url=location.href.split('?')[0].split('#')[0];
-  const message='אפליקציית רשימת קניות משותפת לכל המשפחה. כל אחד מוסיף, כולם רואים בזמן אמת. הצטרפו לראשונים שמתנסים בפיילוט: '+url;
-  // Prefer the native share sheet (WhatsApp, SMS, mail, etc.). Fall back to
-  // clipboard copy only if navigator.share isn't available or the user
-  // cancels.
+  // For the native share sheet: text WITHOUT the URL (URL passed separately
+  // via the `url` field — most apps concatenate text+url, so embedding it
+  // in text again produces a duplicate link).
+  const textOnly='אפליקציית רשימת קניות משותפת לכל המשפחה. כל אחד מוסיף, כולם רואים בזמן אמת. הצטרפו לראשונים שמתנסים בפיילוט:';
+  // For clipboard / fallback paths: include the URL inline (no separate url field).
+  const fullMessage=textOnly+' '+url;
   if(navigator.share){
     try{
-      await navigator.share({title:'Shared Shopping',text:message,url});
+      await navigator.share({title:'Shared Shopping',text:textOnly,url});
       return;
     }catch(err){
-      // User canceled — don't fall back unless it was a real failure
       if(err && err.name==='AbortError')return;
     }
   }
   try{
-    await navigator.clipboard.writeText(message);
+    await navigator.clipboard.writeText(fullMessage);
     toast('הקישור הועתק, ניתן לשתף עם החברים');
   }catch(_){
-    prompt('העתק והדבק את ההודעה הבאה:',message);
+    prompt('העתק והדבק את ההודעה הבאה:',fullMessage);
   }
 });
 
