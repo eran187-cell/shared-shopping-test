@@ -1771,6 +1771,11 @@ const FB_CFG={
   appId:'1:85106790897:web:8fba405da678553d78f450'
 };
 firebase.initializeApp(FB_CFG);
+// Persist Firebase Auth across browser sessions (default behaviour, but
+// stated explicitly so it survives even when third-party cookies are restricted).
+try{
+  if(firebase.auth)firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
+}catch(_){}
 const db=firebase.database();
 const SESSION=Math.random().toString(36).slice(2);
 let deviceId=localStorage.getItem('sl3_deviceId')||(()=>{const id=Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem('sl3_deviceId',id);return id;})();
@@ -2129,8 +2134,10 @@ async function _googleSignOut(){
 function _waitForAuth(){
   return new Promise(resolve=>{
     if(firebase.auth().currentUser){resolve(firebase.auth().currentUser);return;}
-    const unsub=firebase.auth().onAuthStateChanged(u=>{unsub();resolve(u||null);});
-    setTimeout(()=>{try{unsub();}catch(_){}resolve(firebase.auth().currentUser||null);},3000);
+    let done=false;
+    const finish=u=>{if(done)return;done=true;try{unsub&&unsub();}catch(_){}resolve(u||null);};
+    const unsub=firebase.auth().onAuthStateChanged(u=>finish(u));
+    setTimeout(()=>finish(firebase.auth().currentUser),6000);
   });
 }
 // Show a list of houses linked to the user's Google account
@@ -2138,19 +2145,30 @@ async function _showSyncedHouses(){
   const wrap=document.getElementById('syncedHousesList');
   wrap.innerHTML='<div style="text-align:center;color:var(--mut);padding:20px">טוען...</div>';
   document.getElementById('syncedHousesOverlay').classList.add('open');
-  // Step 1: ensure Firebase Auth is settled. If no current user, prompt sign-in.
+  // Step 1: try to set persistence to local (helps across page loads)
+  try{await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);}catch(_){}
+  // Step 2: wait for any persisted auth to load
   let user=await _waitForAuth();
+  // Step 3: if no auth, force a fresh sign-in popup
   if(!user){
+    wrap.innerHTML='<div style="text-align:center;color:var(--mut);padding:20px">פותח חלון התחברות...</div>';
     try{
       const r=await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
       user=r.user;
     }catch(err){
+      const code=(err&&err.code)||'';
+      if(code==='auth/popup-closed-by-user' || code==='auth/cancelled-popup-request'){
+        document.getElementById('syncedHousesOverlay').classList.remove('open');
+        return;
+      }
       wrap.innerHTML='<div style="color:var(--red);text-align:center;padding:20px">'+esc(err&&err.message||'נדרשת התחברות')+'</div>';
       return;
     }
   }
   const uid=user.uid;
   localStorage.setItem('sl3_googleUid',uid);
+  // Show "loading" again now that we have auth
+  wrap.innerHTML='<div style="text-align:center;color:var(--mut);padding:20px">טוען בתים...</div>';
   try{
     const snap=await firebase.database().ref('users/'+uid+'/houses').once('value');
     const entries=Object.entries(snap.val()||{});
