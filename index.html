@@ -2124,18 +2124,33 @@ async function _googleSignOut(){
   localStorage.removeItem('sl3_googleUid');
   toast('התנתק מסנכרון Google');
 }
+// Wait for Firebase Auth state to settle (it resolves async on page load,
+// even when there's a persisted session). Returns the currentUser or null.
+function _waitForAuth(){
+  return new Promise(resolve=>{
+    if(firebase.auth().currentUser){resolve(firebase.auth().currentUser);return;}
+    const unsub=firebase.auth().onAuthStateChanged(u=>{unsub();resolve(u||null);});
+    setTimeout(()=>{try{unsub();}catch(_){}resolve(firebase.auth().currentUser||null);},3000);
+  });
+}
 // Show a list of houses linked to the user's Google account
 async function _showSyncedHouses(){
-  const uid=localStorage.getItem('sl3_googleUid');
-  if(!uid){alert('נדרשת התחברות עם Google תחילה.');return;}
-  // Ensure Firebase auth is current (uid in localStorage may exist without active session)
-  if(!firebase.auth().currentUser){
-    try{await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());}
-    catch(err){alert('יש להתחבר עם Google תחילה: '+(err&&err.message||''));return;}
-  }
   const wrap=document.getElementById('syncedHousesList');
   wrap.innerHTML='<div style="text-align:center;color:var(--mut);padding:20px">טוען...</div>';
   document.getElementById('syncedHousesOverlay').classList.add('open');
+  // Step 1: ensure Firebase Auth is settled. If no current user, prompt sign-in.
+  let user=await _waitForAuth();
+  if(!user){
+    try{
+      const r=await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+      user=r.user;
+    }catch(err){
+      wrap.innerHTML='<div style="color:var(--red);text-align:center;padding:20px">'+esc(err&&err.message||'נדרשת התחברות')+'</div>';
+      return;
+    }
+  }
+  const uid=user.uid;
+  localStorage.setItem('sl3_googleUid',uid);
   try{
     const snap=await firebase.database().ref('users/'+uid+'/houses').once('value');
     const entries=Object.entries(snap.val()||{});
@@ -2201,6 +2216,8 @@ async function _showSyncedHouses(){
 }
 async function _googleRestoreSpecificHouse(uid,hid){
   try{
+    // Ensure auth is settled before any DB read
+    if(!firebase.auth().currentUser){await _waitForAuth();}
     const infoSnap=await firebase.database().ref('users/'+uid+'/houses/'+hid).once('value');
     const info=infoSnap.val();
     if(!info){toast('הבית לא בענן');return;}
