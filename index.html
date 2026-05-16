@@ -2287,20 +2287,27 @@ document.getElementById('syncedHousesClose').addEventListener('click',()=>{
 window._googleSignInAndSync=_googleSignInAndSync;
 window._googleSignOut=_googleSignOut;
 window._showSyncedHouses=_showSyncedHouses;
-// Auto-keep cloud link fresh when user is signed in and currently in a house.
-// Critical: wait for Firebase Auth state to load BEFORE writing — otherwise
-// the security rules reject the write as unauthenticated.
+// On every page load: reconcile localStorage `sl3_googleUid` with the real
+// Firebase Auth state. This keeps the drawer toggle in sync — if the auth
+// session was lost (cleared cookies, signed out elsewhere, expired token),
+// the local flag is wiped so the toggle accurately shows "off".
 window.addEventListener('load',function(){
   setTimeout(async ()=>{
     try{
       if(!localStorage.getItem('sl3_googleUid'))return;
-      if(!houseId)return;
       if(typeof firebase==='undefined' || !firebase.auth)return;
       const u=await _waitForAuth();
-      if(!u)return; // localStorage flag is stale — auth session expired
-      // Always use the live auth uid (in case localStorage holds a previous account)
+      if(!u){
+        // Stale flag — Firebase has no session. Clean up so toggle shows OFF.
+        localStorage.removeItem('sl3_googleUid');
+        return;
+      }
+      // Always anchor to the live auth uid (in case localStorage holds a previous account)
       localStorage.setItem('sl3_googleUid',u.uid);
-      _googleLinkCurrentHouse(u.uid);
+      // If user is in a house, keep the cloud link fresh
+      if(houseId && typeof _googleLinkCurrentHouse==='function'){
+        _googleLinkCurrentHouse(u.uid);
+      }
     }catch(_){}
   },3500);
 });
