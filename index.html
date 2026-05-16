@@ -883,6 +883,7 @@ body.dark .kpi-tile:hover{box-shadow:0 12px 30px rgba(0,0,0,.5)}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 </head>
 <body>
 
@@ -1014,7 +1015,9 @@ const APP_VERSION='1.02-rc.2';
     envelope:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>',
     document:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
     trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
-    sparkles:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3z"/><path d="M19 14l.7 2 2 .8-2 .7-.7 2-.7-2-2-.7 2-.8L19 14z"/><path d="M5 16l.5 1.5 1.5.5-1.5.5L5 20l-.5-1.5L3 18l1.5-.5L5 16z"/></svg>'
+    sparkles:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3z"/><path d="M19 14l.7 2 2 .8-2 .7-.7 2-.7-2-2-.7 2-.8L19 14z"/><path d="M5 16l.5 1.5 1.5.5-1.5.5L5 20l-.5-1.5L3 18l1.5-.5L5 16z"/></svg>',
+    cloud:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M17.5 19a4.5 4.5 0 100-9h-1.8a7 7 0 10-13.4 4"/><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/></svg>',
+    cloudOff:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M22.6 12a4.5 4.5 0 00-3.8-3.8M19 19H6a4 4 0 01-.4-7.97"/><path d="M9.4 5.4A7 7 0 0119 11"/><line x1="2" y1="2" x2="22" y2="22"/></svg>'
   };
   function _populate(){
     const isDark=document.body.classList.contains('dark');
@@ -1022,12 +1025,22 @@ const APP_VERSION='1.02-rc.2';
     shareSlot.innerHTML='<button id="drawerTellFriends" type="button" data-track="drawer:tellFriends" style="width:100%;padding:14px;border:1.5px solid var(--pri);border-radius:12px;background:var(--pril);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px">'+_ICON.gift+' המלצה לחברים</button>';
     document.getElementById('drawerTellFriends').addEventListener('click',_bridge('tellFriendsBtn'));
     const _isAdminNow=(typeof isAdmin==='function')?isAdmin():false;
+    const _isGoogleSyncOn=!!localStorage.getItem('sl3_googleUid');
+    const _googleLabel=_isGoogleSyncOn?'מנותק מסנכרון Google':'התחבר עם Google לסנכרון';
+    const _googleAction=()=>{
+      const c=document.getElementById('globalDrawerClose');if(c)c.click();
+      setTimeout(()=>{
+        if(_isGoogleSyncOn && typeof window._googleSignOut==='function')window._googleSignOut();
+        else if(typeof window._googleSignInAndSync==='function')window._googleSignInAndSync();
+      },180);
+    };
     const items=[
       {icon:_ICON.sparkles,label:'מה חדש',track:'drawer:whatsnew',action:()=>{const c=document.getElementById('globalDrawerClose');if(c)c.click();setTimeout(()=>{if(typeof window._showWhatsNew==='function')window._showWhatsNew(true);},200);}},
       {icon:_ICON.gear,label:'הגדרות',track:'drawer:settings',action:_bridge('settingsBtn')},
       {icon:_ICON.download,label:'התקנת האפליקציה',track:'drawer:install',action:_bridge('homeInstallBtn')},
       {icon:isDark?_ICON.sun:_ICON.moon,label:isDark?'תצוגה בהירה':'תצוגה כהה',track:'drawer:theme',action:_toggleDark},
       {icon:_ICON.link,label:'שלח קישור להצטרפות',track:'drawer:share',action:_bridge('shareBtn')},
+      {icon:_isGoogleSyncOn?_ICON.cloudOff:_ICON.cloud,label:_googleLabel,track:'drawer:googleSync',action:_googleAction},
       {icon:_ICON.refresh,label:'עדכון גרסה',track:'drawer:update',action:_forceUpdate},
       {icon:_ICON.envelope,label:'פניה לתמיכה',track:'drawer:support',action:_bridge('supportBtn')},
       {icon:_ICON.document,label:'תנאי שימוש',track:'drawer:about',action:_bridge('aboutLink')},
@@ -1160,6 +1173,11 @@ const APP_VERSION='1.02-rc.2';
     <p style="font-size:13px;line-height:1.7;color:var(--txt);text-align:right;margin-top:10px">
       <b>🛒 מאגר מוצרים.</b><br>
       רשימת המוצרים להשלמה אוטומטית מבוססת על נתוני שקיפות מחירים ציבוריים של רשתות הקמעונאות בישראל ועל הזנה ידנית של צוות האפליקציה. שמות מותגים המופיעים במאגר הם לצרכי השלמת חיפוש בלבד - אין קשר מסחרי עם היצרנים.
+    </p>
+
+    <p style="font-size:13px;line-height:1.7;color:var(--txt);text-align:right;margin-top:10px">
+      <b>☁️ סנכרון אופציונלי עם Google.</b><br>
+      ניתן לחבר את הזהות שלך לחשבון Google כדי לשחזר אותה במעבר בין מכשירים. הסנכרון לחלוטין אופציונלי - מי שלא רוצה, פשוט לא לוחץ על הכפתור בתפריט. בעת ההתחברות נשמרים בענן רק מזהה החשבון, רשימת הבתים שלך, ומזהה החבר בכל בית. שם, אימייל ופרטים אישיים אחרים מ-Google אינם נשמרים. ניתן להתנתק בכל עת מתפריט האפליקציה.
     </p>
 
     <p style="font-size:13px;line-height:1.7;color:var(--txt);text-align:right;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bdr)">
@@ -1931,6 +1949,101 @@ function _onKickedFromHouse(){
   setTimeout(()=>window._refreshGlobalMenuVisibility&&window._refreshGlobalMenuVisibility(),0);
   document.getElementById('leftGroupOverlay').style.display='flex';
 }
+
+/* ══ OPTIONAL GOOGLE SYNC ═══════════════════════════════════════════
+   Lets a user link their identity to a Google account so that on a new
+   device, signing in restores their house membership automatically.
+   Fully optional — onboarding is unchanged for users who don't sign in. */
+async function _googleSignInAndSync(){
+  if(typeof firebase==='undefined' || !firebase.auth){
+    alert('שירות ההתחברות לא זמין כרגע. נסה שוב בעוד רגע.');
+    return;
+  }
+  try{
+    const provider=new firebase.auth.GoogleAuthProvider();
+    const result=await firebase.auth().signInWithPopup(provider);
+    const uid=result.user.uid;
+    localStorage.setItem('sl3_googleUid',uid);
+    if(houseId){
+      // Mode A: link the current house to this Google account
+      await _googleLinkCurrentHouse(uid);
+      toast('סונכרן בהצלחה - תוכל לחזור לבית הזה מכל מכשיר');
+    } else {
+      // Mode B: restore the most recent house from cloud
+      await _googleRestoreFromCloud(uid);
+    }
+  }catch(err){
+    const code=(err&&err.code)||'';
+    if(code==='auth/popup-closed-by-user' || code==='auth/cancelled-popup-request')return;
+    console.error('Google sign-in failed',err);
+    alert('התחברות נכשלה: '+(err&&err.message||code||'שגיאה לא ידועה'));
+  }
+}
+async function _googleLinkCurrentHouse(uid){
+  if(!houseId)return;
+  const mine=_myMemberId&&_myMemberId();
+  if(!mine)return;
+  const member=getMember(mine);
+  if(!member)return;
+  try{
+    await firebase.database().ref('users/'+uid+'/houses/'+houseId).set({
+      memberId:mine,
+      color:member.color||'#999',
+      joinedAt:Date.now()
+    });
+    await firebase.database().ref('users/'+uid+'/ts').set(Date.now());
+  }catch(err){
+    console.warn('linkCurrentHouse failed',err);
+  }
+}
+async function _googleRestoreFromCloud(uid){
+  try{
+    const snap=await firebase.database().ref('users/'+uid+'/houses').once('value');
+    const entries=Object.entries(snap.val()||{});
+    if(!entries.length){
+      toast('לא נמצאו בתים קודמים - צור או הצטרף לבית');
+      return;
+    }
+    entries.sort((a,b)=>((b[1]&&b[1].joinedAt)||0)-((a[1]&&a[1].joinedAt)||0));
+    const hid=entries[0][0];
+    const info=entries[0][1];
+    const houseSnap=await firebase.database().ref('houses/'+hid).once('value');
+    const data=houseSnap.val();
+    if(!data){
+      toast('הבית לא נמצא - ייתכן שנמחק');
+      return;
+    }
+    const members=(data.house&&data.house.members)||[];
+    const idx=members.findIndex(m=>m&&m.id===info.memberId);
+    if(idx<0){
+      toast('החברות בבית בוטלה');
+      return;
+    }
+    members[idx].deviceId=deviceId;
+    await firebase.database().ref('houses/'+hid+'/house/members').set(members);
+    localStorage.setItem('sl3_houseId',hid);
+    toast('שוחזר בית - טוען מחדש...');
+    setTimeout(()=>location.reload(),1500);
+  }catch(err){
+    console.error('restoreFromCloud failed',err);
+    alert('שחזור הבית נכשל: '+(err&&err.message||err));
+  }
+}
+async function _googleSignOut(){
+  try{if(firebase&&firebase.auth)await firebase.auth().signOut();}catch(_){}
+  localStorage.removeItem('sl3_googleUid');
+  toast('התנתק מסנכרון Google');
+}
+// Expose to the drawer (which lives in an earlier IIFE)
+window._googleSignInAndSync=_googleSignInAndSync;
+window._googleSignOut=_googleSignOut;
+// Auto-keep cloud link fresh when user is signed in and currently in a house
+window.addEventListener('load',function(){
+  const uid=localStorage.getItem('sl3_googleUid');
+  if(uid && houseId && typeof firebase!=='undefined' && firebase.database){
+    setTimeout(()=>{try{_googleLinkCurrentHouse(uid);}catch(_){}},3500);
+  }
+});
 function renderCurrent(){
   renderHome();
   if(activeId&&!document.getElementById('list').classList.contains('slide-right')){
@@ -4389,14 +4502,15 @@ acInit();
    notification dot on the hamburger menu and (on next open) get the
    modal automatically.
 */
-const WHATSNEW_ID='2026-05-10';
-const WHATSNEW_VERSION='1.02';
+const WHATSNEW_ID='2026-05-17';
+const WHATSNEW_VERSION='1.03';
 const WHATSNEW_BULLETS=[
   '🛒 רשימה קניות אחת',
   '<svg style="display:inline-block;vertical-align:-3px;color:var(--pri)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v6"/><path d="M12 16v6"/><path d="M2 12h6"/><path d="M16 12h6"/><path d="M5 5l3 3"/><path d="M16 16l3 3"/><path d="M5 19l3-3"/><path d="M16 8l3-3"/></svg> "סידור חכם" - מיון אוטומטי לפי מחלקות',
   '🔔 סימון פריט כ"דחוף"',
   '🤝 מניעת הזנה כפולה לפריטים',
   '📦 מאגר מוצרים כפול',
+  '☁️ חדש: סנכרון אופציונלי עם Google - חזור לבית שלך מכל מכשיר',
 ];
 const _WHATSNEW_KEY='sl3_whatsnewSeen';
 function _whatsNewUnread(){
