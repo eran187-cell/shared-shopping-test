@@ -2022,6 +2022,8 @@ async function _googleSignInAndSync(){
     const result=await firebase.auth().signInWithPopup(provider);
     const uid=result.user.uid;
     localStorage.setItem('sl3_googleUid',uid);
+    // Force fresh token so Realtime DB websocket carries the auth claim
+    try{await result.user.getIdToken(true);}catch(_){}
 
     // Always check cloud first — restore-first is the mental model.
     const cloudSnap=await firebase.database().ref('users/'+uid+'/houses').once('value');
@@ -2167,6 +2169,10 @@ async function _showSyncedHouses(){
   }
   const uid=user.uid;
   localStorage.setItem('sl3_googleUid',uid);
+  // Force token refresh so Realtime Database's websocket picks up the new
+  // auth claim before the read fires. Without this, the DB may still be
+  // using a stale (unauthenticated) connection from the initial load.
+  try{await user.getIdToken(true);}catch(_){}
   // Show "loading" again now that we have auth
   wrap.innerHTML='<div style="text-align:center;color:var(--mut);padding:20px">טוען בתים...</div>';
   try{
@@ -2262,12 +2268,22 @@ document.getElementById('syncedHousesClose').addEventListener('click',()=>{
 window._googleSignInAndSync=_googleSignInAndSync;
 window._googleSignOut=_googleSignOut;
 window._showSyncedHouses=_showSyncedHouses;
-// Auto-keep cloud link fresh when user is signed in and currently in a house
+// Auto-keep cloud link fresh when user is signed in and currently in a house.
+// Critical: wait for Firebase Auth state to load BEFORE writing — otherwise
+// the security rules reject the write as unauthenticated.
 window.addEventListener('load',function(){
-  const uid=localStorage.getItem('sl3_googleUid');
-  if(uid && houseId && typeof firebase!=='undefined' && firebase.database){
-    setTimeout(()=>{try{_googleLinkCurrentHouse(uid);}catch(_){}},3500);
-  }
+  setTimeout(async ()=>{
+    try{
+      if(!localStorage.getItem('sl3_googleUid'))return;
+      if(!houseId)return;
+      if(typeof firebase==='undefined' || !firebase.auth)return;
+      const u=await _waitForAuth();
+      if(!u)return; // localStorage flag is stale — auth session expired
+      // Always use the live auth uid (in case localStorage holds a previous account)
+      localStorage.setItem('sl3_googleUid',u.uid);
+      _googleLinkCurrentHouse(u.uid);
+    }catch(_){}
+  },3500);
 });
 function renderCurrent(){
   renderHome();
