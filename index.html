@@ -1947,7 +1947,20 @@ function save(){
   const payload=JSON.parse(JSON.stringify({house,types:listTypes,items,nextId,_s:SESSION,_t:Date.now()}));
   console.log('[save] writing to Firebase, items=',totalItems,'houseId=',houseId);
   db.ref('houses/'+houseId).set(payload)
-    .then(()=>{console.log('[save] OK');setTimeout(()=>{_saving=false;},600);recordHouseStat();})
+    .then(()=>{
+      console.log('[save] OK');
+      setTimeout(()=>{_saving=false;},600);
+      recordHouseStat();
+      // If the user is signed into Google sync, also keep the cloud link
+      // current. This is how a fresh house created via "Google sign-in →
+      // no cloud houses → create new" gets auto-linked once the member is saved.
+      try{
+        const _uid=localStorage.getItem('sl3_googleUid');
+        if(_uid && firebase.auth().currentUser && typeof _googleLinkCurrentHouse==='function'){
+          _googleLinkCurrentHouse(_uid);
+        }
+      }catch(_){}
+    })
     .catch(err=>{console.error('[save] FAILED:',err);_saving=false;toast('שמירה נכשלה: '+(err.message||err.code||'שגיאה'));});
 }
 function applyData(d){
@@ -2036,7 +2049,10 @@ async function _googleSignInAndSync(){
         await _googleLinkCurrentHouse(uid);
         toast('סונכרן בהצלחה - תוכל לחזור לבית הזה מכל מכשיר');
       } else {
-        toast('לא נמצאו בתים קודמים - צור או הצטרף לבית');
+        // User is on onboarding with no cloud history → start a new house.
+        // The save() hook will auto-link it to Google once a member is saved.
+        toast('יוצר בית חדש מקושר לחשבון Google שלך…');
+        setTimeout(()=>{document.getElementById('createHouseBtn').click();},400);
       }
       return;
     }
@@ -2098,7 +2114,10 @@ async function _googleRestoreFromCloud(uid){
     const snap=await firebase.database().ref('users/'+uid+'/houses').once('value');
     const entries=Object.entries(snap.val()||{});
     if(!entries.length){
-      toast('לא נמצאו בתים קודמים - צור או הצטרף לבית');
+      // No cloud history at all → start a new house and let the save() hook
+      // auto-link it once a member is added.
+      toast('יוצר בית חדש מקושר לחשבון Google שלך…');
+      setTimeout(()=>{document.getElementById('createHouseBtn').click();},400);
       return;
     }
     entries.sort((a,b)=>((b[1]&&b[1].joinedAt)||0)-((a[1]&&a[1].joinedAt)||0));
