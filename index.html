@@ -1050,9 +1050,14 @@ const APP_VERSION='1.02-rc.2';
         else if(typeof window._googleSignInAndSync==='function')window._googleSignInAndSync();
       },180);
     };
+    const _manageHousesAction=()=>{
+      const c=document.getElementById('globalDrawerClose');if(c)c.click();
+      setTimeout(()=>{if(typeof window._showSyncedHouses==='function')window._showSyncedHouses();},200);
+    };
     const items=[
       {icon:_ICON.sparkles,label:'מה חדש',track:'drawer:whatsnew',action:()=>{const c=document.getElementById('globalDrawerClose');if(c)c.click();setTimeout(()=>{if(typeof window._showWhatsNew==='function')window._showWhatsNew(true);},200);}},
       {icon:_ICON.cloud,label:'סינכרון עם Google',track:'drawer:googleSync',action:_googleAction,toggle:true,toggleOn:_isGoogleSyncOn},
+      _isGoogleSyncOn?{icon:_ICON.cloud,label:'ניהול בתים מסונכרנים',track:'drawer:manageHouses',action:_manageHousesAction}:null,
       {icon:_ICON.gear,label:'הגדרות',track:'drawer:settings',action:_bridge('settingsBtn')},
       {icon:_ICON.download,label:'התקנת האפליקציה',track:'drawer:install',action:_bridge('homeInstallBtn')},
       {icon:isDark?_ICON.sun:_ICON.moon,label:isDark?'תצוגה בהירה':'תצוגה כהה',track:'drawer:theme',action:_toggleDark},
@@ -1709,6 +1714,18 @@ const APP_VERSION='1.02-rc.2';
   </div>
 </div>
 
+<!-- Manage Google-synced houses (visible only when sync is on) -->
+<div class="overlay" id="syncedHousesOverlay" style="z-index:9500">
+  <div class="sheet" style="max-height:82vh;overflow-y:auto">
+    <h3 style="display:flex;align-items:center;gap:8px"><span>🏠</span><span>הבתים המסונכרנים שלי</span></h3>
+    <div style="font-size:12px;color:var(--mut);margin:6px 0 14px">בתים שמקושרים לחשבון Google שלך. אפשר לעבור ביניהם או להסיר.</div>
+    <div id="syncedHousesList" style="font-size:13px"></div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" id="syncedHousesClose">סגירה</button>
+    </div>
+  </div>
+</div>
+
 <!-- Shown to non-admin members after they leave the group. -->
 <div class="overlay" id="leftGroupOverlay" style="display:none;align-items:center">
   <div class="sheet onboard-sheet">
@@ -2107,9 +2124,109 @@ async function _googleSignOut(){
   localStorage.removeItem('sl3_googleUid');
   toast('התנתק מסנכרון Google');
 }
+// Show a list of houses linked to the user's Google account
+async function _showSyncedHouses(){
+  const uid=localStorage.getItem('sl3_googleUid');
+  if(!uid){alert('נדרשת התחברות עם Google תחילה.');return;}
+  // Ensure Firebase auth is current (uid in localStorage may exist without active session)
+  if(!firebase.auth().currentUser){
+    try{await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());}
+    catch(err){alert('יש להתחבר עם Google תחילה: '+(err&&err.message||''));return;}
+  }
+  const wrap=document.getElementById('syncedHousesList');
+  wrap.innerHTML='<div style="text-align:center;color:var(--mut);padding:20px">טוען...</div>';
+  document.getElementById('syncedHousesOverlay').classList.add('open');
+  try{
+    const snap=await firebase.database().ref('users/'+uid+'/houses').once('value');
+    const entries=Object.entries(snap.val()||{});
+    if(!entries.length){
+      wrap.innerHTML='<div style="color:var(--mut);text-align:center;padding:20px">אין בתים מסונכרנים עדיין.<br>סנכרן בית כדי לראות אותו כאן.</div>';
+      return;
+    }
+    entries.sort((a,b)=>((b[1]&&b[1].joinedAt)||0)-((a[1]&&a[1].joinedAt)||0));
+    // Fetch each house name + members count for nice display
+    const houseInfos=await Promise.all(entries.map(async([hid,info])=>{
+      try{
+        const hSnap=await firebase.database().ref('houses/'+hid).once('value');
+        const data=hSnap.val()||{};
+        const name=(data.house&&data.house.name)||'בית ללא שם';
+        const members=(data.house&&data.house.members)||[];
+        const items=Object.values(data.items||{}).reduce((n,a)=>n+(Array.isArray(a)?a.length:0),0);
+        return {hid,info,name,memberCount:members.length,itemCount:items,exists:!!data};
+      }catch(_){return {hid,info,name:'בית ללא שם',memberCount:0,itemCount:0,exists:false};}
+    }));
+    wrap.innerHTML=houseInfos.map(h=>{
+      const ageDays=h.info.joinedAt?Math.floor((Date.now()-h.info.joinedAt)/86400000):null;
+      const ageLabel=ageDays===null?'':ageDays===0?'נוסף היום':ageDays===1?'נוסף אתמול':'נוסף לפני '+ageDays+' ימים';
+      const isCurrent=(houseId===h.hid);
+      const status=isCurrent?'<span style="font-size:10px;background:var(--pri);color:#fff;padding:2px 7px;border-radius:6px;margin-right:4px;font-weight:700">נוכחי</span>':'';
+      const danger=!h.exists?'<div style="font-size:11px;color:var(--red);margin-top:3px">⚠ הבית לא קיים יותר בשרת</div>':'';
+      return '<div style="border:1px solid var(--bdr);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:'+(isCurrent?'var(--pril)':'var(--sur)')+'">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px">'
+          +'<div style="font-weight:700;font-size:14px;flex:1">'+status+esc(h.name)+'</div>'
+        +'</div>'
+        +'<div style="font-size:11px;color:var(--mut);margin-bottom:8px">'+(h.exists?('👥 '+h.memberCount+' חברים · 🛒 '+h.itemCount+' פריטים · '):'')+ageLabel+'</div>'
+        +danger
+        +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
+          +(isCurrent?'':'<button data-action="switch" data-hid="'+h.hid+'" style="flex:1;padding:6px 12px;border:none;border-radius:8px;background:var(--pri);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit"'+(h.exists?'':' disabled')+'>'+(h.exists?'עבור לבית זה':'לא זמין')+'</button>')
+          +'<button data-action="remove" data-hid="'+h.hid+'" style="padding:6px 10px;border:1.5px solid var(--bdr);border-radius:8px;background:transparent;color:var(--red);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">הסר מהסנכרון</button>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+    // wire actions
+    wrap.querySelectorAll('button[data-action="switch"]').forEach(b=>{
+      b.addEventListener('click',async function(){
+        const hid=this.dataset.hid;
+        if(!confirm('לעבור לבית "'+(houseInfos.find(x=>x.hid===hid)||{name:''}).name+'"?'))return;
+        document.getElementById('syncedHousesOverlay').classList.remove('open');
+        await _googleRestoreSpecificHouse(uid,hid);
+      });
+    });
+    wrap.querySelectorAll('button[data-action="remove"]').forEach(b=>{
+      b.addEventListener('click',async function(){
+        const hid=this.dataset.hid;
+        const h=houseInfos.find(x=>x.hid===hid);
+        if(!confirm('להסיר את "'+(h&&h.name||hid)+'" מהבתים המסונכרנים?\n(הבית עצמו לא יימחק — רק הקישור לחשבון Google שלך)'))return;
+        try{
+          await firebase.database().ref('users/'+uid+'/houses/'+hid).remove();
+          toast('הוסר מהבתים המסונכרנים');
+          _showSyncedHouses(); // refresh list
+        }catch(err){alert('הסרה נכשלה: '+(err&&err.message||err));}
+      });
+    });
+  }catch(err){
+    console.error('synced houses failed',err);
+    wrap.innerHTML='<div style="color:var(--red);text-align:center;padding:20px">טעינה נכשלה: '+esc(err&&err.message||'')+'</div>';
+  }
+}
+async function _googleRestoreSpecificHouse(uid,hid){
+  try{
+    const infoSnap=await firebase.database().ref('users/'+uid+'/houses/'+hid).once('value');
+    const info=infoSnap.val();
+    if(!info){toast('הבית לא בענן');return;}
+    const houseSnap=await firebase.database().ref('houses/'+hid).once('value');
+    const data=houseSnap.val();
+    if(!data){toast('הבית לא נמצא - ייתכן שנמחק');return;}
+    const members=(data.house&&data.house.members)||[];
+    const idx=members.findIndex(m=>m&&m.id===info.memberId);
+    if(idx<0){toast('החברות בבית בוטלה');return;}
+    members[idx].deviceId=deviceId;
+    await firebase.database().ref('houses/'+hid+'/house/members').set(members);
+    localStorage.setItem('sl3_houseId',hid);
+    toast('עובר לבית - טוען מחדש...');
+    setTimeout(()=>location.reload(),1500);
+  }catch(err){
+    console.error('restore specific failed',err);
+    alert('מעבר לבית נכשל: '+(err&&err.message||err));
+  }
+}
+document.getElementById('syncedHousesClose').addEventListener('click',()=>{
+  document.getElementById('syncedHousesOverlay').classList.remove('open');
+});
 // Expose to the drawer (which lives in an earlier IIFE)
 window._googleSignInAndSync=_googleSignInAndSync;
 window._googleSignOut=_googleSignOut;
+window._showSyncedHouses=_showSyncedHouses;
 // Auto-keep cloud link fresh when user is signed in and currently in a house
 window.addEventListener('load',function(){
   const uid=localStorage.getItem('sl3_googleUid');
