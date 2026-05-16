@@ -2040,7 +2040,19 @@ async function _googleSignInAndSync(){
 
     // Always check cloud first — restore-first is the mental model.
     const cloudSnap=await firebase.database().ref('users/'+uid+'/houses').once('value');
-    const cloudHouses=cloudSnap.val()||{};
+    const rawCloud=cloudSnap.val()||{};
+    // Filter out stale entries pointing at houses that no longer exist
+    const cloudHouses={};
+    await Promise.all(Object.entries(rawCloud).map(async ([hid,info])=>{
+      try{
+        const houseSnap=await firebase.database().ref('houses/'+hid).once('value');
+        if(houseSnap.val()){cloudHouses[hid]=info;}
+        else{
+          // Auto-cleanup stale entry
+          await firebase.database().ref('users/'+uid+'/houses/'+hid).remove().catch(()=>{});
+        }
+      }catch(_){}
+    }));
     const cloudHouseIds=Object.keys(cloudHouses);
 
     // Case 1: cloud has nothing yet
@@ -2112,21 +2124,27 @@ async function _googleLinkCurrentHouse(uid){
 async function _googleRestoreFromCloud(uid){
   try{
     const snap=await firebase.database().ref('users/'+uid+'/houses').once('value');
-    const entries=Object.entries(snap.val()||{});
-    if(!entries.length){
-      // No cloud history at all → start a new house and let the save() hook
-      // auto-link it once a member is added.
+    const rawEntries=Object.entries(snap.val()||{});
+    // Sort by joinedAt desc and walk through until we find a live one;
+    // stale (deleted) houses are pruned along the way.
+    rawEntries.sort((a,b)=>((b[1]&&b[1].joinedAt)||0)-((a[1]&&a[1].joinedAt)||0));
+    let hid=null, info=null, data=null;
+    for(const [candidateHid,candidateInfo] of rawEntries){
+      try{
+        const candidateSnap=await firebase.database().ref('houses/'+candidateHid).once('value');
+        const candidateData=candidateSnap.val();
+        if(candidateData){
+          hid=candidateHid; info=candidateInfo; data=candidateData;
+          break;
+        }
+        // Stale — clean up and continue
+        await firebase.database().ref('users/'+uid+'/houses/'+candidateHid).remove().catch(()=>{});
+      }catch(_){}
+    }
+    if(!hid){
+      // No live cloud houses → start a new house and let save() hook link it.
       toast('יוצר בית חדש מקושר לחשבון Google שלך…');
       setTimeout(()=>{document.getElementById('createHouseBtn').click();},400);
-      return;
-    }
-    entries.sort((a,b)=>((b[1]&&b[1].joinedAt)||0)-((a[1]&&a[1].joinedAt)||0));
-    const hid=entries[0][0];
-    const info=entries[0][1];
-    const houseSnap=await firebase.database().ref('houses/'+hid).once('value');
-    const data=houseSnap.val();
-    if(!data){
-      toast('הבית לא נמצא - ייתכן שנמחק');
       return;
     }
     const members=(data.house&&data.house.members)||[];
