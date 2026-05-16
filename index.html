@@ -2000,14 +2000,51 @@ async function _googleSignInAndSync(){
     const result=await firebase.auth().signInWithPopup(provider);
     const uid=result.user.uid;
     localStorage.setItem('sl3_googleUid',uid);
-    if(houseId){
-      // Mode A: link the current house to this Google account
-      await _googleLinkCurrentHouse(uid);
-      toast('סונכרן בהצלחה - תוכל לחזור לבית הזה מכל מכשיר');
-    } else {
-      // Mode B: restore the most recent house from cloud
-      await _googleRestoreFromCloud(uid);
+
+    // Always check cloud first — restore-first is the mental model.
+    const cloudSnap=await firebase.database().ref('users/'+uid+'/houses').once('value');
+    const cloudHouses=cloudSnap.val()||{};
+    const cloudHouseIds=Object.keys(cloudHouses);
+
+    // Case 1: cloud has nothing yet
+    if(!cloudHouseIds.length){
+      if(houseId){
+        await _googleLinkCurrentHouse(uid);
+        toast('סונכרן בהצלחה - תוכל לחזור לבית הזה מכל מכשיר');
+      } else {
+        toast('לא נמצאו בתים קודמים - צור או הצטרף לבית');
+      }
+      return;
     }
+
+    // Case 2: current house already in cloud → just refresh the timestamp
+    if(houseId && cloudHouses[houseId]){
+      await _googleLinkCurrentHouse(uid);
+      toast('סונכרן בהצלחה');
+      return;
+    }
+
+    // Case 3: cloud has houses, but the current device is in a DIFFERENT one
+    // (or none). Pick the most-recent and offer to restore.
+    const entries=Object.entries(cloudHouses).sort((a,b)=>((b[1]&&b[1].joinedAt)||0)-((a[1]&&a[1].joinedAt)||0));
+    const recentHid=entries[0][0];
+    let recentName='הבית הקודם';
+    try{
+      const nameSnap=await firebase.database().ref('houses/'+recentHid+'/house/name').once('value');
+      if(nameSnap.val())recentName=nameSnap.val();
+    }catch(_){}
+    if(houseId){
+      // User is currently in a different house. Ask before overriding.
+      const msg='בחשבון Google שלך נמצא הבית "'+recentName+'". לעבור אליו (הבית הנוכחי לא יימחק, פשוט תתחלף אליו)?';
+      if(!confirm(msg)){
+        // User declined — link the current house to cloud as well
+        await _googleLinkCurrentHouse(uid);
+        toast('סונכרן בהצלחה');
+        return;
+      }
+    }
+    // Restore the most-recent house from cloud
+    await _googleRestoreFromCloud(uid);
   }catch(err){
     const code=(err&&err.code)||'';
     if(code==='auth/popup-closed-by-user' || code==='auth/cancelled-popup-request')return;
