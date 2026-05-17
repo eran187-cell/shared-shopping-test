@@ -1050,14 +1050,9 @@ const APP_VERSION='1.02-rc.2';
         else if(typeof window._googleSignInAndSync==='function')window._googleSignInAndSync();
       },180);
     };
-    const _manageHousesAction=()=>{
-      const c=document.getElementById('globalDrawerClose');if(c)c.click();
-      setTimeout(()=>{if(typeof window._showSyncedHouses==='function')window._showSyncedHouses();},200);
-    };
     const items=[
       {icon:_ICON.sparkles,label:'מה חדש',track:'drawer:whatsnew',action:()=>{const c=document.getElementById('globalDrawerClose');if(c)c.click();setTimeout(()=>{if(typeof window._showWhatsNew==='function')window._showWhatsNew(true);},200);}},
       {icon:_ICON.cloud,label:'סינכרון עם Google',track:'drawer:googleSync',action:_googleAction,toggle:true,toggleOn:_isGoogleSyncOn},
-      _isGoogleSyncOn?{icon:_ICON.cloud,label:'ניהול בתים מסונכרנים',track:'drawer:manageHouses',action:_manageHousesAction}:null,
       {icon:_ICON.gear,label:'הגדרות',track:'drawer:settings',action:_bridge('settingsBtn')},
       {icon:_ICON.download,label:'התקנת האפליקציה',track:'drawer:install',action:_bridge('homeInstallBtn')},
       {icon:isDark?_ICON.sun:_ICON.moon,label:isDark?'תצוגה בהירה':'תצוגה כהה',track:'drawer:theme',action:_toggleDark},
@@ -1966,7 +1961,7 @@ function save(){
 function applyData(d){
   if(!d)return;
   const h=d.house||{};
-  house={name:h.name||'',members:Array.isArray(h.members)?h.members:[],adminId:h.adminId};
+  house={name:h.name||'',members:Array.isArray(h.members)?h.members:[],adminId:h.adminId,ownerUid:h.ownerUid||null};
   listTypes=Array.isArray(d.types)&&d.types.length?d.types:DEFAULT_TYPES.map(x=>({...x}));
   items=(d.items&&typeof d.items==='object')?d.items:{};
   nextId=d.nextId||1;
@@ -2004,6 +1999,8 @@ function applyData(d){
   if((house.members||[]).some(m=>m&&m.deviceId===deviceId)){
     try{localStorage.setItem('sl3_wasMember','1');}catch(_){}
   }
+  // Heal stale ownership (e.g., previous owner was removed from the house).
+  try{if(typeof _ensureHouseOwnership==='function'){setTimeout(_ensureHouseOwnership,1500);}}catch(_){}
 }
 // Called when the remote state shows we no longer belong to the house
 // (kicked by admin, or the entire house was deleted).
@@ -2058,8 +2055,9 @@ async function _googleSignInAndSync(){
     // Case 1: cloud has nothing yet
     if(!cloudHouseIds.length){
       if(houseId){
-        await _googleLinkCurrentHouse(uid);
-        toast('סונכרן בהצלחה - תוכל לחזור לבית הזה מכל מכשיר');
+        const role=await _googleLinkCurrentHouse(uid);
+        if(role==='owner')toast('סונכרן בהצלחה - תוכל לחזור לבית הזה מכל מכשיר');
+        else toast('זוהית כחבר בבית. הבעלות שייכת לחבר אחר.');
       } else {
         // User is on onboarding with no cloud history → start a new house.
         // The save() hook will auto-link it to Google once a member is saved.
@@ -2071,8 +2069,9 @@ async function _googleSignInAndSync(){
 
     // Case 2: current house already in cloud → just refresh the timestamp
     if(houseId && cloudHouses[houseId]){
-      await _googleLinkCurrentHouse(uid);
-      toast('סונכרן בהצלחה');
+      const role=await _googleLinkCurrentHouse(uid);
+      if(role==='owner')toast('סונכרן בהצלחה');
+      else toast('זוהית כחבר בבית. הבעלות שייכת לחבר אחר.');
       return;
     }
 
@@ -2090,8 +2089,9 @@ async function _googleSignInAndSync(){
       const msg='בחשבון Google שלך נמצא הבית "'+recentName+'". לעבור אליו (הבית הנוכחי לא יימחק, פשוט תתחלף אליו)?';
       if(!confirm(msg)){
         // User declined — link the current house to cloud as well
-        await _googleLinkCurrentHouse(uid);
-        toast('סונכרן בהצלחה');
+        const role=await _googleLinkCurrentHouse(uid);
+        if(role==='owner')toast('סונכרן בהצלחה');
+        else toast('זוהית כחבר בבית. הבעלות שייכת לחבר אחר.');
         return;
       }
     }
@@ -2104,22 +2104,74 @@ async function _googleSignInAndSync(){
     alert('התחברות נכשלה: '+(err&&err.message||code||'שגיאה לא ידועה'));
   }
 }
+// Returns 'owner' | 'member' | null. 'owner' means this uid is the single
+// account that "owns" the house; 'member' means another uid already owns it
+// and this uid is identity-only (can restore membership but not list the
+// house under their synced houses).
 async function _googleLinkCurrentHouse(uid){
-  if(!houseId)return;
+  if(!houseId)return null;
   const mine=_myMemberId&&_myMemberId();
-  if(!mine)return;
+  if(!mine)return null;
   const member=getMember(mine);
-  if(!member)return;
+  if(!member)return null;
+  let role='member';
   try{
+    // First-write-wins claim on ownerUid via transaction
+    const ownerRef=firebase.database().ref('houses/'+houseId+'/house/ownerUid');
+    const txRes=await ownerRef.transaction(curr=>(curr==null?uid:undefined));
+    const existing=txRes && txRes.snapshot ? txRes.snapshot.val() : null;
+    role=(existing===uid)?'owner':'member';
+    // Stamp googleUid onto this member's record so future ownership transfers
+    // can find them. Uses a targeted update to avoid clobbering other fields.
+    try{
+      const membersSnap=await firebase.database().ref('houses/'+houseId+'/house/members').once('value');
+      const membersArr=membersSnap.val()||[];
+      const idx=membersArr.findIndex(m=>m&&m.id===mine);
+      if(idx>=0 && membersArr[idx].googleUid!==uid){
+        await firebase.database().ref('houses/'+houseId+'/house/members/'+idx+'/googleUid').set(uid);
+      }
+    }catch(e){console.warn('stamp googleUid failed',e);}
+    // Owner gets the house listed under /users/<uid>/houses; non-owners get
+    // an identity-only entry (role:'member'). Either way it lets the same
+    // uid restore the membership on a new device.
     await firebase.database().ref('users/'+uid+'/houses/'+houseId).set({
       memberId:mine,
       color:member.color||'#999',
-      joinedAt:Date.now()
+      joinedAt:Date.now(),
+      role
     });
     await firebase.database().ref('users/'+uid+'/ts').set(Date.now());
   }catch(err){
     console.warn('linkCurrentHouse failed',err);
   }
+  return role;
+}
+// Idempotent ownership-transfer: if the house has an ownerUid pointing at
+// nobody currently in members[] (the owner left/was kicked), move ownership
+// to the oldest remaining member who has a googleUid. Safe to call any time
+// — only the FIRST member by index runs the write to avoid races.
+async function _ensureHouseOwnership(){
+  try{
+    if(!houseId || !house || !Array.isArray(house.members) || !house.members.length)return;
+    const ownerUid=(house && house.ownerUid)||null;
+    const members=house.members;
+    // Only the first member acts — keeps it conflict-free across clients
+    if(!members[0] || members[0].deviceId!==deviceId)return;
+    if(ownerUid){
+      const ownerStillHere=members.some(m=>m && m.googleUid===ownerUid);
+      if(ownerStillHere)return;
+      // Find oldest (lowest index) member with a googleUid → new owner
+      const heir=members.find(m=>m && m.googleUid);
+      if(heir){
+        await firebase.database().ref('houses/'+houseId+'/house/ownerUid').set(heir.googleUid);
+        // Promote them inside /users so it shows in their synced-houses list
+        try{await firebase.database().ref('users/'+heir.googleUid+'/houses/'+houseId+'/role').set('owner');}catch(_){}
+      } else {
+        // Nobody has a googleUid — clear ownership so the next syncer can claim
+        await firebase.database().ref('houses/'+houseId+'/house/ownerUid').remove();
+      }
+    }
+  }catch(e){console.warn('ensureHouseOwnership failed',e);}
 }
 async function _googleRestoreFromCloud(uid){
   try{
@@ -2228,18 +2280,24 @@ async function _showSyncedHouses(){
         const name=(data.house&&data.house.name)||'בית ללא שם';
         const members=(data.house&&data.house.members)||[];
         const items=Object.values(data.items||{}).reduce((n,a)=>n+(Array.isArray(a)?a.length:0),0);
-        return {hid,info,name,memberCount:members.length,itemCount:items,exists:!!data};
-      }catch(_){return {hid,info,name:'בית ללא שם',memberCount:0,itemCount:0,exists:false};}
+        // Effective role: explicit info.role first; else infer from ownerUid
+        const ownerUid=(data.house&&data.house.ownerUid)||null;
+        const role=(info && info.role) || (ownerUid===uid?'owner':(ownerUid?'member':'owner'));
+        return {hid,info,name,memberCount:members.length,itemCount:items,exists:!!data,role};
+      }catch(_){return {hid,info,name:'בית ללא שם',memberCount:0,itemCount:0,exists:false,role:(info&&info.role)||'owner'};}
     }));
-    wrap.innerHTML=houseInfos.map(h=>{
+    const ownedHouses=houseInfos.filter(h=>h.role==='owner');
+    const identityHouses=houseInfos.filter(h=>h.role!=='owner');
+    const renderCard=h=>{
       const ageDays=h.info.joinedAt?Math.floor((Date.now()-h.info.joinedAt)/86400000):null;
       const ageLabel=ageDays===null?'':ageDays===0?'נוסף היום':ageDays===1?'נוסף אתמול':'נוסף לפני '+ageDays+' ימים';
       const isCurrent=(houseId===h.hid);
       const status=isCurrent?'<span style="font-size:10px;background:var(--pri);color:#fff;padding:2px 7px;border-radius:6px;margin-right:4px;font-weight:700">נוכחי</span>':'';
       const danger=!h.exists?'<div style="font-size:11px;color:var(--red);margin-top:3px">⚠ הבית לא קיים יותר בשרת</div>':'';
+      const roleBadge=h.role==='owner'?'<span style="font-size:10px;background:#7c5cff;color:#fff;padding:2px 7px;border-radius:6px;margin-right:4px;font-weight:700">בעלים</span>':'<span style="font-size:10px;background:#666;color:#fff;padding:2px 7px;border-radius:6px;margin-right:4px;font-weight:700">זהות בלבד</span>';
       return '<div style="border:1px solid var(--bdr);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:'+(isCurrent?'var(--pril)':'var(--sur)')+'">'
         +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px">'
-          +'<div style="font-weight:700;font-size:14px;flex:1">'+status+esc(h.name)+'</div>'
+          +'<div style="font-weight:700;font-size:14px;flex:1">'+status+roleBadge+esc(h.name)+'</div>'
         +'</div>'
         +'<div style="font-size:11px;color:var(--mut);margin-bottom:8px">'+(h.exists?('👥 '+h.memberCount+' חברים · 🛒 '+h.itemCount+' פריטים · '):'')+ageLabel+'</div>'
         +danger
@@ -2248,7 +2306,12 @@ async function _showSyncedHouses(){
           +'<button data-action="remove" data-hid="'+h.hid+'" style="padding:6px 10px;border:1.5px solid var(--bdr);border-radius:8px;background:transparent;color:var(--red);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">הסר מהסנכרון</button>'
         +'</div>'
       +'</div>';
-    }).join('');
+    };
+    const sectionHeader=t=>'<div style="font-size:12px;font-weight:700;color:var(--mut);margin:8px 4px 6px">'+t+'</div>';
+    let html='';
+    if(ownedHouses.length){html+=sectionHeader('בתים שלך');html+=ownedHouses.map(renderCard).join('');}
+    if(identityHouses.length){html+=sectionHeader('זהויות שמורות (חבר בבית של אחר)');html+=identityHouses.map(renderCard).join('');}
+    wrap.innerHTML=html;
     // wire actions
     wrap.querySelectorAll('button[data-action="switch"]').forEach(b=>{
       b.addEventListener('click',async function(){
