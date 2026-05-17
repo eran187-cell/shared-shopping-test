@@ -1042,7 +1042,18 @@ const APP_VERSION='1.02-rc.2';
     shareSlot.innerHTML='<button id="drawerTellFriends" type="button" data-track="drawer:tellFriends" style="width:100%;padding:14px;border:1.5px solid var(--pri);border-radius:12px;background:var(--pril);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px">'+_ICON.gift+' המלצה לחברים</button>';
     document.getElementById('drawerTellFriends').addEventListener('click',_bridge('tellFriendsBtn'));
     const _isAdminNow=(typeof isAdmin==='function')?isAdmin():false;
-    const _isGoogleSyncOn=!!localStorage.getItem('sl3_googleUid');
+    // Toggle reflects truth: requires BOTH the localStorage marker AND a live
+    // Firebase Auth session. If Firebase has no current user, the marker is
+    // stale (signed out elsewhere / cleared cookies / expired) → treat as OFF.
+    let _isGoogleSyncOn=!!localStorage.getItem('sl3_googleUid');
+    if(_isGoogleSyncOn){
+      try{
+        if(typeof firebase==='undefined' || !firebase.auth || !firebase.auth().currentUser){
+          _isGoogleSyncOn=false;
+          localStorage.removeItem('sl3_googleUid');
+        }
+      }catch(_){_isGoogleSyncOn=false;}
+    }
     const _googleAction=()=>{
       const c=document.getElementById('globalDrawerClose');if(c)c.click();
       setTimeout(()=>{
@@ -2368,10 +2379,19 @@ document.getElementById('syncedHousesClose').addEventListener('click',()=>{
 window._googleSignInAndSync=_googleSignInAndSync;
 window._googleSignOut=_googleSignOut;
 window._showSyncedHouses=_showSyncedHouses;
-// On every page load: reconcile localStorage `sl3_googleUid` with the real
-// Firebase Auth state. This keeps the drawer toggle in sync — if the auth
-// session was lost (cleared cookies, signed out elsewhere, expired token),
-// the local flag is wiped so the toggle accurately shows "off".
+// Always-on auth listener: as soon as Firebase resolves auth state (or it
+// changes), mirror it into localStorage. This is the primary mechanism that
+// keeps the drawer toggle truthful — no 3.5s delay, no race with drawer open.
+try{
+  if(typeof firebase!=='undefined' && firebase.auth){
+    firebase.auth().onAuthStateChanged(function(u){
+      if(u){localStorage.setItem('sl3_googleUid',u.uid);}
+      else {localStorage.removeItem('sl3_googleUid');}
+    });
+  }
+}catch(_){}
+// Belt-and-suspenders: also reconcile on window load as a fallback (in case
+// the always-on listener registered before firebase.auth was ready).
 window.addEventListener('load',function(){
   setTimeout(async ()=>{
     try{
