@@ -4928,6 +4928,10 @@ function _annLoadSeen(){try{return JSON.parse(localStorage.getItem(ANN_SEEN_KEY)
 function _annSaveSeen(seen){try{localStorage.setItem(ANN_SEEN_KEY,JSON.stringify(seen));}catch(_){}}
 function _annMatchesUser(ann){
   if(!ann||ann.active===false)return false;
+  // Auto-expire: anything older than 30 days is treated as inactive.
+  // Protects against forgotten/test messages lingering indefinitely.
+  const MAX_AGE_MS=30*24*60*60*1000;
+  if(ann.createdAt && (Date.now()-ann.createdAt) > MAX_AGE_MS)return false;
   if(!ann.target||ann.target==='all')return true;
   if(!houseId)return false;
   const myCode=String(houseId).toUpperCase();
@@ -5005,6 +5009,19 @@ function _annInit(){
   _annListener=_annDb.ref('announcements');
   _annListener.on('value',snap=>{
     _annAll=snap.val()||{};
+    // First-contact baseline: a brand-new device should NOT receive a flood
+    // of old announcements that were broadcast before they installed. On the
+    // very first listener fire (no install timestamp yet), mark everything
+    // currently in /announcements as "already seen" and stamp install time.
+    try{
+      const INSTALL_KEY='ss_annInstallTs';
+      if(!localStorage.getItem(INSTALL_KEY)){
+        const seen=_annLoadSeen();
+        Object.keys(_annAll).forEach(id=>{if(!seen[id])seen[id]=Date.now();});
+        _annSaveSeen(seen);
+        localStorage.setItem(INSTALL_KEY,String(Date.now()));
+      }
+    }catch(_){}
     _annUpdateBadge();
     // auto-show if a new unseen message arrives
     if(!_annCurrent){
