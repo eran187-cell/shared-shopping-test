@@ -435,23 +435,6 @@ body.dark .qty-badge{background:rgba(255,255,255,.08)}
 #globalMenuBtn.has-announce .menu-badge{display:block}
 @keyframes badgePulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.25);opacity:.7}}
 
-/* Drawer item toggle switch — used for the optional Google sync row */
-.drawer-switch{
-  display:inline-block;position:relative;flex-shrink:0;
-  width:38px;height:22px;border-radius:99px;
-  background:#c4c8c6;transition:background .25s;
-}
-body.dark .drawer-switch{background:#3a4a42}
-.drawer-switch::after{
-  content:"";position:absolute;top:2px;
-  inset-inline-start:2px;
-  width:18px;height:18px;border-radius:50%;background:#fff;
-  box-shadow:0 1px 3px rgba(0,0,0,.25);
-  transition:inset-inline-start .25s,background .25s;
-}
-.drawer-switch.on{background:var(--pri)}
-.drawer-switch.on::after{inset-inline-start:18px}
-
 /* Quick-add bar */
 .qabar{
   position:fixed;bottom:0;left:50%;transform:translateX(-50%);
@@ -900,7 +883,6 @@ body.dark .kpi-tile:hover{box-shadow:0 12px 30px rgba(0,0,0,.5)}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 </head>
 <body>
 
@@ -1032,9 +1014,7 @@ const APP_VERSION='1.02-rc.2';
     envelope:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>',
     document:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
     trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
-    sparkles:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3z"/><path d="M19 14l.7 2 2 .8-2 .7-.7 2-.7-2-2-.7 2-.8L19 14z"/><path d="M5 16l.5 1.5 1.5.5-1.5.5L5 20l-.5-1.5L3 18l1.5-.5L5 16z"/></svg>',
-    cloud:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M17.5 19a4.5 4.5 0 100-9h-1.8a7 7 0 10-13.4 4"/><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/></svg>',
-    cloudOff:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M22.6 12a4.5 4.5 0 00-3.8-3.8M19 19H6a4 4 0 01-.4-7.97"/><path d="M9.4 5.4A7 7 0 0119 11"/><line x1="2" y1="2" x2="22" y2="22"/></svg>'
+    sparkles:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3z"/><path d="M19 14l.7 2 2 .8-2 .7-.7 2-.7-2-2-.7 2-.8L19 14z"/><path d="M5 16l.5 1.5 1.5.5-1.5.5L5 20l-.5-1.5L3 18l1.5-.5L5 16z"/></svg>'
   };
   function _populate(){
     const isDark=document.body.classList.contains('dark');
@@ -1042,28 +1022,8 @@ const APP_VERSION='1.02-rc.2';
     shareSlot.innerHTML='<button id="drawerTellFriends" type="button" data-track="drawer:tellFriends" style="width:100%;padding:14px;border:1.5px solid var(--pri);border-radius:12px;background:var(--pril);color:var(--pri);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px">'+_ICON.gift+' המלצה לחברים</button>';
     document.getElementById('drawerTellFriends').addEventListener('click',_bridge('tellFriendsBtn'));
     const _isAdminNow=(typeof isAdmin==='function')?isAdmin():false;
-    // Toggle reflects truth: requires BOTH the localStorage marker AND a live
-    // Firebase Auth session. If Firebase has no current user, the marker is
-    // stale (signed out elsewhere / cleared cookies / expired) → treat as OFF.
-    let _isGoogleSyncOn=!!localStorage.getItem('sl3_googleUid');
-    if(_isGoogleSyncOn){
-      try{
-        if(typeof firebase==='undefined' || !firebase.auth || !firebase.auth().currentUser){
-          _isGoogleSyncOn=false;
-          localStorage.removeItem('sl3_googleUid');
-        }
-      }catch(_){_isGoogleSyncOn=false;}
-    }
-    const _googleAction=()=>{
-      const c=document.getElementById('globalDrawerClose');if(c)c.click();
-      setTimeout(()=>{
-        if(_isGoogleSyncOn && typeof window._googleSignOut==='function')window._googleSignOut();
-        else if(typeof window._googleSignInAndSync==='function')window._googleSignInAndSync();
-      },180);
-    };
     const items=[
       {icon:_ICON.sparkles,label:'מה חדש',track:'drawer:whatsnew',action:()=>{const c=document.getElementById('globalDrawerClose');if(c)c.click();setTimeout(()=>{if(typeof window._showWhatsNew==='function')window._showWhatsNew(true);},200);}},
-      {icon:_ICON.cloud,label:'סינכרון עם Google',track:'drawer:googleSync',action:_googleAction,toggle:true,toggleOn:_isGoogleSyncOn},
       {icon:_ICON.gear,label:'הגדרות',track:'drawer:settings',action:_bridge('settingsBtn')},
       {icon:_ICON.download,label:'התקנת האפליקציה',track:'drawer:install',action:_bridge('homeInstallBtn')},
       {icon:isDark?_ICON.sun:_ICON.moon,label:isDark?'תצוגה בהירה':'תצוגה כהה',track:'drawer:theme',action:_toggleDark},
@@ -1074,12 +1034,7 @@ const APP_VERSION='1.02-rc.2';
       _isAdminNow?{icon:_ICON.trash,label:'איפוס אפליקציה',track:'drawer:resetApp',action:_resetApp}:null
     ].filter(Boolean);
     const nav=document.getElementById('drawerNav');
-    nav.innerHTML=items.map((it,i)=>{
-      const togglePart=it.toggle
-        ?'<span class="drawer-switch'+(it.toggleOn?' on':'')+'" aria-hidden="true"></span>'
-        :'';
-      return '<button type="button" class="drawer-item'+(it.toggle?' is-toggle':'')+'" data-i="'+i+'" data-track="'+it.track+'"'+(it.toggle?' role="switch" aria-checked="'+(it.toggleOn?'true':'false')+'"':'')+' style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:none;background:none;color:var(--txt);font-size:15px;cursor:pointer;font-family:inherit;text-align:right;border-radius:8px;min-height:48px"><span style="width:28px;display:inline-flex;align-items:center;justify-content:center;color:var(--txt)">'+it.icon+'</span><span style="flex:1">'+it.label+'</span>'+togglePart+'</button>';
-    }).join('');
+    nav.innerHTML=items.map((it,i)=>'<button type="button" class="drawer-item" data-i="'+i+'" data-track="'+it.track+'" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:none;background:none;color:var(--txt);font-size:15px;cursor:pointer;font-family:inherit;text-align:right;border-radius:8px;min-height:48px"><span style="width:28px;display:inline-flex;align-items:center;justify-content:center;color:var(--txt)">'+it.icon+'</span><span style="flex:1">'+it.label+'</span></button>').join('');
     nav.querySelectorAll('.drawer-item').forEach(b=>{
       b.addEventListener('click',()=>items[+b.dataset.i].action());
       b.addEventListener('mouseenter',()=>b.style.background='var(--bg)');
@@ -1205,11 +1160,6 @@ const APP_VERSION='1.02-rc.2';
     <p style="font-size:13px;line-height:1.7;color:var(--txt);text-align:right;margin-top:10px">
       <b>🛒 מאגר מוצרים.</b><br>
       רשימת המוצרים להשלמה אוטומטית מבוססת על נתוני שקיפות מחירים ציבוריים של רשתות הקמעונאות בישראל ועל הזנה ידנית של צוות האפליקציה. שמות מותגים המופיעים במאגר הם לצרכי השלמת חיפוש בלבד - אין קשר מסחרי עם היצרנים.
-    </p>
-
-    <p style="font-size:13px;line-height:1.7;color:var(--txt);text-align:right;margin-top:10px">
-      <b>☁️ סנכרון אופציונלי עם Google.</b><br>
-      ניתן לחבר את הזהות שלך לחשבון Google כדי לשחזר אותה במעבר בין מכשירים. הסנכרון לחלוטין אופציונלי - מי שלא רוצה, פשוט לא לוחץ על הכפתור בתפריט. בעת ההתחברות נשמרים בענן רק מזהה החשבון, רשימת הבתים שלך, ומזהה החבר בכל בית. שם, אימייל ופרטים אישיים אחרים מ-Google אינם נשמרים. ניתן להתנתק בכל עת מתפריט האפליקציה.
     </p>
 
     <p style="font-size:13px;line-height:1.7;color:var(--txt);text-align:right;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bdr)">
@@ -1646,21 +1596,6 @@ const APP_VERSION='1.02-rc.2';
     <h2 class="onboard-title">קניות משפחתיות</h2>
     <p class="onboard-sub">סנכרון בזמן אמת עם כל המשפחה</p>
     <button class="btn-primary" id="createHouseBtn" style="width:100%;font-size:17px;font-weight:700;padding:18px;min-height:56px">+ יצירת בית חדש</button>
-
-    <!-- Divider -->
-    <div style="display:flex;align-items:center;gap:10px;margin:18px 0 12px;color:var(--mut);font-size:12px">
-      <span style="flex:1;height:1px;background:var(--bdr)"></span>
-      <span>או</span>
-      <span style="flex:1;height:1px;background:var(--bdr)"></span>
-    </div>
-
-    <!-- Optional: sign in with Google to restore an existing house -->
-    <button id="onboardGoogleBtn" type="button" data-track="onboard:googleSync" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 16px;border:1.5px solid var(--bdr);border-radius:12px;background:var(--sur);color:var(--txt);font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;min-height:52px">
-      <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3a12 12 0 01-11.3 8 12 12 0 110-24c3 0 5.8 1.1 7.9 3l5.7-5.7A20 20 0 1024 44c11 0 20-8 20-20 0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8A12 12 0 0124 12c3 0 5.8 1.1 7.9 3l5.7-5.7A20 20 0 006.3 14.7z"/><path fill="#4CAF50" d="M24 44a20 20 0 0013.5-5.2l-6.2-5.3A12 12 0 0112.7 28.5l-6.5 5A20 20 0 0024 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3a12 12 0 01-4.1 5.5l6.2 5.3A20 20 0 0044 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
-      <span>התחבר עם Google</span>
-    </button>
-    <p style="font-size:11px;color:var(--mut);text-align:center;margin-top:8px;line-height:1.5">אם התחברת בעבר ממכשיר אחר, נשחזר את הבית שלך</p>
-
     <!-- Hidden join hooks: kept in DOM as fallbacks (e.g. ?h=CODE deeplink, support flow). -->
     <input id="joinCodeInput" maxlength="8" style="display:none"/>
     <button id="joinHouseBtn" style="display:none">הצטרפות</button>
@@ -1720,18 +1655,6 @@ const APP_VERSION='1.02-rc.2';
   </div>
 </div>
 
-<!-- Manage Google-synced houses (visible only when sync is on) -->
-<div class="overlay" id="syncedHousesOverlay" style="z-index:9500">
-  <div class="sheet" style="max-height:82vh;overflow-y:auto">
-    <h3 style="display:flex;align-items:center;gap:8px"><span>🏠</span><span>הבתים המסונכרנים שלי</span></h3>
-    <div style="font-size:12px;color:var(--mut);margin:6px 0 14px">בתים שמקושרים לחשבון Google שלך. אפשר לעבור ביניהם או להסיר.</div>
-    <div id="syncedHousesList" style="font-size:13px"></div>
-    <div class="sheet-actions">
-      <button class="btn-cancel" id="syncedHousesClose">סגירה</button>
-    </div>
-  </div>
-</div>
-
 <!-- Shown to non-admin members after they leave the group. -->
 <div class="overlay" id="leftGroupOverlay" style="display:none;align-items:center">
   <div class="sheet onboard-sheet">
@@ -1777,11 +1700,6 @@ const FB_CFG={
   appId:'1:85106790897:web:8fba405da678553d78f450'
 };
 firebase.initializeApp(FB_CFG);
-// Persist Firebase Auth across browser sessions (default behaviour, but
-// stated explicitly so it survives even when third-party cookies are restricted).
-try{
-  if(firebase.auth)firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
-}catch(_){}
 const db=firebase.database();
 const SESSION=Math.random().toString(36).slice(2);
 let deviceId=localStorage.getItem('sl3_deviceId')||(()=>{const id=Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem('sl3_deviceId',id);return id;})();
@@ -1953,26 +1871,13 @@ function save(){
   const payload=JSON.parse(JSON.stringify({house,types:listTypes,items,nextId,_s:SESSION,_t:Date.now()}));
   console.log('[save] writing to Firebase, items=',totalItems,'houseId=',houseId);
   db.ref('houses/'+houseId).set(payload)
-    .then(()=>{
-      console.log('[save] OK');
-      setTimeout(()=>{_saving=false;},600);
-      recordHouseStat();
-      // If the user is signed into Google sync, also keep the cloud link
-      // current. This is how a fresh house created via "Google sign-in →
-      // no cloud houses → create new" gets auto-linked once the member is saved.
-      try{
-        const _uid=localStorage.getItem('sl3_googleUid');
-        if(_uid && firebase.auth().currentUser && typeof _googleLinkCurrentHouse==='function'){
-          _googleLinkCurrentHouse(_uid);
-        }
-      }catch(_){}
-    })
+    .then(()=>{console.log('[save] OK');setTimeout(()=>{_saving=false;},600);recordHouseStat();})
     .catch(err=>{console.error('[save] FAILED:',err);_saving=false;toast('שמירה נכשלה: '+(err.message||err.code||'שגיאה'));});
 }
 function applyData(d){
   if(!d)return;
   const h=d.house||{};
-  house={name:h.name||'',members:Array.isArray(h.members)?h.members:[],adminId:h.adminId,ownerUid:h.ownerUid||null};
+  house={name:h.name||'',members:Array.isArray(h.members)?h.members:[],adminId:h.adminId};
   listTypes=Array.isArray(d.types)&&d.types.length?d.types:DEFAULT_TYPES.map(x=>({...x}));
   items=(d.items&&typeof d.items==='object')?d.items:{};
   nextId=d.nextId||1;
@@ -2010,8 +1915,6 @@ function applyData(d){
   if((house.members||[]).some(m=>m&&m.deviceId===deviceId)){
     try{localStorage.setItem('sl3_wasMember','1');}catch(_){}
   }
-  // Heal stale ownership (e.g., previous owner was removed from the house).
-  try{if(typeof _ensureHouseOwnership==='function'){setTimeout(_ensureHouseOwnership,1500);}}catch(_){}
 }
 // Called when the remote state shows we no longer belong to the house
 // (kicked by admin, or the entire house was deleted).
@@ -2028,393 +1931,6 @@ function _onKickedFromHouse(){
   setTimeout(()=>window._refreshGlobalMenuVisibility&&window._refreshGlobalMenuVisibility(),0);
   document.getElementById('leftGroupOverlay').style.display='flex';
 }
-
-/* ══ OPTIONAL GOOGLE SYNC ═══════════════════════════════════════════
-   Lets a user link their identity to a Google account so that on a new
-   device, signing in restores their house membership automatically.
-   Fully optional — onboarding is unchanged for users who don't sign in. */
-async function _googleSignInAndSync(){
-  if(typeof firebase==='undefined' || !firebase.auth){
-    alert('שירות ההתחברות לא זמין כרגע. נסה שוב בעוד רגע.');
-    return;
-  }
-  try{
-    const provider=new firebase.auth.GoogleAuthProvider();
-    const result=await firebase.auth().signInWithPopup(provider);
-    const uid=result.user.uid;
-    localStorage.setItem('sl3_googleUid',uid);
-    // Force fresh token so Realtime DB websocket carries the auth claim
-    try{await result.user.getIdToken(true);}catch(_){}
-
-    // Always check cloud first — restore-first is the mental model.
-    const cloudSnap=await firebase.database().ref('users/'+uid+'/houses').once('value');
-    const rawCloud=cloudSnap.val()||{};
-    // Filter out stale entries pointing at houses that no longer exist
-    const cloudHouses={};
-    await Promise.all(Object.entries(rawCloud).map(async ([hid,info])=>{
-      try{
-        const houseSnap=await firebase.database().ref('houses/'+hid).once('value');
-        if(houseSnap.val()){cloudHouses[hid]=info;}
-        else{
-          // Auto-cleanup stale entry
-          await firebase.database().ref('users/'+uid+'/houses/'+hid).remove().catch(()=>{});
-        }
-      }catch(_){}
-    }));
-    const cloudHouseIds=Object.keys(cloudHouses);
-
-    // Case 1: cloud has nothing yet
-    if(!cloudHouseIds.length){
-      if(houseId){
-        const role=await _googleLinkCurrentHouse(uid);
-        if(role==='owner')toast('סונכרן בהצלחה - תוכל לחזור לבית הזה מכל מכשיר');
-        else toast('זוהית כחבר בבית. הבעלות שייכת לחבר אחר.');
-      } else {
-        // User is on onboarding with no cloud history → start a new house.
-        // The save() hook will auto-link it to Google once a member is saved.
-        toast('יוצר בית חדש מקושר לחשבון Google שלך…');
-        setTimeout(()=>{document.getElementById('createHouseBtn').click();},400);
-      }
-      return;
-    }
-
-    // Case 2: current house already in cloud → just refresh the timestamp
-    if(houseId && cloudHouses[houseId]){
-      const role=await _googleLinkCurrentHouse(uid);
-      if(role==='owner')toast('סונכרן בהצלחה');
-      else toast('זוהית כחבר בבית. הבעלות שייכת לחבר אחר.');
-      return;
-    }
-
-    // Case 3: cloud has houses, but the current device is in a DIFFERENT one
-    // (or none). Pick the most-recent and offer to restore.
-    const entries=Object.entries(cloudHouses).sort((a,b)=>((b[1]&&b[1].joinedAt)||0)-((a[1]&&a[1].joinedAt)||0));
-    const recentHid=entries[0][0];
-    let recentName='הבית הקודם';
-    try{
-      const nameSnap=await firebase.database().ref('houses/'+recentHid+'/house/name').once('value');
-      if(nameSnap.val())recentName=nameSnap.val();
-    }catch(_){}
-    if(houseId){
-      // User is currently in a different house. Ask before overriding.
-      const msg='בחשבון Google שלך נמצא הבית "'+recentName+'". לעבור אליו (הבית הנוכחי לא יימחק, פשוט תתחלף אליו)?';
-      if(!confirm(msg)){
-        // User declined — link the current house to cloud as well
-        const role=await _googleLinkCurrentHouse(uid);
-        if(role==='owner')toast('סונכרן בהצלחה');
-        else toast('זוהית כחבר בבית. הבעלות שייכת לחבר אחר.');
-        return;
-      }
-    }
-    // Restore the most-recent house from cloud
-    await _googleRestoreFromCloud(uid);
-  }catch(err){
-    const code=(err&&err.code)||'';
-    if(code==='auth/popup-closed-by-user' || code==='auth/cancelled-popup-request')return;
-    console.error('Google sign-in failed',err);
-    alert('התחברות נכשלה: '+(err&&err.message||code||'שגיאה לא ידועה'));
-  }
-}
-// Returns 'owner' | 'member' | null. 'owner' means this uid is the single
-// account that "owns" the house; 'member' means another uid already owns it
-// and this uid is identity-only (can restore membership but not list the
-// house under their synced houses).
-async function _googleLinkCurrentHouse(uid){
-  if(!houseId)return null;
-  const mine=_myMemberId&&_myMemberId();
-  if(!mine)return null;
-  const member=getMember(mine);
-  if(!member)return null;
-  let role='member';
-  try{
-    // First-write-wins claim on ownerUid via transaction
-    const ownerRef=firebase.database().ref('houses/'+houseId+'/house/ownerUid');
-    const txRes=await ownerRef.transaction(curr=>(curr==null?uid:undefined));
-    const existing=txRes && txRes.snapshot ? txRes.snapshot.val() : null;
-    role=(existing===uid)?'owner':'member';
-    // Stamp googleUid onto this member's record so future ownership transfers
-    // can find them. Uses a targeted update to avoid clobbering other fields.
-    try{
-      const membersSnap=await firebase.database().ref('houses/'+houseId+'/house/members').once('value');
-      const membersArr=membersSnap.val()||[];
-      const idx=membersArr.findIndex(m=>m&&m.id===mine);
-      if(idx>=0 && membersArr[idx].googleUid!==uid){
-        await firebase.database().ref('houses/'+houseId+'/house/members/'+idx+'/googleUid').set(uid);
-      }
-    }catch(e){console.warn('stamp googleUid failed',e);}
-    // Owner gets the house listed under /users/<uid>/houses; non-owners get
-    // an identity-only entry (role:'member'). Either way it lets the same
-    // uid restore the membership on a new device.
-    await firebase.database().ref('users/'+uid+'/houses/'+houseId).set({
-      memberId:mine,
-      color:member.color||'#999',
-      joinedAt:Date.now(),
-      role
-    });
-    await firebase.database().ref('users/'+uid+'/ts').set(Date.now());
-  }catch(err){
-    console.warn('linkCurrentHouse failed',err);
-  }
-  return role;
-}
-// Idempotent ownership-transfer: if the house has an ownerUid pointing at
-// nobody currently in members[] (the owner left/was kicked), move ownership
-// to the oldest remaining member who has a googleUid. Safe to call any time
-// — only the FIRST member by index runs the write to avoid races.
-async function _ensureHouseOwnership(){
-  try{
-    if(!houseId || !house || !Array.isArray(house.members) || !house.members.length)return;
-    const ownerUid=(house && house.ownerUid)||null;
-    const members=house.members;
-    // Only the first member acts — keeps it conflict-free across clients
-    if(!members[0] || members[0].deviceId!==deviceId)return;
-    if(ownerUid){
-      const ownerStillHere=members.some(m=>m && m.googleUid===ownerUid);
-      if(ownerStillHere)return;
-      // Find oldest (lowest index) member with a googleUid → new owner
-      const heir=members.find(m=>m && m.googleUid);
-      if(heir){
-        await firebase.database().ref('houses/'+houseId+'/house/ownerUid').set(heir.googleUid);
-        // Promote them inside /users so it shows in their synced-houses list
-        try{await firebase.database().ref('users/'+heir.googleUid+'/houses/'+houseId+'/role').set('owner');}catch(_){}
-      } else {
-        // Nobody has a googleUid — clear ownership so the next syncer can claim
-        await firebase.database().ref('houses/'+houseId+'/house/ownerUid').remove();
-      }
-    }
-  }catch(e){console.warn('ensureHouseOwnership failed',e);}
-}
-async function _googleRestoreFromCloud(uid){
-  try{
-    const snap=await firebase.database().ref('users/'+uid+'/houses').once('value');
-    const rawEntries=Object.entries(snap.val()||{});
-    // Sort by joinedAt desc and walk through until we find a live one;
-    // stale (deleted) houses are pruned along the way.
-    rawEntries.sort((a,b)=>((b[1]&&b[1].joinedAt)||0)-((a[1]&&a[1].joinedAt)||0));
-    let hid=null, info=null, data=null;
-    for(const [candidateHid,candidateInfo] of rawEntries){
-      try{
-        const candidateSnap=await firebase.database().ref('houses/'+candidateHid).once('value');
-        const candidateData=candidateSnap.val();
-        if(candidateData){
-          hid=candidateHid; info=candidateInfo; data=candidateData;
-          break;
-        }
-        // Stale — clean up and continue
-        await firebase.database().ref('users/'+uid+'/houses/'+candidateHid).remove().catch(()=>{});
-      }catch(_){}
-    }
-    if(!hid){
-      // No live cloud houses → start a new house and let save() hook link it.
-      toast('יוצר בית חדש מקושר לחשבון Google שלך…');
-      setTimeout(()=>{document.getElementById('createHouseBtn').click();},400);
-      return;
-    }
-    const members=(data.house&&data.house.members)||[];
-    const idx=members.findIndex(m=>m&&m.id===info.memberId);
-    if(idx<0){
-      toast('החברות בבית בוטלה');
-      return;
-    }
-    members[idx].deviceId=deviceId;
-    await firebase.database().ref('houses/'+hid+'/house/members').set(members);
-    localStorage.setItem('sl3_houseId',hid);
-    toast('שוחזר בית - טוען מחדש...');
-    setTimeout(()=>location.reload(),1500);
-  }catch(err){
-    console.error('restoreFromCloud failed',err);
-    alert('שחזור הבית נכשל: '+(err&&err.message||err));
-  }
-}
-async function _googleSignOut(){
-  try{if(firebase&&firebase.auth)await firebase.auth().signOut();}catch(_){}
-  localStorage.removeItem('sl3_googleUid');
-  toast('התנתק מסנכרון Google');
-}
-// Wait for Firebase Auth state to settle (it resolves async on page load,
-// even when there's a persisted session). Returns the currentUser or null.
-function _waitForAuth(){
-  return new Promise(resolve=>{
-    if(firebase.auth().currentUser){resolve(firebase.auth().currentUser);return;}
-    let done=false;
-    const finish=u=>{if(done)return;done=true;try{unsub&&unsub();}catch(_){}resolve(u||null);};
-    const unsub=firebase.auth().onAuthStateChanged(u=>finish(u));
-    setTimeout(()=>finish(firebase.auth().currentUser),6000);
-  });
-}
-// Show a list of houses linked to the user's Google account
-async function _showSyncedHouses(){
-  const wrap=document.getElementById('syncedHousesList');
-  wrap.innerHTML='<div style="text-align:center;color:var(--mut);padding:20px">טוען...</div>';
-  document.getElementById('syncedHousesOverlay').classList.add('open');
-  // Step 1: try to set persistence to local (helps across page loads)
-  try{await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);}catch(_){}
-  // Step 2: wait for any persisted auth to load
-  let user=await _waitForAuth();
-  // Step 3: if no auth, force a fresh sign-in popup
-  if(!user){
-    wrap.innerHTML='<div style="text-align:center;color:var(--mut);padding:20px">פותח חלון התחברות...</div>';
-    try{
-      const r=await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
-      user=r.user;
-    }catch(err){
-      const code=(err&&err.code)||'';
-      if(code==='auth/popup-closed-by-user' || code==='auth/cancelled-popup-request'){
-        document.getElementById('syncedHousesOverlay').classList.remove('open');
-        return;
-      }
-      wrap.innerHTML='<div style="color:var(--red);text-align:center;padding:20px">'+esc(err&&err.message||'נדרשת התחברות')+'</div>';
-      return;
-    }
-  }
-  const uid=user.uid;
-  localStorage.setItem('sl3_googleUid',uid);
-  // Force token refresh so Realtime Database's websocket picks up the new
-  // auth claim before the read fires. Without this, the DB may still be
-  // using a stale (unauthenticated) connection from the initial load.
-  try{await user.getIdToken(true);}catch(_){}
-  // Show "loading" again now that we have auth
-  wrap.innerHTML='<div style="text-align:center;color:var(--mut);padding:20px">טוען בתים...</div>';
-  try{
-    const snap=await firebase.database().ref('users/'+uid+'/houses').once('value');
-    const entries=Object.entries(snap.val()||{});
-    if(!entries.length){
-      wrap.innerHTML='<div style="color:var(--mut);text-align:center;padding:20px">אין בתים מסונכרנים עדיין.<br>סנכרן בית כדי לראות אותו כאן.</div>';
-      return;
-    }
-    entries.sort((a,b)=>((b[1]&&b[1].joinedAt)||0)-((a[1]&&a[1].joinedAt)||0));
-    // Fetch each house name + members count for nice display
-    const houseInfos=await Promise.all(entries.map(async([hid,info])=>{
-      try{
-        const hSnap=await firebase.database().ref('houses/'+hid).once('value');
-        const data=hSnap.val()||{};
-        const name=(data.house&&data.house.name)||'בית ללא שם';
-        const members=(data.house&&data.house.members)||[];
-        const items=Object.values(data.items||{}).reduce((n,a)=>n+(Array.isArray(a)?a.length:0),0);
-        // Effective role: explicit info.role first; else infer from ownerUid
-        const ownerUid=(data.house&&data.house.ownerUid)||null;
-        const role=(info && info.role) || (ownerUid===uid?'owner':(ownerUid?'member':'owner'));
-        return {hid,info,name,memberCount:members.length,itemCount:items,exists:!!data,role};
-      }catch(_){return {hid,info,name:'בית ללא שם',memberCount:0,itemCount:0,exists:false,role:(info&&info.role)||'owner'};}
-    }));
-    const ownedHouses=houseInfos.filter(h=>h.role==='owner');
-    const identityHouses=houseInfos.filter(h=>h.role!=='owner');
-    const renderCard=h=>{
-      const ageDays=h.info.joinedAt?Math.floor((Date.now()-h.info.joinedAt)/86400000):null;
-      const ageLabel=ageDays===null?'':ageDays===0?'נוסף היום':ageDays===1?'נוסף אתמול':'נוסף לפני '+ageDays+' ימים';
-      const isCurrent=(houseId===h.hid);
-      const status=isCurrent?'<span style="font-size:10px;background:var(--pri);color:#fff;padding:2px 7px;border-radius:6px;margin-right:4px;font-weight:700">נוכחי</span>':'';
-      const danger=!h.exists?'<div style="font-size:11px;color:var(--red);margin-top:3px">⚠ הבית לא קיים יותר בשרת</div>':'';
-      const roleBadge=h.role==='owner'?'<span style="font-size:10px;background:#7c5cff;color:#fff;padding:2px 7px;border-radius:6px;margin-right:4px;font-weight:700">בעלים</span>':'<span style="font-size:10px;background:#666;color:#fff;padding:2px 7px;border-radius:6px;margin-right:4px;font-weight:700">זהות בלבד</span>';
-      return '<div style="border:1px solid var(--bdr);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:'+(isCurrent?'var(--pril)':'var(--sur)')+'">'
-        +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px">'
-          +'<div style="font-weight:700;font-size:14px;flex:1">'+status+roleBadge+esc(h.name)+'</div>'
-        +'</div>'
-        +'<div style="font-size:11px;color:var(--mut);margin-bottom:8px">'+(h.exists?('👥 '+h.memberCount+' חברים · 🛒 '+h.itemCount+' פריטים · '):'')+ageLabel+'</div>'
-        +danger
-        +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
-          +(isCurrent?'':'<button data-action="switch" data-hid="'+h.hid+'" style="flex:1;padding:6px 12px;border:none;border-radius:8px;background:var(--pri);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit"'+(h.exists?'':' disabled')+'>'+(h.exists?'עבור לבית זה':'לא זמין')+'</button>')
-          +'<button data-action="remove" data-hid="'+h.hid+'" style="padding:6px 10px;border:1.5px solid var(--bdr);border-radius:8px;background:transparent;color:var(--red);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">הסר מהסנכרון</button>'
-        +'</div>'
-      +'</div>';
-    };
-    const sectionHeader=t=>'<div style="font-size:12px;font-weight:700;color:var(--mut);margin:8px 4px 6px">'+t+'</div>';
-    let html='';
-    if(ownedHouses.length){html+=sectionHeader('בתים שלך');html+=ownedHouses.map(renderCard).join('');}
-    if(identityHouses.length){html+=sectionHeader('זהויות שמורות (חבר בבית של אחר)');html+=identityHouses.map(renderCard).join('');}
-    wrap.innerHTML=html;
-    // wire actions
-    wrap.querySelectorAll('button[data-action="switch"]').forEach(b=>{
-      b.addEventListener('click',async function(){
-        const hid=this.dataset.hid;
-        if(!confirm('לעבור לבית "'+(houseInfos.find(x=>x.hid===hid)||{name:''}).name+'"?'))return;
-        document.getElementById('syncedHousesOverlay').classList.remove('open');
-        await _googleRestoreSpecificHouse(uid,hid);
-      });
-    });
-    wrap.querySelectorAll('button[data-action="remove"]').forEach(b=>{
-      b.addEventListener('click',async function(){
-        const hid=this.dataset.hid;
-        const h=houseInfos.find(x=>x.hid===hid);
-        if(!confirm('להסיר את "'+(h&&h.name||hid)+'" מהבתים המסונכרנים?\n(הבית עצמו לא יימחק — רק הקישור לחשבון Google שלך)'))return;
-        try{
-          await firebase.database().ref('users/'+uid+'/houses/'+hid).remove();
-          toast('הוסר מהבתים המסונכרנים');
-          _showSyncedHouses(); // refresh list
-        }catch(err){alert('הסרה נכשלה: '+(err&&err.message||err));}
-      });
-    });
-  }catch(err){
-    console.error('synced houses failed',err);
-    wrap.innerHTML='<div style="color:var(--red);text-align:center;padding:20px">טעינה נכשלה: '+esc(err&&err.message||'')+'</div>';
-  }
-}
-async function _googleRestoreSpecificHouse(uid,hid){
-  try{
-    // Ensure auth is settled before any DB read
-    if(!firebase.auth().currentUser){await _waitForAuth();}
-    const infoSnap=await firebase.database().ref('users/'+uid+'/houses/'+hid).once('value');
-    const info=infoSnap.val();
-    if(!info){toast('הבית לא בענן');return;}
-    const houseSnap=await firebase.database().ref('houses/'+hid).once('value');
-    const data=houseSnap.val();
-    if(!data){toast('הבית לא נמצא - ייתכן שנמחק');return;}
-    const members=(data.house&&data.house.members)||[];
-    const idx=members.findIndex(m=>m&&m.id===info.memberId);
-    if(idx<0){toast('החברות בבית בוטלה');return;}
-    members[idx].deviceId=deviceId;
-    await firebase.database().ref('houses/'+hid+'/house/members').set(members);
-    localStorage.setItem('sl3_houseId',hid);
-    toast('עובר לבית - טוען מחדש...');
-    setTimeout(()=>location.reload(),1500);
-  }catch(err){
-    console.error('restore specific failed',err);
-    alert('מעבר לבית נכשל: '+(err&&err.message||err));
-  }
-}
-document.getElementById('syncedHousesClose').addEventListener('click',()=>{
-  document.getElementById('syncedHousesOverlay').classList.remove('open');
-});
-// Expose to the drawer (which lives in an earlier IIFE)
-window._googleSignInAndSync=_googleSignInAndSync;
-window._googleSignOut=_googleSignOut;
-window._showSyncedHouses=_showSyncedHouses;
-// Always-on auth listener — but ONE-WAY: it only CLEARS the local marker
-// when Firebase has no user (signed out / expired). It does NOT set the
-// marker when Firebase restores a persisted session. Otherwise a stale
-// browser auth from a previous test would silently flip the toggle ON for
-// a user who never explicitly turned it on in this app flow.
-try{
-  if(typeof firebase!=='undefined' && firebase.auth){
-    firebase.auth().onAuthStateChanged(function(u){
-      if(!u){localStorage.removeItem('sl3_googleUid');}
-      // Note: setting `sl3_googleUid` is the responsibility of the explicit
-      // sign-in flows (_googleSignInAndSync, _showSyncedHouses) only.
-    });
-  }
-}catch(_){}
-// Belt-and-suspenders: also reconcile on window load as a fallback (in case
-// the always-on listener registered before firebase.auth was ready).
-window.addEventListener('load',function(){
-  setTimeout(async ()=>{
-    try{
-      if(!localStorage.getItem('sl3_googleUid'))return;
-      if(typeof firebase==='undefined' || !firebase.auth)return;
-      const u=await _waitForAuth();
-      if(!u){
-        // Stale flag — Firebase has no session. Clean up so toggle shows OFF.
-        localStorage.removeItem('sl3_googleUid');
-        return;
-      }
-      // Always anchor to the live auth uid (in case localStorage holds a previous account)
-      localStorage.setItem('sl3_googleUid',u.uid);
-      // If user is in a house, keep the cloud link fresh
-      if(houseId && typeof _googleLinkCurrentHouse==='function'){
-        _googleLinkCurrentHouse(u.uid);
-      }
-    }catch(_){}
-  },3500);
-});
 function renderCurrent(){
   renderHome();
   if(activeId&&!document.getElementById('list').classList.contains('slide-right')){
@@ -4873,15 +4389,14 @@ acInit();
    notification dot on the hamburger menu and (on next open) get the
    modal automatically.
 */
-const WHATSNEW_ID='2026-05-17';
-const WHATSNEW_VERSION='1.03';
+const WHATSNEW_ID='2026-05-10';
+const WHATSNEW_VERSION='1.02';
 const WHATSNEW_BULLETS=[
   '🛒 רשימה קניות אחת',
   '<svg style="display:inline-block;vertical-align:-3px;color:var(--pri)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v6"/><path d="M12 16v6"/><path d="M2 12h6"/><path d="M16 12h6"/><path d="M5 5l3 3"/><path d="M16 16l3 3"/><path d="M5 19l3-3"/><path d="M16 8l3-3"/></svg> "סידור חכם" - מיון אוטומטי לפי מחלקות',
   '🔔 סימון פריט כ"דחוף"',
   '🤝 מניעת הזנה כפולה לפריטים',
   '📦 מאגר מוצרים כפול',
-  '☁️ חדש: סנכרון אופציונלי עם Google - חזור לבית שלך מכל מכשיר',
 ];
 const _WHATSNEW_KEY='sl3_whatsnewSeen';
 function _whatsNewUnread(){
@@ -4931,10 +4446,6 @@ function _annLoadSeen(){try{return JSON.parse(localStorage.getItem(ANN_SEEN_KEY)
 function _annSaveSeen(seen){try{localStorage.setItem(ANN_SEEN_KEY,JSON.stringify(seen));}catch(_){}}
 function _annMatchesUser(ann){
   if(!ann||ann.active===false)return false;
-  // Auto-expire: anything older than 30 days is treated as inactive.
-  // Protects against forgotten/test messages lingering indefinitely.
-  const MAX_AGE_MS=30*24*60*60*1000;
-  if(ann.createdAt && (Date.now()-ann.createdAt) > MAX_AGE_MS)return false;
   if(!ann.target||ann.target==='all')return true;
   if(!houseId)return false;
   const myCode=String(houseId).toUpperCase();
@@ -5012,19 +4523,6 @@ function _annInit(){
   _annListener=_annDb.ref('announcements');
   _annListener.on('value',snap=>{
     _annAll=snap.val()||{};
-    // First-contact baseline: a brand-new device should NOT receive a flood
-    // of old announcements that were broadcast before they installed. On the
-    // very first listener fire (no install timestamp yet), mark everything
-    // currently in /announcements as "already seen" and stamp install time.
-    try{
-      const INSTALL_KEY='ss_annInstallTs';
-      if(!localStorage.getItem(INSTALL_KEY)){
-        const seen=_annLoadSeen();
-        Object.keys(_annAll).forEach(id=>{if(!seen[id])seen[id]=Date.now();});
-        _annSaveSeen(seen);
-        localStorage.setItem(INSTALL_KEY,String(Date.now()));
-      }
-    }catch(_){}
     _annUpdateBadge();
     // auto-show if a new unseen message arrives
     if(!_annCurrent){
@@ -6225,13 +5723,6 @@ if(_isAdmin){
 }
 
 /* ── Onboarding handlers ─────────────── */
-// Optional Google sign-in directly from onboarding — when the user has used
-// the app before from another device, signing in restores their most recent
-// house. If they have no cloud history, they stay on the onboarding screen
-// (the toast inside _googleRestoreFromCloud tells them to create or join).
-document.getElementById('onboardGoogleBtn').addEventListener('click',function(){
-  if(typeof _googleSignInAndSync==='function')_googleSignInAndSync();
-});
 document.getElementById('createHouseBtn').addEventListener('click',function(){
   // generate 6-char uppercase house code
   const newId=Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6).padEnd(6,'0');
