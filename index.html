@@ -2379,14 +2379,17 @@ document.getElementById('syncedHousesClose').addEventListener('click',()=>{
 window._googleSignInAndSync=_googleSignInAndSync;
 window._googleSignOut=_googleSignOut;
 window._showSyncedHouses=_showSyncedHouses;
-// Always-on auth listener: as soon as Firebase resolves auth state (or it
-// changes), mirror it into localStorage. This is the primary mechanism that
-// keeps the drawer toggle truthful — no 3.5s delay, no race with drawer open.
+// Always-on auth listener — but ONE-WAY: it only CLEARS the local marker
+// when Firebase has no user (signed out / expired). It does NOT set the
+// marker when Firebase restores a persisted session. Otherwise a stale
+// browser auth from a previous test would silently flip the toggle ON for
+// a user who never explicitly turned it on in this app flow.
 try{
   if(typeof firebase!=='undefined' && firebase.auth){
     firebase.auth().onAuthStateChanged(function(u){
-      if(u){localStorage.setItem('sl3_googleUid',u.uid);}
-      else {localStorage.removeItem('sl3_googleUid');}
+      if(!u){localStorage.removeItem('sl3_googleUid');}
+      // Note: setting `sl3_googleUid` is the responsibility of the explicit
+      // sign-in flows (_googleSignInAndSync, _showSyncedHouses) only.
     });
   }
 }catch(_){}
