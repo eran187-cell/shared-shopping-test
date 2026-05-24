@@ -4503,12 +4503,31 @@ function _annShow(id,ann){
   }
   document.getElementById('announceOverlay').classList.add('open');
 }
-function _annDismiss(recordResponse){
+// Build the context payload written to /announcements/<id>/responses/<deviceId>.
+// Includes house code + member name + dismissal type so the admin dashboard
+// can show WHO viewed each message (not just a count of devices).
+function _annResponsePayload(kind){
+  const p={t:Date.now(),k:kind||'close'};
+  try{
+    if(typeof houseId!=='undefined' && houseId)p.h=houseId;
+    const mid=(typeof _myMemberId==='function')?_myMemberId():null;
+    if(mid && typeof getMember==='function'){
+      const m=getMember(mid);
+      if(m && m.name)p.n=m.name;
+    }
+  }catch(_){}
+  return p;
+}
+// kind: 'cta' (action button) | 'close' (X) | 'fb' (feedback submitted)
+function _annDismiss(kind){
   if(!_annCurrent)return;
   const id=_annCurrent.id;
   const seen=_annLoadSeen();seen[id]=Date.now();_annSaveSeen(seen);
-  if(recordResponse && _annDb){
-    try{_annDb.ref('announcements/'+id+'/responses/'+deviceId).set(Date.now());}catch(_){}
+  // ALWAYS record the response, regardless of which button was used.
+  // The only way to dismiss the message is by clicking SOMETHING, so every
+  // dismissal is a confirmed view.
+  if(_annDb){
+    try{_annDb.ref('announcements/'+id+'/responses/'+deviceId).set(_annResponsePayload(kind));}catch(_){}
   }
   document.getElementById('announceOverlay').classList.remove('open');
   _annCurrent=null;
@@ -4568,17 +4587,17 @@ document.getElementById('announceCtaBtn').addEventListener('click',function(){
               .set({text,t:Date.now()});
       }catch(_){}
     }
-    _annDismiss(true);
+    _annDismiss('fb');
     setTimeout(()=>{if(typeof toast==='function')toast('תודה על המשוב!');},300);
     return;
   }
   // record response BEFORE running action (in case action reloads page)
-  _annDismiss(true);
+  _annDismiss('cta');
   if(action==='update'){
     setTimeout(_annTriggerUpdate,150);
   }
 });
-document.getElementById('announceCloseBtn').addEventListener('click',()=>_annDismiss(false));
+document.getElementById('announceCloseBtn').addEventListener('click',()=>_annDismiss('close'));
 // Tapping hamburger when there's a queued message also re-opens it
 document.getElementById('globalMenuBtn').addEventListener('click',function(){
   if(_annCurrent)return; // already showing
@@ -4908,7 +4927,28 @@ _annInit();
       const entries=Object.entries(all).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
       if(!entries.length){wrap.innerHTML='<div style="color:var(--mut)">אין הודעות.</div>';return;}
       wrap.innerHTML=entries.map(([id,a])=>{
-        const responses=a.responses?Object.keys(a.responses).length:0;
+        const respObj=a.responses||{};
+        const respEntries=Object.entries(respObj);
+        const responses=respEntries.length;
+        // Split by dismissal type — backward-compatible with old format
+        // where the value was a bare timestamp number ⇒ treated as 'cta'.
+        let nCta=0,nClose=0,nFb=0;
+        respEntries.forEach(([dev,v])=>{
+          if(typeof v==='number'){nCta++;return;}
+          const k=(v&&v.k)||'cta';
+          if(k==='close')nClose++; else if(k==='fb')nFb++; else nCta++;
+        });
+        const respBreakdown=responses?(' (✓'+nCta+(nClose?' ✕'+nClose:'')+(nFb?' 💬'+nFb:'')+')'):'';
+        const respList=respEntries.map(([dev,v])=>{
+          const isNum=typeof v==='number';
+          const t=isNum?v:(v&&v.t)||0;
+          const k=isNum?'cta':((v&&v.k)||'cta');
+          const h=isNum?'':((v&&v.h)||'');
+          const n=isNum?'':((v&&v.n)||'');
+          const kIcon=k==='close'?'✕':(k==='fb'?'💬':'✓');
+          const kLabel=k==='close'?'סגירה':(k==='fb'?'משוב':'אישור');
+          return {t,k,h,n,dev,isNum,kIcon,kLabel};
+        }).sort((x,y)=>(y.t||0)-(x.t||0));
         const fb=a.feedback||{};
         const fbCount=Object.keys(fb).length;
         const fbList=Object.entries(fb).sort((x,y)=>(y[1].t||0)-(x[1].t||0));
@@ -4923,10 +4963,29 @@ _annInit();
         return '<div style="border:1px solid var(--bdr);border-radius:8px;padding:8px 10px;margin-bottom:6px;background:var(--bg)">'
           +'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:4px">'
             +'<span>'+_esc(tgt)+' · '+_fmtTime(a.createdAt||0)+'</span>'
-            +'<span>'+status+' · 👁 '+responses+(isFeedback?(' · 💬 '+fbCount):'')+'</span>'
+            +'<span>'+status+' · 👁 '+responses+respBreakdown+(isFeedback?(' · 💬 '+fbCount):'')+'</span>'
           +'</div>'
           +'<div style="font-weight:600;font-size:13px;margin-bottom:2px">'+_esc(a.icon||'📣')+' '+_esc(a.title||'')+(isFeedback?' <span style="font-size:11px;color:var(--pri);font-weight:500">[משוב]</span>':'')+'</div>'
           +'<div style="font-size:12px;color:var(--mut);max-height:60px;overflow:hidden;text-overflow:ellipsis">'+_esc(a.text||'')+'</div>'
+          +(responses?(
+            '<details style="margin-top:8px;border-top:1px dashed var(--bdr);padding-top:6px">'
+            +'<summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--pri)">הצג '+responses+' צופים</summary>'
+            +'<div style="max-height:240px;overflow-y:auto;margin-top:6px">'
+            +respList.map(r=>(
+              '<div style="background:var(--sur);border:1px solid var(--bdr);border-radius:6px;padding:5px 8px;margin-bottom:3px;font-size:11px">'
+              +'<div style="display:flex;justify-content:space-between;gap:8px">'
+                +'<span><span title="'+_esc(r.kLabel)+'">'+r.kIcon+'</span> '
+                +(r.n?'<b>'+_esc(r.n)+'</b>':'<span style="color:var(--mut)">חבר לא ידוע</span>')
+                +(r.h?' · בית <code style="background:var(--bg);padding:1px 4px;border-radius:3px">'+_esc(r.h)+'</code>':'')
+                +(r.isNum?' <span style="color:var(--mut);font-size:10px">(ישן)</span>':'')
+                +'</span>'
+                +'<span style="color:var(--mut)">'+_fmtTime(r.t)+'</span>'
+              +'</div>'
+              +'<div style="color:var(--mut);font-size:10px;margin-top:2px">device: '+_esc(r.dev.slice(-6))+'</div>'
+              +'</div>'
+            )).join('')
+            +'</div></details>'
+          ):'')
           +(isFeedback && fbCount?(
             '<details style="margin-top:8px;border-top:1px dashed var(--bdr);padding-top:6px">'
             +'<summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--pri)">הצג '+fbCount+' תגובות משוב</summary>'
