@@ -1527,6 +1527,7 @@ const APP_VERSION='1.02-rc.2';
             <option value="dismiss">סגירה רגילה</option>
             <option value="update">עדכון גרסה</option>
             <option value="feedback">משוב — 2 שורות מהמשתמש</option>
+            <option value="tellFriends">המלצה לחברים — פתיחת שיתוף</option>
           </select>
         </div>
         <button id="annSendBtn" style="padding:10px;border:none;border-radius:8px;background:var(--pri);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">📤 שלח הודעה</button>
@@ -4506,7 +4507,10 @@ function _annShow(id,ann){
     setTimeout(()=>fb.focus(),120);
   } else {
     fb.style.display='none';
-    ctaBtn.textContent=ann.ctaLabel||'הבנתי ✓';
+    const _dflt=ann.ctaAction==='tellFriends'?'🎁 המלצה לחברים'
+      :ann.ctaAction==='update'?'🔄 עדכון גרסה'
+      :'הבנתי ✓';
+    ctaBtn.textContent=ann.ctaLabel||_dflt;
   }
   document.getElementById('announceOverlay').classList.add('open');
 }
@@ -4602,6 +4606,13 @@ document.getElementById('announceCtaBtn').addEventListener('click',function(){
   _annDismiss('cta');
   if(action==='update'){
     setTimeout(_annTriggerUpdate,150);
+  } else if(action==='tellFriends'){
+    // Trigger the existing 'tell friends' flow (share sheet / clipboard).
+    // tellFriendsBtn lives in settings markup but is wired globally.
+    setTimeout(()=>{
+      const btn=document.getElementById('tellFriendsBtn');
+      if(btn)btn.click();
+    },150);
   }
 });
 document.getElementById('announceCloseBtn').addEventListener('click',()=>_annDismiss('close'));
@@ -4818,8 +4829,12 @@ _annInit();
     }
     document.getElementById('annPreviewFb').style.display=(ctaAction==='feedback')?'block':'none';
     const ctaBtn=document.getElementById('annPreviewCta');
-    ctaBtn.textContent=ctaLabel||(ctaAction==='feedback'?'שליחת משוב ✉':'הבנתי ✓');
-    if(ctaAction==='feedback' && !ctaLabel.trim())ctaBtn.textContent='שליחת משוב ✉';
+    const _defaultLabel=ctaAction==='feedback'?'שליחת משוב ✉'
+      :ctaAction==='tellFriends'?'🎁 המלצה לחברים'
+      :ctaAction==='update'?'🔄 עדכון גרסה'
+      :'הבנתי ✓';
+    ctaBtn.textContent=ctaLabel||_defaultLabel;
+    if(!ctaLabel.trim())ctaBtn.textContent=_defaultLabel;
   }
   ['annText','annTitle','annIcon','annCtaLabel'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.addEventListener('input',_refreshPreview);
@@ -4836,7 +4851,10 @@ _annInit();
     return count+' יעדים';
   }
   function _describeCtaAction(action){
-    return action==='update'?'עדכון גרסה':action==='feedback'?'משוב — 2 שורות מהמשתמש':'סגירה רגילה';
+    return action==='update'?'עדכון גרסה'
+      :action==='feedback'?'משוב — 2 שורות מהמשתמש'
+      :action==='tellFriends'?'המלצה לחברים — פתיחת שיתוף'
+      :'סגירה רגילה';
   }
   const sendBtn=document.getElementById('annSendBtn');
   if(sendBtn){
