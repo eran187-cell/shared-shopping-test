@@ -1847,6 +1847,13 @@ function recordLogin(){
     db.ref('stats/logins/'+day+'/'+dev).set(Date.now())
       .then(()=>console.log('[stats login] OK'))
       .catch(err=>console.error('[stats login] FAILED:',err.code,err.message));
+    // Also write per-house so the admin dashboard can show total/weekly
+    // entries next to each family. Same idempotency: one device per day per house.
+    _getHouseHash().then(hash=>{
+      if(!hash)return;
+      db.ref('stats/houses/'+hash+'/logins/'+day+'/'+dev).set(Date.now())
+        .catch(err=>console.warn('[stats login house]',err.code||err.message));
+    }).catch(()=>{});
   }catch(e){console.error('[stats login]',e);}
 }
 
@@ -5491,11 +5498,23 @@ async function loadAdminStats(){
           ?'<span style="font-size:10px;background:var(--bg);color:var(--mut);padding:1px 6px;border-radius:6px;font-family:monospace" title="גרסאות לפי מכשירים">'
             +devVerEntries.map(([v,c])=>esc(v)+'×'+c).join(' · ')+'</span>'
           :'';
+        // Per-house entries: total across all days + last 7 days
+        const hLogins=h.logins||{};
+        let loginTotal=0, loginWeek=0;
+        const _weekCutoffDate=new Date(); _weekCutoffDate.setHours(0,0,0,0); _weekCutoffDate.setDate(_weekCutoffDate.getDate()-6);
+        const _weekCutoffStr=_weekCutoffDate.toISOString().slice(0,10);
+        Object.entries(hLogins).forEach(([day,devs])=>{
+          const n=devs?Object.keys(devs).length:0;
+          loginTotal += n;
+          if(day >= _weekCutoffStr) loginWeek += n;
+        });
         return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bdr);'+rowBg+'">'
           +'<span style="font-size:12px;color:var(--mut);min-width:24px;text-align:center">'+(i+1)+'</span>'
           +'<span style="font-size:14px;font-weight:600;flex:1;display:flex;align-items:center;gap:4px">'+newBadge+displayName+codeChip+verLabel+'</span>'
           +'<span style="font-size:12px;color:var(--mut)">👥 '+(h.m||0)+'</span>'
           +'<span style="font-size:12px;color:var(--mut)">🛒 '+(h.i||0)+'</span>'
+          +'<span style="font-size:12px;color:var(--mut)" title="סה&quot;כ כניסות לאפליקציה (ימי-מכשיר ייחודיים)">📊 '+loginTotal+'</span>'
+          +'<span style="font-size:12px;color:var(--mut)" title="כניסות ב-7 הימים האחרונים">📅 '+loginWeek+'</span>'
           +'<span style="font-size:11px;color:'+ageColor+';min-width:70px;text-align:left">'+ageLabel+'</span>'
           +(code?'<button data-reset-code="'+esc(code)+'" data-reset-name="'+esc(h.n||code||hash.slice(0,6))+'" title="אפס שיוכי מכשירים (תמיכה)" style="background:#f0ad4e;border:none;color:#fff;width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:13px;padding:0;font-weight:700">🧹</button>':'')
           +'<button data-del-hash="'+hash+'" data-del-code="'+esc(code)+'" data-del-name="'+esc(h.n||code||hash.slice(0,6))+'" title="מחק בית לחלוטין" style="background:#e74c3c;border:none;color:#fff;width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:13px;padding:0;font-weight:700">🗑</button>'
