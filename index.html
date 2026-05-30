@@ -1629,6 +1629,13 @@ const APP_VERSION='1.02-rc.2';
       <h3 style="display:flex;align-items:center;gap:8px;flex:1;margin:0"><span>🧺</span><span>ניהול מוצרים וקטגוריות</span></h3>
       <button id="catalogAdminClose" style="background:transparent;border:none;font-size:22px;cursor:pointer;color:var(--mut);padding:4px 10px">✕</button>
     </div>
+    <!-- Pending suggestions from users (auto-populated when users add a "new" product) -->
+    <div id="catSuggestionsWrap" style="display:none;background:#fff8e7;border:1.5px solid #f5b041;border-radius:10px;padding:10px;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;color:#a36400;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <span>💡</span><span id="catSuggestionsTitle">הצעות חדשות מהמשתמשים</span>
+      </div>
+      <div id="catSuggestionsList" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
     <!-- Add product form -->
     <div style="display:flex;flex-direction:column;gap:6px;background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:10px;margin-bottom:8px">
       <div style="font-size:12px;color:var(--mut);font-weight:600">➕ הוסף מוצר חדש</div>
@@ -3962,7 +3969,20 @@ function _acPick(e){
   e.stopPropagation();
   const val=item.dataset.val;
   // save custom product to Firebase (so it appears in autocomplete later)
-  if(item.dataset.new==='1'&&val&&houseId)db.ref('houses/'+houseId+'/customProducts').push(val);
+  if(item.dataset.new==='1'&&val&&houseId){
+    db.ref('houses/'+houseId+'/customProducts').push(val);
+    // Also queue as a global suggestion so the admin can promote it into
+    // the shared catalog (assign a department, edit the name, etc.).
+    // Skipped if the product already exists in the effective catalog.
+    try{
+      if(!_acProducts.includes(val) && typeof _safeItemKey==='function'){
+        const k=_safeItemKey(val);
+        if(k){
+          db.ref('catalog/suggestions/'+k).set({n:val,h:houseId,ts:Date.now()}).catch(()=>{});
+        }
+      }
+    }catch(_){}
+  }
   // Fill input only — user must still press ✓ to add the item
   _acInput.value=val;_acTyped=val;_acGhost='';
   _acDrop.classList.remove('open');
@@ -5824,7 +5844,58 @@ _refreshAdminThemeBtn();
     // The dept this product would have in the base catalog (if any)
     return _acDeptsBase[name]||null;
   }
+  function _renderSuggestions(){
+    const wrap=document.getElementById('catSuggestionsWrap');
+    const list=document.getElementById('catSuggestionsList');
+    const titleEl=document.getElementById('catSuggestionsTitle');
+    if(!wrap||!list)return;
+    const sugg=(_acCatalogOverrides&&_acCatalogOverrides.suggestions)||{};
+    // Filter out anything that's already in the effective catalog (race-safe)
+    const entries=Object.entries(sugg).filter(([k,s])=>s && s.n && !_acProducts.includes(s.n));
+    if(!entries.length){wrap.style.display='none';return;}
+    wrap.style.display='block';
+    entries.sort((a,b)=>((b[1].ts||0)-(a[1].ts||0)));
+    titleEl.textContent='הצעות חדשות מהמשתמשים ('+entries.length+')';
+    const depts=_allDepts();
+    list.innerHTML=entries.map(([key,s])=>{
+      const houseChip=s.h?('<code style="font-size:9px;background:#fff;padding:1px 5px;border-radius:4px;color:#a36400;border:1px solid #f5b041">'+esc(s.h)+'</code>'):'';
+      const ageMs=s.ts?(Date.now()-s.ts):0;
+      const ageMin=Math.floor(ageMs/60000);
+      const ageLabel=ageMin<1?'הרגע':ageMin<60?(ageMin+' דק׳'):ageMin<1440?(Math.floor(ageMin/60)+' שעות'):(Math.floor(ageMin/1440)+' ימים');
+      return '<div style="background:#fff;border:1px solid #f0c275;border-radius:8px;padding:7px 8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">'
+        +'<input data-sugg-name="'+esc(key)+'" type="text" value="'+esc(s.n)+'" style="flex:2;min-width:120px;padding:6px;border:1px solid var(--bdr);border-radius:6px;background:var(--sur);color:var(--txt);font-size:13px;font-family:inherit"/>'
+        +'<select data-sugg-dept="'+esc(key)+'" style="flex:1;min-width:120px;padding:6px;border:1px solid var(--bdr);border-radius:6px;background:var(--sur);color:var(--txt);font-size:12px;font-family:inherit">'
+          +'<option value="">— בחר קטגוריה —</option>'
+          +depts.map(d=>'<option value="'+esc(d)+'">'+esc(d)+'</option>').join('')
+        +'</select>'
+        +'<button data-sugg-approve="'+esc(key)+'" style="padding:6px 10px;border:none;border-radius:6px;background:var(--pri);color:#fff;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">✓ אשר</button>'
+        +'<button data-sugg-dismiss="'+esc(key)+'" title="דחה" style="padding:6px 8px;border:1px solid #e74c3c;border-radius:6px;background:transparent;color:#e74c3c;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">✕</button>'
+        +'<div style="flex-basis:100%;font-size:10px;color:#a36400;display:flex;gap:6px;align-items:center">מבית '+houseChip+' · לפני '+ageLabel+'</div>'
+        +'</div>';
+    }).join('');
+    list.querySelectorAll('button[data-sugg-approve]').forEach(btn=>{
+      btn.addEventListener('click',function(){
+        const key=this.dataset.suggApprove;
+        const nameInp=list.querySelector('input[data-sugg-name="'+key+'"]');
+        const deptSel=list.querySelector('select[data-sugg-dept="'+key+'"]');
+        const name=(nameInp.value||'').trim();
+        const dept=(deptSel.value||'').trim();
+        if(!name){alert('שם חסר');nameInp.focus();return;}
+        if(!dept){alert('בחר קטגוריה');deptSel.focus();return;}
+        _saveProduct(name,dept);
+        firebase.database().ref('catalog/suggestions/'+key).remove().catch(()=>{});
+      });
+    });
+    list.querySelectorAll('button[data-sugg-dismiss]').forEach(btn=>{
+      btn.addEventListener('click',function(){
+        const key=this.dataset.suggDismiss;
+        if(!confirm('לדחות את ההצעה? היא לא תופיע יותר כאן.'))return;
+        firebase.database().ref('catalog/suggestions/'+key).remove().catch(()=>{});
+      });
+    });
+  }
   function _renderList(){
+    _renderSuggestions();
     const wrap=document.getElementById('catalogAdminList');
     const statsEl=document.getElementById('catalogAdminStats');
     if(!wrap)return;
