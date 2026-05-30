@@ -1659,16 +1659,17 @@ const APP_VERSION='1.02-rc.2';
       <select id="catFilterDept" style="flex:1;min-width:140px;padding:8px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--txt);font-size:13px;font-family:inherit"></select>
     </div>
     <div id="catalogAdminStats" style="font-size:11px;color:var(--mut);margin-bottom:6px"></div>
-    <!-- Bulk action bar — appears when at least one product is checked -->
-    <div id="catBulkBar" style="display:none;background:#eaf6ff;border:1.5px solid #5dade2;border-radius:10px;padding:8px 10px;margin-bottom:8px;align-items:center;gap:8px;flex-wrap:wrap">
+    <!-- Products list -->
+    <div id="catalogAdminList" style="flex:1;overflow-y:auto;border:1px solid var(--bdr);border-radius:10px;padding:6px;background:var(--bg)"></div>
+    <!-- Bulk action bar (placed BELOW the list so its dropdown opens upward
+         over the list, not over the title/form at the top). -->
+    <div id="catBulkBar" style="display:none;background:#eaf6ff;border:1.5px solid #5dade2;border-radius:10px;padding:8px 10px;margin-top:8px;align-items:center;gap:8px;flex-wrap:wrap">
       <span id="catBulkCount" style="font-size:13px;font-weight:700;color:#1a5d8a">0 נבחרו</span>
       <span style="font-size:12px;color:#1a5d8a">העברה ל:</span>
       <select id="catBulkDept" style="flex:1;min-width:120px;padding:6px 8px;border:1px solid #5dade2;border-radius:6px;background:#fff;color:var(--txt);font-size:13px;font-family:inherit"></select>
       <button id="catBulkApply" style="padding:6px 14px;border:none;border-radius:6px;background:#1a5d8a;color:#fff;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">✓ העבר</button>
       <button id="catBulkClear" title="נקה בחירה" style="padding:6px 10px;border:1px solid #5dade2;border-radius:6px;background:transparent;color:#1a5d8a;font-weight:600;font-size:12px;cursor:pointer;font-family:inherit">נקה</button>
     </div>
-    <!-- Products list -->
-    <div id="catalogAdminList" style="flex:1;overflow-y:auto;border:1px solid var(--bdr);border-radius:10px;padding:6px;background:var(--bg)"></div>
   </div>
 </div>
 
