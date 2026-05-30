@@ -1659,6 +1659,14 @@ const APP_VERSION='1.02-rc.2';
       <select id="catFilterDept" style="flex:1;min-width:140px;padding:8px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--txt);font-size:13px;font-family:inherit"></select>
     </div>
     <div id="catalogAdminStats" style="font-size:11px;color:var(--mut);margin-bottom:6px"></div>
+    <!-- Bulk action bar — appears when at least one product is checked -->
+    <div id="catBulkBar" style="display:none;background:#eaf6ff;border:1.5px solid #5dade2;border-radius:10px;padding:8px 10px;margin-bottom:8px;align-items:center;gap:8px;flex-wrap:wrap">
+      <span id="catBulkCount" style="font-size:13px;font-weight:700;color:#1a5d8a">0 נבחרו</span>
+      <span style="font-size:12px;color:#1a5d8a">העברה ל:</span>
+      <select id="catBulkDept" style="flex:1;min-width:120px;padding:6px 8px;border:1px solid #5dade2;border-radius:6px;background:#fff;color:var(--txt);font-size:13px;font-family:inherit"></select>
+      <button id="catBulkApply" style="padding:6px 14px;border:none;border-radius:6px;background:#1a5d8a;color:#fff;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">✓ העבר</button>
+      <button id="catBulkClear" title="נקה בחירה" style="padding:6px 10px;border:1px solid #5dade2;border-radius:6px;background:transparent;color:#1a5d8a;font-weight:600;font-size:12px;cursor:pointer;font-family:inherit">נקה</button>
+    </div>
     <!-- Products list -->
     <div id="catalogAdminList" style="flex:1;overflow-y:auto;border:1px solid var(--bdr);border-radius:10px;padding:6px;background:var(--bg)"></div>
   </div>
@@ -5822,14 +5830,25 @@ _refreshAdminThemeBtn();
     });
     return out;
   }
+  // Track multi-select state across re-renders
+  const _catSelected=new Set();
+  function _updateBulkBar(){
+    const bar=document.getElementById('catBulkBar');
+    const cnt=document.getElementById('catBulkCount');
+    if(!bar||!cnt)return;
+    const n=_catSelected.size;
+    if(n>0){bar.style.display='flex';cnt.textContent=n+' נבחרו';}
+    else{bar.style.display='none';}
+  }
   function _populateDeptSelects(){
     const depts=_allDepts();
-    ['catNewDept','catFilterDept'].forEach(id=>{
+    ['catNewDept','catFilterDept','catBulkDept'].forEach(id=>{
       const el=document.getElementById(id);
       if(!el)return;
       const prev=el.value;
       const isFilter=(id==='catFilterDept');
-      el.innerHTML=(isFilter?'<option value="">כל הקטגוריות</option>':'<option value="">בחר קטגוריה…</option>')
+      const placeholder=isFilter?'כל הקטגוריות':(id==='catBulkDept'?'בחר קטגוריה ליעד…':'בחר קטגוריה…');
+      el.innerHTML='<option value="">'+placeholder+'</option>'
         +depts.map(d=>'<option value="'+esc(d)+'">'+esc(d)+'</option>').join('');
       if(prev && depts.includes(prev))el.value=prev;
     });
@@ -5923,7 +5942,9 @@ _refreshAdminThemeBtn();
       +byDept[d].map(it=>{
         const customBadge=_isCustomProduct(it.name)?' <span style="font-size:9px;background:var(--pri);color:#fff;padding:1px 5px;border-radius:4px;font-weight:700">מותאם</span>':'';
         const origNote=(_isStaticProduct(it.name)&&_origDept(it.name)&&_origDept(it.name)!==it.dept)?(' <span style="font-size:10px;color:var(--mut)" title="מקור: '+esc(_origDept(it.name))+'">↻</span>'):'';
-        return '<div data-cat-row="'+esc(it.name)+'" style="display:flex;align-items:center;gap:6px;padding:5px 6px;border-bottom:1px solid var(--bdr);background:var(--bg)">'
+        const isChecked=_catSelected.has(it.name);
+        return '<div data-cat-row="'+esc(it.name)+'" style="display:flex;align-items:center;gap:6px;padding:5px 6px;border-bottom:1px solid var(--bdr);background:'+(isChecked?'#eaf6ff':'var(--bg)')+'">'
+          +'<input type="checkbox" data-cat-sel="'+esc(it.name)+'"'+(isChecked?' checked':'')+' style="cursor:pointer;width:16px;height:16px;flex:0 0 auto"/>'
           +'<span class="cat-name" style="flex:1;font-size:13px">'+esc(it.name)+customBadge+origNote+'</span>'
           +'<button data-cat-edit="'+esc(it.name)+'" title="ערוך שם" style="padding:3px 7px;border:1px solid var(--bdr);border-radius:6px;background:var(--sur);color:var(--txt);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✏</button>'
           +'<select data-cat-move="'+esc(it.name)+'" style="padding:4px 6px;border:1px solid var(--bdr);border-radius:6px;background:var(--sur);color:var(--txt);font-size:11px;font-family:inherit;min-width:120px">'
@@ -5947,6 +5968,19 @@ _refreshAdminThemeBtn();
         const name=this.dataset.catDel;
         if(!confirm('להסיר את "'+name+'" מהמאגר?\n(אם זה מוצר ממאגר הבסיס, הוא יסומן כמוסר)'))return;
         _deleteProduct(name);
+      });
+    });
+    // Wire checkboxes (multi-select)
+    wrap.querySelectorAll('input[data-cat-sel]').forEach(cb=>{
+      cb.addEventListener('change',function(){
+        const name=this.dataset.catSel;
+        if(this.checked)_catSelected.add(name); else _catSelected.delete(name);
+        // Drop selections for items no longer in the catalog
+        _catSelected.forEach(n=>{if(!_acProducts.includes(n))_catSelected.delete(n);});
+        // Highlight the row without a full re-render (more responsive)
+        const row=this.closest('[data-cat-row]');
+        if(row)row.style.background=this.checked?'#eaf6ff':'var(--bg)';
+        _updateBulkBar();
       });
     });
     wrap.querySelectorAll('button[data-cat-edit]').forEach(btn=>{
@@ -6172,6 +6206,48 @@ _refreshAdminThemeBtn();
   if(searchEl)searchEl.addEventListener('input',()=>_renderList());
   const filterEl=document.getElementById('catFilterDept');
   if(filterEl)filterEl.addEventListener('change',()=>_renderList());
+  // Bulk bar buttons
+  const bulkApply=document.getElementById('catBulkApply');
+  if(bulkApply){
+    bulkApply.addEventListener('click',function(){
+      const sel=document.getElementById('catBulkDept');
+      const dept=(sel.value||'').trim();
+      if(!dept){alert('בחר קטגוריית יעד');sel.focus();return;}
+      const names=Array.from(_catSelected).filter(n=>_acProducts.includes(n));
+      if(!names.length){alert('אין מוצרים נבחרים');return;}
+      if(!confirm('להעביר '+names.length+' מוצרים לקטגוריה "'+dept+'"?'))return;
+      const ops=names.map(name=>{
+        const k=_keyFor(name);
+        if(!k)return Promise.resolve();
+        const payload={n:name,d:dept,ts:Date.now()};
+        return firebase.database().ref('catalog/products/'+k).set(payload)
+          .then(()=>firebase.database().ref('catalog/removed/'+k).remove().catch(()=>{}));
+      });
+      Promise.all(ops).then(()=>{
+        // Optimistic local update
+        names.forEach(name=>{
+          _acDepts[name]=dept;
+          if(!_acProducts.includes(name))_acProducts.push(name);
+        });
+        _catSelected.clear();
+        _updateBulkBar();
+        _flashFeedback('✓ הועברו '+names.length+' מוצרים ל-'+dept,true);
+        _renderList();
+      }).catch(err=>{
+        const msg=err&&(err.message||err.code)||'שגיאה';
+        _flashFeedback('העברה נכשלה: '+msg,false);
+        console.error('[catalog bulk]',err);
+      });
+    });
+  }
+  const bulkClear=document.getElementById('catBulkClear');
+  if(bulkClear){
+    bulkClear.addEventListener('click',function(){
+      _catSelected.clear();
+      _updateBulkBar();
+      _renderList();
+    });
+  }
   // Enter key in add-name field submits
   const nameInp=document.getElementById('catNewName');
   if(nameInp)nameInp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();_addProduct();}});
