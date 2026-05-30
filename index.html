@@ -1583,6 +1583,12 @@ const APP_VERSION='1.02-rc.2';
       </div>
     </div>
 
+    <div class="admin-card" style="margin-bottom:16px">
+      <h3><span class="ico">🧺</span>ניהול מוצרים וקטגוריות</h3>
+      <div style="font-size:13px;color:var(--mut);margin-bottom:10px">הוספה, עריכה ומחיקה של מוצרים במאגר; שינוי שיוך לקטגוריה; הוספת קטגוריות חדשות. השינויים נכנסים לתוקף מיידית לכל המשתמשים.</div>
+      <button id="adminOpenCatalogBtn" style="padding:10px 16px;border:none;border-radius:8px;background:var(--pri);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">📦 פתח ממשק ניהול</button>
+    </div>
+
     <div id="adminError" style="color:#e74c3c;font-size:13px;margin-top:12px"></div>
     <div style="font-size:11px;color:var(--mut);margin-top:18px;line-height:1.6;text-align:center;padding:14px;background:var(--sur);border:1px solid var(--bdr);border-radius:12px">
       🔒 כל הנתונים אנונימיים: קודי בתים מוצפנים (SHA-256), שמות חברים אינם נשמרים, ולפריטים נשמר רק מונה תדירות גלובלי.
@@ -1618,6 +1624,40 @@ const APP_VERSION='1.02-rc.2';
       <button id="annConfirmSend" class="btn-primary">✓ אישור שליחה</button>
       <button id="annConfirmCancel" class="btn-cancel">ביטול</button>
     </div>
+  </div>
+</div>
+
+<!-- Admin: catalog management (products + departments) -->
+<div class="overlay" id="catalogAdminOverlay" style="z-index:10000">
+  <div class="sheet" style="max-height:92vh;display:flex;flex-direction:column;width:min(720px,96vw)">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <h3 style="display:flex;align-items:center;gap:8px;flex:1;margin:0"><span>🧺</span><span>ניהול מוצרים וקטגוריות</span></h3>
+      <button id="catalogAdminClose" style="background:transparent;border:none;font-size:22px;cursor:pointer;color:var(--mut);padding:4px 10px">✕</button>
+    </div>
+    <!-- Add product form -->
+    <div style="display:flex;flex-direction:column;gap:6px;background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:10px;margin-bottom:8px">
+      <div style="font-size:12px;color:var(--mut);font-weight:600">➕ הוסף מוצר חדש</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <input id="catNewName" type="text" placeholder="שם המוצר" style="flex:2;min-width:140px;padding:8px;border:1px solid var(--bdr);border-radius:6px;background:var(--sur);color:var(--txt);font-size:13px;font-family:inherit"/>
+        <select id="catNewDept" style="flex:1;min-width:140px;padding:8px;border:1px solid var(--bdr);border-radius:6px;background:var(--sur);color:var(--txt);font-size:13px;font-family:inherit"></select>
+        <button id="catAddProdBtn" style="padding:8px 14px;border:none;border-radius:6px;background:var(--pri);color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">הוסף</button>
+      </div>
+      <div id="catAddStatus" style="font-size:11px;color:var(--mut);min-height:14px"></div>
+    </div>
+    <!-- Add department -->
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;font-size:12px;color:var(--mut)">
+      <span>➕ קטגוריה:</span>
+      <input id="catNewDeptName" type="text" placeholder="שם קטגוריה חדשה" style="flex:1;min-width:140px;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);font-size:13px;font-family:inherit"/>
+      <button id="catAddDeptBtn" style="padding:6px 12px;border:1px solid var(--pri);border-radius:6px;background:transparent;color:var(--pri);font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">הוסף קטגוריה</button>
+    </div>
+    <!-- Filter / search -->
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+      <input id="catSearch" type="text" placeholder="🔍 חיפוש מוצר…" style="flex:2;min-width:140px;padding:8px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--txt);font-size:13px;font-family:inherit"/>
+      <select id="catFilterDept" style="flex:1;min-width:140px;padding:8px;border:1px solid var(--bdr);border-radius:8px;background:var(--bg);color:var(--txt);font-size:13px;font-family:inherit"></select>
+    </div>
+    <div id="catalogAdminStats" style="font-size:11px;color:var(--mut);margin-bottom:6px"></div>
+    <!-- Products list -->
+    <div id="catalogAdminList" style="flex:1;overflow-y:auto;border:1px solid var(--bdr);border-radius:10px;padding:6px;background:var(--bg)"></div>
   </div>
 </div>
 
@@ -3713,6 +3753,13 @@ function _flyToCollapsedDept(itemId,deptName){
 
 /* ══ AUTOCOMPLETE — inline ghost text ════════ */
 let _acProducts=[], _acCustom=[];
+// Base values from the static JSON (kept separate so admin overrides from
+// Firebase can be re-applied non-destructively on every snapshot).
+let _acProductsBase=[];
+let _acDeptsBase={};
+let _acDeptOrderBase=[];
+// Global admin-managed overrides from /catalog in Firebase
+let _acCatalogOverrides={products:{},removed:{},depts:{}};
 let _acTyped='';   // what the user actually typed
 let _acGhost='';   // current ghost suggestion
 let _acDeleting=false;
@@ -3731,25 +3778,72 @@ async function acInit(){
     if(!r.ok)throw 0;
     const data=await r.json();
     const depts=data&&data['מחלקות']?data['מחלקות']:{};
-    _acDeptOrder=Object.keys(depts);
+    _acDeptOrderBase=Object.keys(depts);
     const seen=new Set();
     const flat=[];
+    const deptsBase={};
     Object.entries(depts).forEach(([dept,arr])=>{
       (arr||[]).forEach(name=>{
         const n=String(name||'').trim();
         if(!n||seen.has(n))return;
         seen.add(n);flat.push(n);
-        if(!_acDepts[n])_acDepts[n]=dept;
+        if(!deptsBase[n])deptsBase[n]=dept;
       });
     });
-    _acProducts=flat;
+    _acProductsBase=flat;
+    _acDeptsBase=deptsBase;
+    _acRecomputeCatalog();
     // If the user already enabled AI sort, refresh now that we have the map.
     if(_aiSort && activeId && !document.getElementById('list').classList.contains('slide-right')){
       renderListView();
     }
   }catch(_){
-    try{const r=await fetch('./products.json');_acProducts=await r.json();}catch(e){_acProducts=[];}
+    try{const r=await fetch('./products.json');_acProductsBase=await r.json();_acProducts=[..._acProductsBase];}catch(e){_acProducts=[];}
   }
+  // Subscribe to global catalog overrides (admin-managed via dashboard)
+  try{
+    if(typeof firebase!=='undefined' && firebase.database){
+      firebase.database().ref('catalog').on('value',snap=>{
+        _acCatalogOverrides=snap.val()||{products:{},removed:{},depts:{}};
+        _acRecomputeCatalog();
+        if(_aiSort && activeId && !document.getElementById('list').classList.contains('slide-right')){
+          renderListView();
+        }
+        // Refresh admin catalog overlay if open
+        if(typeof window._renderCatalogAdmin==='function'){
+          const ov=document.getElementById('catalogAdminOverlay');
+          if(ov && ov.classList.contains('open')) window._renderCatalogAdmin();
+        }
+      });
+    }
+  }catch(e){console.warn('catalog overrides listen failed',e);}
+}
+// Rebuild effective catalog from base + Firebase overrides.
+function _acRecomputeCatalog(){
+  _acDepts={..._acDeptsBase};
+  _acProducts=[..._acProductsBase];
+  _acDeptOrder=[..._acDeptOrderBase];
+  const ovr=_acCatalogOverrides||{};
+  // Custom/edited products (override department, or new product entirely)
+  Object.values(ovr.products||{}).forEach(o=>{
+    if(!o||!o.n||!o.d)return;
+    _acDepts[o.n]=o.d;
+    if(!_acProducts.includes(o.n))_acProducts.push(o.n);
+    if(!_acDeptOrder.includes(o.d))_acDeptOrder.push(o.d);
+  });
+  // Removed products
+  Object.values(ovr.removed||{}).forEach(o=>{
+    const name=o&&o.n;
+    if(!name)return;
+    delete _acDepts[name];
+    const i=_acProducts.indexOf(name);
+    if(i>=0)_acProducts.splice(i,1);
+  });
+  // Empty/added departments
+  Object.values(ovr.depts||{}).forEach(o=>{
+    if(!o||!o.n)return;
+    if(!_acDeptOrder.includes(o.n))_acDeptOrder.push(o.n);
+  });
 }
 // ── AI sort helpers ─────────────────────────────
 // Smooth height-based collapse/expand. Pins the actual measured height as
@@ -5696,6 +5790,178 @@ document.getElementById('adminThemeBtn').addEventListener('click',function(){
   _refreshAdminThemeBtn();
 });
 _refreshAdminThemeBtn();
+
+/* ══ Admin: catalog management (products + categories) ══════════════════ */
+(function(){
+  function _keyFor(name){
+    // Reuse the existing safe key (base64 of UTF-8 bytes, URL-safe, capped at 80)
+    try{return _safeItemKey(name);}catch(_){return null;}
+  }
+  function _allDepts(){
+    // Effective dept list (base + custom + extras), excluding 'אחרים' header
+    const out=[..._acDeptOrder];
+    // Surface any depts referenced by an override but not yet in order list
+    Object.values((_acCatalogOverrides&&_acCatalogOverrides.products)||{}).forEach(o=>{
+      if(o&&o.d&&!out.includes(o.d))out.push(o.d);
+    });
+    return out;
+  }
+  function _populateDeptSelects(){
+    const depts=_allDepts();
+    ['catNewDept','catFilterDept'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el)return;
+      const prev=el.value;
+      const isFilter=(id==='catFilterDept');
+      el.innerHTML=(isFilter?'<option value="">כל הקטגוריות</option>':'<option value="">בחר קטגוריה…</option>')
+        +depts.map(d=>'<option value="'+esc(d)+'">'+esc(d)+'</option>').join('');
+      if(prev && depts.includes(prev))el.value=prev;
+    });
+  }
+  function _isCustomProduct(name){
+    const k=_keyFor(name);
+    return !!(k && _acCatalogOverrides && _acCatalogOverrides.products && _acCatalogOverrides.products[k]);
+  }
+  function _isStaticProduct(name){
+    return _acProductsBase.includes(name);
+  }
+  function _origDept(name){
+    // The dept this product would have in the base catalog (if any)
+    return _acDeptsBase[name]||null;
+  }
+  function _renderList(){
+    const wrap=document.getElementById('catalogAdminList');
+    const statsEl=document.getElementById('catalogAdminStats');
+    if(!wrap)return;
+    const q=((document.getElementById('catSearch')||{}).value||'').trim().toLowerCase();
+    const filterDept=(document.getElementById('catFilterDept')||{}).value||'';
+    const items=_acProducts
+      .map(n=>({name:n,dept:_acDepts[n]||'(ללא)'}))
+      .filter(it=>{
+        if(filterDept && it.dept!==filterDept)return false;
+        if(q && !it.name.toLowerCase().includes(q))return false;
+        return true;
+      })
+      .sort((a,b)=>a.dept.localeCompare(b.dept,'he')||a.name.localeCompare(b.name,'he'));
+    statsEl.textContent='מציג '+items.length+' מתוך '+_acProducts.length+' מוצרים · '+_acDeptOrder.length+' קטגוריות';
+    if(!items.length){wrap.innerHTML='<div style="text-align:center;color:var(--mut);padding:24px;font-size:13px">אין מוצרים תואמים.</div>';return;}
+    // Group by dept for readability
+    const byDept={};
+    items.forEach(it=>{(byDept[it.dept]=byDept[it.dept]||[]).push(it);});
+    const depts=Object.keys(byDept).sort((a,b)=>a.localeCompare(b,'he'));
+    const allDepts=_allDepts();
+    wrap.innerHTML=depts.map(d=>(
+      '<div style="margin-bottom:10px">'
+      +'<div style="font-size:12px;font-weight:700;color:var(--pri);background:var(--sur);padding:4px 8px;border-radius:6px;margin-bottom:4px">'+esc(d)+' ('+byDept[d].length+')</div>'
+      +byDept[d].map(it=>{
+        const customBadge=_isCustomProduct(it.name)?' <span style="font-size:9px;background:var(--pri);color:#fff;padding:1px 5px;border-radius:4px;font-weight:700">מותאם</span>':'';
+        const origNote=(_isStaticProduct(it.name)&&_origDept(it.name)&&_origDept(it.name)!==it.dept)?(' <span style="font-size:10px;color:var(--mut)" title="מקור: '+esc(_origDept(it.name))+'">↻</span>'):'';
+        return '<div style="display:flex;align-items:center;gap:6px;padding:5px 6px;border-bottom:1px solid var(--bdr);background:var(--bg)">'
+          +'<span style="flex:1;font-size:13px">'+esc(it.name)+customBadge+origNote+'</span>'
+          +'<select data-cat-move="'+esc(it.name)+'" style="padding:4px 6px;border:1px solid var(--bdr);border-radius:6px;background:var(--sur);color:var(--txt);font-size:11px;font-family:inherit;min-width:120px">'
+            +allDepts.map(d2=>'<option value="'+esc(d2)+'"'+(d2===it.dept?' selected':'')+'>'+esc(d2)+'</option>').join('')
+          +'</select>'
+          +'<button data-cat-del="'+esc(it.name)+'" title="מחק" style="padding:3px 7px;border:1px solid #e74c3c;border-radius:6px;background:transparent;color:#e74c3c;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🗑</button>'
+        +'</div>';
+      }).join('')
+      +'</div>'
+    )).join('');
+    // Wire move + delete
+    wrap.querySelectorAll('select[data-cat-move]').forEach(sel=>{
+      sel.addEventListener('change',function(){
+        const name=this.dataset.catMove;
+        const dept=this.value;
+        _saveProduct(name,dept);
+      });
+    });
+    wrap.querySelectorAll('button[data-cat-del]').forEach(btn=>{
+      btn.addEventListener('click',function(){
+        const name=this.dataset.catDel;
+        if(!confirm('להסיר את "'+name+'" מהמאגר?\n(אם זה מוצר ממאגר הבסיס, הוא יסומן כמוסר)'))return;
+        _deleteProduct(name);
+      });
+    });
+  }
+  function _saveProduct(name,dept){
+    const k=_keyFor(name);
+    if(!k){alert('שם לא תקין');return;}
+    const payload={n:name,d:dept,ts:Date.now()};
+    firebase.database().ref('catalog/products/'+k).set(payload)
+      .then(()=>{
+        // If product was previously marked removed, clear it
+        firebase.database().ref('catalog/removed/'+k).remove().catch(()=>{});
+      })
+      .catch(err=>alert('שמירה נכשלה: '+(err.message||err.code)));
+  }
+  function _deleteProduct(name){
+    const k=_keyFor(name);
+    if(!k)return;
+    const isStatic=_isStaticProduct(name);
+    // If it's a custom-only product → just remove the override
+    // If it's a static product → mark as removed
+    firebase.database().ref('catalog/products/'+k).remove().catch(()=>{});
+    if(isStatic){
+      firebase.database().ref('catalog/removed/'+k).set({n:name,ts:Date.now()})
+        .catch(err=>alert('מחיקה נכשלה: '+(err.message||err.code)));
+    }
+  }
+  function _addProduct(){
+    const nameEl=document.getElementById('catNewName');
+    const deptEl=document.getElementById('catNewDept');
+    const status=document.getElementById('catAddStatus');
+    const name=(nameEl.value||'').trim();
+    const dept=(deptEl.value||'').trim();
+    status.textContent='';status.style.color='var(--mut)';
+    if(!name){status.textContent='⚠ הזן שם מוצר';status.style.color='#e74c3c';nameEl.focus();return;}
+    if(!dept){status.textContent='⚠ בחר קטגוריה';status.style.color='#e74c3c';deptEl.focus();return;}
+    if(_acProducts.includes(name) && _acDepts[name]===dept){status.textContent='ℹ המוצר כבר קיים בקטגוריה זו';return;}
+    _saveProduct(name,dept);
+    nameEl.value='';
+    status.textContent='✓ נשמר';status.style.color='var(--pri)';
+    setTimeout(()=>{status.textContent='';},1500);
+    nameEl.focus();
+  }
+  function _addDept(){
+    const el=document.getElementById('catNewDeptName');
+    const name=(el.value||'').trim();
+    if(!name){el.focus();return;}
+    if(_acDeptOrder.includes(name)){alert('הקטגוריה כבר קיימת');return;}
+    const k=_keyFor(name);
+    if(!k){alert('שם לא תקין');return;}
+    firebase.database().ref('catalog/depts/'+k).set({n:name,ts:Date.now()})
+      .then(()=>{el.value='';})
+      .catch(err=>alert('הוספה נכשלה: '+(err.message||err.code)));
+  }
+  function _open(){
+    _populateDeptSelects();
+    _renderList();
+    document.getElementById('catalogAdminOverlay').classList.add('open');
+    setTimeout(()=>document.getElementById('catNewName').focus(),120);
+  }
+  function _close(){
+    document.getElementById('catalogAdminOverlay').classList.remove('open');
+  }
+  // Expose for the catalog overrides listener to call after a remote change
+  window._renderCatalogAdmin=function(){_populateDeptSelects();_renderList();};
+  // Wire events (once)
+  const openBtn=document.getElementById('adminOpenCatalogBtn');
+  if(openBtn)openBtn.addEventListener('click',_open);
+  const closeBtn=document.getElementById('catalogAdminClose');
+  if(closeBtn)closeBtn.addEventListener('click',_close);
+  const addProdBtn=document.getElementById('catAddProdBtn');
+  if(addProdBtn)addProdBtn.addEventListener('click',_addProduct);
+  const addDeptBtn=document.getElementById('catAddDeptBtn');
+  if(addDeptBtn)addDeptBtn.addEventListener('click',_addDept);
+  const searchEl=document.getElementById('catSearch');
+  if(searchEl)searchEl.addEventListener('input',()=>_renderList());
+  const filterEl=document.getElementById('catFilterDept');
+  if(filterEl)filterEl.addEventListener('change',()=>_renderList());
+  // Enter key in add-name field submits
+  const nameInp=document.getElementById('catNewName');
+  if(nameInp)nameInp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();_addProduct();}});
+  const deptInp=document.getElementById('catNewDeptName');
+  if(deptInp)deptInp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();_addDept();}});
+})();
 
 /* ── Admin delete operations ────────────────────────── */
 async function adminDeleteHouseByCode(){
