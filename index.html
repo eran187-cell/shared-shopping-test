@@ -125,7 +125,9 @@ a,button,input,select{touch-action:manipulation}
 #setup .setup-sub{text-align:center;font-size:14px;color:var(--mut);margin-bottom:32px}
 
 .section-card{background:var(--sur);border-radius:16px;border:1.5px solid var(--bdr);padding:20px;margin-bottom:16px}
-.cat-bubble{background:var(--sur);border:1.5px solid var(--bdr);border-radius:16px;padding:10px 12px;margin-bottom:10px;transition:border-color .15s ease, box-shadow .15s ease}
+#catalogAdminBubbles{display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start}
+.cat-bubble{background:var(--sur);border:1.5px solid var(--bdr);border-radius:16px;padding:8px 12px;flex:0 0 auto;min-width:130px;transition:border-color .15s ease, box-shadow .15s ease, flex-basis .25s ease}
+.cat-bubble.open{flex:1 1 100%;padding:12px 14px}
 .cat-bubble.drop-target{border-color:var(--pri);background:var(--pril);box-shadow:0 0 0 3px rgba(45,186,122,.18)}
 .cat-bubble-header{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
 .cat-bubble-name{flex:1;font-weight:700;font-size:14px;color:var(--txt)}
@@ -6210,10 +6212,22 @@ _refreshAdminThemeBtn();
         +'</div>'
       +'</div>';
     }).join('');
-    // Wire toggle (header click)
+    // Wire toggle (header click). Only one bubble may be open at a time so
+    // the closed ones can wrap across the available width and the user does
+    // not have to scroll vertically through a tall stack of cards.
     wrap.querySelectorAll('.cat-bubble').forEach(b=>{
       const header=b.querySelector('.cat-bubble-header');
-      header.addEventListener('click',()=>b.classList.toggle('open'));
+      header.addEventListener('click',()=>{
+        const wasOpen=b.classList.contains('open');
+        // Close all others
+        wrap.querySelectorAll('.cat-bubble.open').forEach(x=>{if(x!==b)x.classList.remove('open');});
+        // Toggle this one
+        b.classList.toggle('open',!wasOpen);
+        if(!wasOpen){
+          // Scroll the just-opened bubble into view
+          setTimeout(()=>b.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+        }
+      });
     });
     // Wire drag start on chips
     wrap.querySelectorAll('.cat-chip').forEach(chip=>{
