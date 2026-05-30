@@ -125,6 +125,19 @@ a,button,input,select{touch-action:manipulation}
 #setup .setup-sub{text-align:center;font-size:14px;color:var(--mut);margin-bottom:32px}
 
 .section-card{background:var(--sur);border-radius:16px;border:1.5px solid var(--bdr);padding:20px;margin-bottom:16px}
+.cat-bubble{background:var(--sur);border:1.5px solid var(--bdr);border-radius:16px;padding:10px 12px;margin-bottom:10px;transition:border-color .15s ease, box-shadow .15s ease}
+.cat-bubble.drop-target{border-color:var(--pri);background:var(--pril);box-shadow:0 0 0 3px rgba(45,186,122,.18)}
+.cat-bubble-header{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.cat-bubble-name{flex:1;font-weight:700;font-size:14px;color:var(--txt)}
+.cat-bubble-count{background:var(--pri);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
+.cat-bubble-toggle{color:var(--mut);font-size:12px;transition:transform .2s ease}
+.cat-bubble.open .cat-bubble-toggle{transform:rotate(180deg)}
+.cat-bubble-body{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bdr)}
+.cat-bubble:not(.open) .cat-bubble-body{display:none}
+.cat-chip{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:var(--bg);border:1px solid var(--bdr);border-radius:14px;font-size:12px;color:var(--txt);cursor:grab;user-select:none;transition:transform .1s ease}
+.cat-chip:hover{border-color:var(--pri);background:var(--pril)}
+.cat-chip:active{cursor:grabbing}
+.cat-chip.dragging{opacity:.5;transform:scale(.95)}
 .section-card h3{font-size:14px;font-weight:700;color:var(--mut);margin-bottom:14px}
 .field{margin-bottom:12px}
 .field label{display:block;font-size:13px;font-weight:600;color:var(--mut);margin-bottom:5px}
@@ -1627,6 +1640,10 @@ const APP_VERSION='1.02-rc.2';
   <div class="sheet" id="catalogAdminSheet" style="max-height:92vh;display:flex;flex-direction:column;width:min(720px,96vw);transition:width .25s ease, max-width .25s ease, max-height .25s ease">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
       <h3 style="display:flex;align-items:center;gap:8px;flex:1;margin:0"><span>🧺</span><span>ניהול מוצרים וקטגוריות</span></h3>
+      <div style="display:flex;background:var(--bg);border:1px solid var(--bdr);border-radius:8px;overflow:hidden">
+        <button id="catViewList" title="תצוגת רשימה" style="padding:5px 10px;border:none;background:var(--pri);color:#fff;font-size:13px;cursor:pointer;font-family:inherit">📋 רשימה</button>
+        <button id="catViewBubbles" title="תצוגת בלונים" style="padding:5px 10px;border:none;background:transparent;color:var(--txt);font-size:13px;cursor:pointer;font-family:inherit">🎈 בלונים</button>
+      </div>
       <button id="catalogAdminMax" title="הגדל למסך מלא" style="background:transparent;border:none;font-size:18px;cursor:pointer;color:var(--mut);padding:4px 8px">⛶</button>
       <button id="catalogAdminClose" title="סגירה" style="background:transparent;border:none;font-size:22px;cursor:pointer;color:var(--mut);padding:4px 10px">✕</button>
     </div>
@@ -1661,6 +1678,8 @@ const APP_VERSION='1.02-rc.2';
     <div id="catalogAdminStats" style="font-size:11px;color:var(--mut);margin-bottom:6px"></div>
     <!-- Products list -->
     <div id="catalogAdminList" style="flex:1;overflow-y:auto;border:1px solid var(--bdr);border-radius:10px;padding:6px;background:var(--bg)"></div>
+    <!-- Bubble view: categories as cards; click to expand; drag chips between cards -->
+    <div id="catalogAdminBubbles" style="display:none;flex:1;overflow-y:auto;border:1px solid var(--bdr);border-radius:10px;padding:10px;background:var(--bg)"></div>
     <!-- Bulk action bar (placed BELOW the list so its dropdown opens upward
          over the list, not over the title/form at the top). -->
     <div id="catBulkBar" style="display:none;background:#eaf6ff;border:1.5px solid #5dade2;border-radius:10px;padding:8px 10px;margin-top:8px;align-items:center;gap:8px;flex-wrap:wrap">
@@ -6137,6 +6156,102 @@ _refreshAdminThemeBtn();
       .then(()=>{el.value='';})
       .catch(err=>alert('הוספה נכשלה: '+(err.message||err.code)));
   }
+  // View mode toggle ('list' or 'bubbles')
+  let _catView='list';
+  function _setView(v){
+    _catView=v;
+    const listEl=document.getElementById('catalogAdminList');
+    const bubblesEl=document.getElementById('catalogAdminBubbles');
+    const vListBtn=document.getElementById('catViewList');
+    const vBubblesBtn=document.getElementById('catViewBubbles');
+    const isBubbles=(v==='bubbles');
+    listEl.style.display=isBubbles?'none':'block';
+    bubblesEl.style.display=isBubbles?'block':'none';
+    vListBtn.style.background=isBubbles?'transparent':'var(--pri)';
+    vListBtn.style.color=isBubbles?'var(--txt)':'#fff';
+    vBubblesBtn.style.background=isBubbles?'var(--pri)':'transparent';
+    vBubblesBtn.style.color=isBubbles?'#fff':'var(--txt)';
+    if(isBubbles)_renderBubbles();
+    else _renderList();
+  }
+  function _renderBubbles(){
+    const wrap=document.getElementById('catalogAdminBubbles');
+    if(!wrap)return;
+    const q=((document.getElementById('catSearch')||{}).value||'').trim().toLowerCase();
+    const filterDept=(document.getElementById('catFilterDept')||{}).value||'';
+    // Group all current products by their effective department
+    const byDept={};
+    _acProducts.forEach(name=>{
+      const d=_acDepts[name]||'(ללא)';
+      (byDept[d]=byDept[d]||[]).push(name);
+    });
+    // Build ordered list of dept names (file order, then extras, with 'אחרים' last)
+    const seen=new Set();
+    const ordered=[];
+    _acDeptOrder.forEach(d=>{if(byDept[d]&&!seen.has(d)){ordered.push(d);seen.add(d);}});
+    Object.keys(byDept).forEach(d=>{if(!seen.has(d)){ordered.push(d);seen.add(d);}});
+    // Apply dept filter
+    const visibleDepts=filterDept?ordered.filter(d=>d===filterDept):ordered;
+    if(!visibleDepts.length){wrap.innerHTML='<div style="text-align:center;color:var(--mut);padding:24px;font-size:13px">אין קטגוריות.</div>';return;}
+    wrap.innerHTML=visibleDepts.map(d=>{
+      const items=(byDept[d]||[]).slice().sort((a,b)=>a.localeCompare(b,'he'));
+      const filtered=q?items.filter(n=>n.toLowerCase().includes(q)):items;
+      // Auto-open when filtering returns matches in that dept
+      const autoOpen=q && filtered.length;
+      return '<div class="cat-bubble'+(autoOpen?' open':'')+'" data-bubble-dept="'+esc(d)+'">'
+        +'<div class="cat-bubble-header">'
+          +'<span class="cat-bubble-name">'+esc(d)+'</span>'
+          +'<span class="cat-bubble-count">'+items.length+(q?' / '+filtered.length:'')+'</span>'
+          +'<span class="cat-bubble-toggle">▼</span>'
+        +'</div>'
+        +'<div class="cat-bubble-body">'
+          +(filtered.length?filtered.map(n=>'<span class="cat-chip" draggable="true" data-chip-name="'+esc(n)+'" title="גרור לבלון אחר">'+esc(n)+'</span>').join('')
+            :'<span style="font-size:12px;color:var(--mut);padding:8px">אין מוצרים תואמים לחיפוש.</span>')
+        +'</div>'
+      +'</div>';
+    }).join('');
+    // Wire toggle (header click)
+    wrap.querySelectorAll('.cat-bubble').forEach(b=>{
+      const header=b.querySelector('.cat-bubble-header');
+      header.addEventListener('click',()=>b.classList.toggle('open'));
+    });
+    // Wire drag start on chips
+    wrap.querySelectorAll('.cat-chip').forEach(chip=>{
+      chip.addEventListener('dragstart',function(e){
+        const name=this.dataset.chipName;
+        e.dataTransfer.setData('text/plain',name);
+        e.dataTransfer.effectAllowed='move';
+        this.classList.add('dragging');
+      });
+      chip.addEventListener('dragend',function(){this.classList.remove('dragging');});
+    });
+    // Wire drop targets on bubbles
+    wrap.querySelectorAll('.cat-bubble').forEach(b=>{
+      b.addEventListener('dragover',function(e){
+        e.preventDefault();
+        e.dataTransfer.dropEffect='move';
+        this.classList.add('drop-target');
+      });
+      b.addEventListener('dragleave',function(e){
+        // Only remove if leaving the bubble entirely (not entering a child)
+        if(!this.contains(e.relatedTarget))this.classList.remove('drop-target');
+      });
+      b.addEventListener('drop',function(e){
+        e.preventDefault();
+        this.classList.remove('drop-target');
+        const name=e.dataTransfer.getData('text/plain');
+        const newDept=this.dataset.bubbleDept;
+        if(!name||!newDept)return;
+        const currentDept=_acDepts[name];
+        if(currentDept===newDept)return; // no-op
+        _saveProduct(name,newDept).then(()=>{
+          // After Firebase write, re-render bubbles (also auto-fires via listener
+          // but explicit refresh keeps it instant)
+          _renderBubbles();
+        });
+      });
+    });
+  }
   function _open(){
     document.getElementById('catalogAdminOverlay').classList.add('open');
     setTimeout(()=>document.getElementById('catNewName').focus(),120);
@@ -6162,7 +6277,15 @@ _refreshAdminThemeBtn();
     document.getElementById('catalogAdminOverlay').classList.remove('open');
   }
   // Expose for the catalog overrides listener to call after a remote change
-  window._renderCatalogAdmin=function(){_populateDeptSelects();_renderList();};
+  window._renderCatalogAdmin=function(){
+    _populateDeptSelects();
+    if(_catView==='bubbles')_renderBubbles();
+    else _renderList();
+  };
+  const vListBtn=document.getElementById('catViewList');
+  const vBubblesBtn=document.getElementById('catViewBubbles');
+  if(vListBtn)vListBtn.addEventListener('click',()=>_setView('list'));
+  if(vBubblesBtn)vBubblesBtn.addEventListener('click',()=>_setView('bubbles'));
   // Wire events (once)
   const openBtn=document.getElementById('adminOpenCatalogBtn');
   if(openBtn)openBtn.addEventListener('click',_open);
@@ -6203,10 +6326,11 @@ _refreshAdminThemeBtn();
   if(addProdBtn)addProdBtn.addEventListener('click',_addProduct);
   const addDeptBtn=document.getElementById('catAddDeptBtn');
   if(addDeptBtn)addDeptBtn.addEventListener('click',_addDept);
+  const _rerender=()=>{if(_catView==='bubbles')_renderBubbles();else _renderList();};
   const searchEl=document.getElementById('catSearch');
-  if(searchEl)searchEl.addEventListener('input',()=>_renderList());
+  if(searchEl)searchEl.addEventListener('input',_rerender);
   const filterEl=document.getElementById('catFilterDept');
-  if(filterEl)filterEl.addEventListener('change',()=>_renderList());
+  if(filterEl)filterEl.addEventListener('change',_rerender);
   // Bulk bar buttons
   const bulkApply=document.getElementById('catBulkApply');
   if(bulkApply){
