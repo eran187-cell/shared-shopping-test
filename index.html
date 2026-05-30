@@ -5948,28 +5948,61 @@ _refreshAdminThemeBtn();
       });
     });
   }
+  function _flashFeedback(msg,isOk){
+    // Reuse the existing toast if available, else show a tiny inline banner
+    if(typeof toast==='function'){toast(msg);return;}
+    const el=document.getElementById('catalogAdminStats');
+    if(!el)return;
+    const prev=el.textContent;
+    el.textContent=msg;
+    el.style.color=isOk===false?'#e74c3c':'var(--pri)';
+    setTimeout(()=>{el.textContent=prev;el.style.color='var(--mut)';},1800);
+  }
   function _saveProduct(name,dept){
     const k=_keyFor(name);
-    if(!k){alert('שם לא תקין');return;}
+    if(!k){alert('שם לא תקין');return Promise.reject();}
     const payload={n:name,d:dept,ts:Date.now()};
-    firebase.database().ref('catalog/products/'+k).set(payload)
+    return firebase.database().ref('catalog/products/'+k).set(payload)
       .then(()=>{
         // If product was previously marked removed, clear it
-        firebase.database().ref('catalog/removed/'+k).remove().catch(()=>{});
+        return firebase.database().ref('catalog/removed/'+k).remove().catch(()=>{});
       })
-      .catch(err=>alert('שמירה נכשלה: '+(err.message||err.code)));
+      .then(()=>{
+        _flashFeedback('✓ נשמר "'+name+'" ב-'+dept,true);
+        // Update local state immediately so UI feels responsive even before
+        // the global listener fires
+        _acDepts[name]=dept;
+        if(!_acProducts.includes(name))_acProducts.push(name);
+        _renderList();
+      })
+      .catch(err=>{
+        const msg=err&&(err.message||err.code)||'שגיאה';
+        _flashFeedback('שמירה נכשלה: '+msg,false);
+        console.error('[catalog save]',err);
+      });
   }
   function _deleteProduct(name){
     const k=_keyFor(name);
     if(!k)return;
     const isStatic=_isStaticProduct(name);
-    // If it's a custom-only product → just remove the override
-    // If it's a static product → mark as removed
-    firebase.database().ref('catalog/products/'+k).remove().catch(()=>{});
+    const ops=[firebase.database().ref('catalog/products/'+k).remove()];
     if(isStatic){
-      firebase.database().ref('catalog/removed/'+k).set({n:name,ts:Date.now()})
-        .catch(err=>alert('מחיקה נכשלה: '+(err.message||err.code)));
+      ops.push(firebase.database().ref('catalog/removed/'+k).set({n:name,ts:Date.now()}));
     }
+    Promise.all(ops)
+      .then(()=>{
+        _flashFeedback('✓ הוסר "'+name+'"',true);
+        // Update local state immediately so the row disappears now
+        delete _acDepts[name];
+        const i=_acProducts.indexOf(name);
+        if(i>=0)_acProducts.splice(i,1);
+        _renderList();
+      })
+      .catch(err=>{
+        const msg=err&&(err.message||err.code)||'שגיאה';
+        _flashFeedback('מחיקה נכשלה: '+msg,false);
+        console.error('[catalog delete]',err);
+      });
   }
   function _addProduct(){
     const nameEl=document.getElementById('catNewName');
@@ -5999,10 +6032,25 @@ _refreshAdminThemeBtn();
       .catch(err=>alert('הוספה נכשלה: '+(err.message||err.code)));
   }
   function _open(){
-    _populateDeptSelects();
-    _renderList();
     document.getElementById('catalogAdminOverlay').classList.add('open');
     setTimeout(()=>document.getElementById('catNewName').focus(),120);
+    // Safety: force a fresh read of /catalog in case the persistent listener
+    // was attached before rules permitted reads.
+    if(typeof firebase!=='undefined' && firebase.database){
+      firebase.database().ref('catalog').once('value').then(snap=>{
+        _acCatalogOverrides=snap.val()||{products:{},removed:{},depts:{}};
+        _acRecomputeCatalog();
+        _populateDeptSelects();
+        _renderList();
+      }).catch(err=>{
+        console.warn('[catalog open] fetch failed',err);
+        _populateDeptSelects();
+        _renderList();
+      });
+    } else {
+      _populateDeptSelects();
+      _renderList();
+    }
   }
   function _close(){
     document.getElementById('catalogAdminOverlay').classList.remove('open');
