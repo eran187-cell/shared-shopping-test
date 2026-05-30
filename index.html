@@ -126,15 +126,15 @@ a,button,input,select{touch-action:manipulation}
 
 .section-card{background:var(--sur);border-radius:16px;border:1.5px solid var(--bdr);padding:20px;margin-bottom:16px}
 #catalogAdminBubbles{display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start}
-.cat-bubble{background:var(--sur);border:2px solid var(--cb,#5dade2);border-radius:18px;padding:6px 10px;flex:0 0 auto;cursor:pointer;transition:transform .12s ease, box-shadow .15s ease, background .15s ease;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.cat-bubble{background:var(--sur);border:2px solid var(--cb,#5dade2);border-radius:18px;padding:6px 12px;flex:0 0 auto;width:max-content;max-width:100%;cursor:pointer;transition:transform .12s ease, box-shadow .15s ease, background .15s ease;box-shadow:0 1px 2px rgba(0,0,0,.05)}
 .cat-bubble:not(.open):hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(0,0,0,.10)}
-.cat-bubble.open{flex:1 1 100%;padding:14px 16px;cursor:default;box-shadow:0 6px 18px rgba(0,0,0,.12);background:var(--cb-pale,var(--pril))}
+.cat-bubble.open{flex:1 1 100%;width:auto;padding:14px 16px;cursor:default;box-shadow:0 6px 18px rgba(0,0,0,.12);background:var(--cb-pale,var(--pril))}
 .cat-bubble.drop-target{transform:scale(1.08);box-shadow:0 0 0 4px rgba(45,186,122,.25);background:var(--pril);border-color:var(--pri)!important}
-.cat-bubble-header{display:flex;align-items:center;gap:6px;user-select:none}
+.cat-bubble-header{display:inline-flex;align-items:center;gap:6px;user-select:none}
 .cat-bubble-name{font-weight:700;font-size:13px;color:var(--cb,var(--txt));white-space:nowrap}
 .cat-bubble.open .cat-bubble-name{font-size:15px;color:var(--txt)}
 .cat-bubble-count{background:var(--cb,var(--pri));color:#fff;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;line-height:1.4}
-.cat-bubble-toggle{color:var(--mut);font-size:10px;transition:transform .2s ease;margin-right:auto}
+.cat-bubble-toggle{color:var(--mut);font-size:10px;transition:transform .2s ease;opacity:.7}
 .cat-bubble.open .cat-bubble-toggle{transform:rotate(180deg)}
 .cat-bubble-body{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bdr)}
 .cat-bubble:not(.open) .cat-bubble-body{display:none}
