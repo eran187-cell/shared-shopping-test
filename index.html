@@ -126,13 +126,15 @@ a,button,input,select{touch-action:manipulation}
 
 .section-card{background:var(--sur);border-radius:16px;border:1.5px solid var(--bdr);padding:20px;margin-bottom:16px}
 #catalogAdminBubbles{display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start}
-.cat-bubble{background:var(--sur);border:1.5px solid var(--bdr);border-radius:16px;padding:8px 12px;flex:0 0 auto;min-width:130px;transition:border-color .15s ease, box-shadow .15s ease, flex-basis .25s ease}
-.cat-bubble.open{flex:1 1 100%;padding:12px 14px}
-.cat-bubble.drop-target{border-color:var(--pri);background:var(--pril);box-shadow:0 0 0 3px rgba(45,186,122,.18)}
-.cat-bubble-header{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
-.cat-bubble-name{flex:1;font-weight:700;font-size:14px;color:var(--txt)}
-.cat-bubble-count{background:var(--pri);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
-.cat-bubble-toggle{color:var(--mut);font-size:12px;transition:transform .2s ease}
+.cat-bubble{background:var(--sur);border:2px solid var(--cb,#5dade2);border-radius:18px;padding:6px 10px;flex:0 0 auto;cursor:pointer;transition:transform .12s ease, box-shadow .15s ease, background .15s ease;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.cat-bubble:not(.open):hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(0,0,0,.10)}
+.cat-bubble.open{flex:1 1 100%;padding:14px 16px;cursor:default;box-shadow:0 6px 18px rgba(0,0,0,.12);background:var(--cb-pale,var(--pril))}
+.cat-bubble.drop-target{transform:scale(1.08);box-shadow:0 0 0 4px rgba(45,186,122,.25);background:var(--pril);border-color:var(--pri)!important}
+.cat-bubble-header{display:flex;align-items:center;gap:6px;user-select:none}
+.cat-bubble-name{font-weight:700;font-size:13px;color:var(--cb,var(--txt));white-space:nowrap}
+.cat-bubble.open .cat-bubble-name{font-size:15px;color:var(--txt)}
+.cat-bubble-count{background:var(--cb,var(--pri));color:#fff;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;line-height:1.4}
+.cat-bubble-toggle{color:var(--mut);font-size:10px;transition:transform .2s ease;margin-right:auto}
 .cat-bubble.open .cat-bubble-toggle{transform:rotate(180deg)}
 .cat-bubble-body{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bdr)}
 .cat-bubble:not(.open) .cat-bubble-body{display:none}
@@ -6195,12 +6197,20 @@ _refreshAdminThemeBtn();
     // Apply dept filter
     const visibleDepts=filterDept?ordered.filter(d=>d===filterDept):ordered;
     if(!visibleDepts.length){wrap.innerHTML='<div style="text-align:center;color:var(--mut);padding:24px;font-size:13px">אין קטגוריות.</div>';return;}
+    // Deterministic color from name (HSL hue based on a small hash) — gives
+    // each category a distinct, stable hue so the eye can target them quickly.
+    const _hueFor=(s)=>{let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h%360;};
     wrap.innerHTML=visibleDepts.map(d=>{
       const items=(byDept[d]||[]).slice().sort((a,b)=>a.localeCompare(b,'he'));
       const filtered=q?items.filter(n=>n.toLowerCase().includes(q)):items;
       // Auto-open when filtering returns matches in that dept
       const autoOpen=q && filtered.length;
-      return '<div class="cat-bubble'+(autoOpen?' open':'')+'" data-bubble-dept="'+esc(d)+'">'
+      const hue=_hueFor(d);
+      const isDark=document.body.classList.contains('dark');
+      const baseColor='hsl('+hue+',55%,'+(isDark?'58%':'42%')+')';
+      const paleColor='hsl('+hue+',55%,'+(isDark?'18%':'96%')+')';
+      const styleVars='--cb:'+baseColor+';--cb-pale:'+paleColor+';';
+      return '<div class="cat-bubble'+(autoOpen?' open':'')+'" data-bubble-dept="'+esc(d)+'" style="'+styleVars+'">'
         +'<div class="cat-bubble-header">'
           +'<span class="cat-bubble-name">'+esc(d)+'</span>'
           +'<span class="cat-bubble-count">'+items.length+(q?' / '+filtered.length:'')+'</span>'
