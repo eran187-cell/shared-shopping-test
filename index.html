@@ -1469,13 +1469,18 @@ const APP_VERSION='1.02-rc.2';
 
     <div class="admin-grid-2">
       <div class="admin-card">
-        <h3><span class="ico">📅</span>כניסות יומיות (7 ימים אחרונים)</h3>
-        <div id="adminLoginsChart"></div>
+        <h3><span class="ico">📱</span>פילוח פלטפורמות (חודש אחרון)</h3>
+        <div id="adminPlatformDist" style="font-size:13px"></div>
       </div>
       <div class="admin-card">
         <h3><span class="ico">📊</span>התפלגות חיבורים אחרונים</h3>
         <div id="adminLoginPie"></div>
       </div>
+    </div>
+
+    <div class="admin-card" style="margin-bottom:16px">
+      <h3><span class="ico">📅</span>כניסות יומיות (7 ימים אחרונים)</h3>
+      <div id="adminLoginsChart"></div>
     </div>
 
     <div class="admin-card" style="margin-bottom:16px">
@@ -1914,11 +1919,25 @@ function recordItemStat(name){
     else if(committed)console.log('[stats item] OK',snap.val());
   });
 }
+function _detectPlatform(){
+  const ua=(navigator.userAgent||'')+' '+((navigator.platform)||'');
+  if(/iPad|iPhone|iPod/.test(ua))return 'apple';
+  if(/Android/i.test(ua))return 'android';
+  if(/Macintosh|Mac OS X/i.test(ua))return 'apple';
+  if(/Windows|Win64|Win32|Linux/i.test(ua))return 'pc';
+  return 'other';
+}
 function recordLogin(){
   if(!houseId)return;
   try{
     const day=new Date().toISOString().slice(0,10); // YYYY-MM-DD UTC
     const dev=deviceId.slice(0,12);
+    // Per-device platform record (used for the platform-distribution card).
+    // Single record per device; lastSeen updates on every login.
+    try{
+      db.ref('stats/devicePlatforms/'+dev).set({p:_detectPlatform(),t:Date.now()})
+        .catch(err=>console.warn('[stats platform]',err.code||err.message));
+    }catch(_){}
     console.log('[stats login] writing',day,dev);
     db.ref('stats/logins/'+day+'/'+dev).set(Date.now())
       .then(()=>console.log('[stats login] OK'))
@@ -5378,6 +5397,7 @@ async function loadAdminStats(){
     const houses=s.houses||{};
     const itemFreq=s.itemFreq||{};
     const logins=s.logins||{};
+    const devicePlatforms=s.devicePlatforms||{};
 
     // ── aggregate totals
     let totalFamilies=0,totalUsers=0,totalItems=0,totalDone=0,totalLists=0,latestUpdate=0,newToday=0;
@@ -5614,6 +5634,51 @@ async function loadAdminStats(){
       pieEl.innerHTML='<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><svg width="140" height="140" viewBox="0 0 140 140" style="flex:0 0 auto">'+slices+'</svg><div style="flex:1;min-width:160px">'+legend+'</div></div>';
     } else {
       pieEl.innerHTML='<div style="text-align:center;color:var(--mut);padding:20px">אין עדיין נתוני בתים.</div>';
+    }
+
+    // ── platform distribution (last 30 days)
+    const platEl=document.getElementById('adminPlatformDist');
+    if(platEl){
+      const monthCutoff=Date.now()-30*86400000;
+      const counts={apple:0,android:0,pc:0,other:0};
+      Object.values(devicePlatforms).forEach(rec=>{
+        if(!rec||typeof rec!=='object')return;
+        if((rec.t||0)<monthCutoff)return;
+        const p=rec.p||'other';
+        if(counts[p]===undefined)counts.other++; else counts[p]++;
+      });
+      const total=counts.apple+counts.android+counts.pc+counts.other;
+      if(total){
+        const pData=[
+          {key:'apple',label:'🍎 Apple (iOS / Mac)',color:'#a3a3a3',n:counts.apple},
+          {key:'android',label:'🤖 Android',color:'#3ddc84',n:counts.android},
+          {key:'pc',label:'💻 PC (Windows / Linux)',color:'#5dade2',n:counts.pc},
+          {key:'other',label:'❓ אחר',color:'#888',n:counts.other}
+        ].filter(s=>s.n>0);
+        const cx=70,cy=70,r=60;
+        let acc=0;
+        const slices=pData.map(s=>{
+          const frac=s.n/total;
+          const a0=acc*2*Math.PI-Math.PI/2;
+          acc+=frac;
+          const a1=acc*2*Math.PI-Math.PI/2;
+          const x0=cx+r*Math.cos(a0),y0=cy+r*Math.sin(a0);
+          const x1=cx+r*Math.cos(a1),y1=cy+r*Math.sin(a1);
+          const large=frac>0.5?1:0;
+          const path=frac>=0.999
+            ?'M '+(cx+r)+' '+cy+' A '+r+' '+r+' 0 1 1 '+(cx-r)+' '+cy+' A '+r+' '+r+' 0 1 1 '+(cx+r)+' '+cy
+            :'M '+cx+' '+cy+' L '+x0+' '+y0+' A '+r+' '+r+' 0 '+large+' 1 '+x1+' '+y1+' Z';
+          return '<path d="'+path+'" fill="'+s.color+'"></path>';
+        }).join('');
+        const legend=pData.map(s=>{
+          const pct=Math.round((s.n/total)*100);
+          return '<div style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0"><span style="width:10px;height:10px;border-radius:2px;background:'+s.color+'"></span><span style="flex:1">'+s.label+'</span><span style="color:var(--mut)">'+s.n+' ('+pct+'%)</span></div>';
+        }).join('');
+        platEl.innerHTML='<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><svg width="140" height="140" viewBox="0 0 140 140" style="flex:0 0 auto">'+slices+'</svg><div style="flex:1;min-width:160px">'+legend+'</div></div>'
+          +'<div style="font-size:11px;color:var(--mut);margin-top:8px">סה"כ <strong>'+total+'</strong> מכשירים פעילים ב-30 הימים האחרונים</div>';
+      } else {
+        platEl.innerHTML='<div style="text-align:center;color:var(--mut);padding:20px">עדיין אין נתוני פלטפורמות. ייאספו עם כניסות עתידיות.</div>';
+      }
     }
 
     // ── filtered house list
